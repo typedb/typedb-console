@@ -26,10 +26,10 @@ java_test(
     test_class = "grakn.core.console.test.GraknConsoleIT",
     deps = [
         # Package dependencies
-        "//console",
+        "//:console",
 
-        # Internal dependencies
-        "//test-integration/rule:grakn-test-server",
+        # Internal dependencies # TODO: should be removed with #1
+        "@graknlabs_grakn_core//test-integration/rule:grakn-test-server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -43,7 +43,10 @@ java_test(
     ],
     data = ["file-(with-parentheses).gql", "invalid-data.cql"],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    classpath_resources = [
+        # TODO: should be removed with #1
+        "@graknlabs_grakn_core//test-integration/resources:logback-test"
+    ]
 )
 
 checkstyle_test(

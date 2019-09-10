@@ -26,19 +26,23 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 genrule(
     name = "version",
     srcs = [
-        "templates/Version.java",
+        "//templates:Version.java",
         ":VERSION",
     ],
-    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
+    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location //templates:Version.java) >> $@",
     outs = ["Version.java"],
     visibility = ["//visibility:public"]
 )
 
 java_library(
     name = "console",
-    srcs = glob(["**/*.java"], exclude=["templates/**", "**/test/**"]) + [":version"],
+    srcs = glob([
+        "*.java",
+        "exception/*.java",
+        "printer/*.java",
+    ]) + [":version"],
     deps = [
-        "//concept", # TODO: To be removed with issue #5288
+        "@graknlabs_grakn_core//concept", # TODO: To be removed with issue #5288
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
 
@@ -53,7 +57,6 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
-    resource_strip_prefix = "console",
     tags = ["maven_coordinates=io.grakn.core:grakn-console:{pom_version}"],
 )
 
@@ -62,11 +65,6 @@ checkstyle_test(
     targets = [
         ":console"
     ],
-)
-
-exports_files(
-    glob(["conf/logback.xml"]),
-    visibility = ["//visibility:public"]
 )
 
 java_binary(
@@ -81,15 +79,15 @@ java_deps(
     target = ":console-binary",
     java_deps_root = "console/services/lib/",
     version_file = "//:VERSION",
-    visibility = ["//:__pkg__"]
+    visibility = ["//visibility:public"]
 )
 
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-core-console-linux",
-    targets = [":console-deps", "//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "console/conf/logback.xml"
+        "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -97,9 +95,9 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-core-console-mac",
-    targets = [":console-deps", "//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "console/conf/logback.xml"
+        "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -107,26 +105,11 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-core-console-windows",
-    targets = [":console-deps", "//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "console/conf/logback.xml"
+        "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
-)
-
-# TODO: To be removed with issue #5269
-assemble_maven(
-    name = "assemble-maven",
-    target = ":console",
-    package = "console",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-# TODO: To be removed with issue #5269
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
 )
 
 assemble_apt(
@@ -140,7 +123,7 @@ assemble_apt(
       "grakn-core-bin (={version})"
     ],
     files = {
-        "//console:conf/logback.xml": "console/conf/logback.xml"
+        "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
@@ -163,7 +146,7 @@ assemble_rpm(
     spec_file = "//config/rpm:grakn-core-console.spec",
     archives = [":console-deps"],
     files = {
-        "//console:conf/logback.xml": "console/conf/logback.xml"
+        "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",

@@ -84,7 +84,7 @@ java_deps(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-core-console-linux",
+    output_filename = "grakn-console-linux",
     targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
@@ -94,7 +94,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    output_filename = "grakn-core-console-mac",
+    output_filename = "grakn-console-mac",
     targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
@@ -104,7 +104,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    output_filename = "grakn-core-console-windows",
+    output_filename = "grakn-console-windows",
     targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
@@ -114,14 +114,15 @@ assemble_zip(
 
 assemble_apt(
     name = "assemble-linux-apt",
-    package_name = "grakn-core-console",
+    package_name = "grakn-console",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (console)",
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin (={version})"
+      "grakn-bin (=%{@graknlab_common})"
     ],
+    workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
@@ -140,10 +141,11 @@ deploy_apt(
 
 assemble_rpm(
     name = "assemble-linux-rpm",
-    package_name = "grakn-core-console",
+    package_name = "grakn-console",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
-    spec_file = "//config/rpm:grakn-core-console.spec",
+    spec_file = "//config/rpm:grakn-console.spec",
+    workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     archives = [":console-deps"],
     files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"

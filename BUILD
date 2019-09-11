@@ -57,7 +57,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
-    tags = ["maven_coordinates=io.grakn.core:grakn-console:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.console:grakn-console:{pom_version}"],
 )
 
 checkstyle_test(

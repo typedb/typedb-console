@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.console;
+package grakn.console;
 
 import grakn.client.GraknClient;
 import grakn.client.exception.GraknClientException;
-import grakn.core.console.exception.GraknConsoleException;
-import grakn.core.console.printer.Printer;
+import grakn.console.exception.GraknConsoleException;
+import grakn.console.printer.Printer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import io.grpc.StatusRuntimeException;

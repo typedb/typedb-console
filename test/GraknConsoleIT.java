@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.console.test;
+package grakn.console.test;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -24,8 +24,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.console.GraknConsole;
-import grakn.core.console.exception.GraknConsoleException;
+import grakn.console.GraknConsole;
+import grakn.console.exception.GraknConsoleException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import io.grpc.Status;

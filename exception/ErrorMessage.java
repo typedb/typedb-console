@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.console.exception;
+package grakn.console.exception;
 
 /**
  * Enum containing error messages.

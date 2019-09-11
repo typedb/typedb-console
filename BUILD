@@ -69,7 +69,7 @@ checkstyle_test(
 
 java_binary(
     name = "console-binary",
-    main_class = "grakn.core.console.GraknConsole",
+    main_class = "grakn.console.GraknConsole",
     runtime_deps = [":console"],
     visibility = ["//:__pkg__"],
 )

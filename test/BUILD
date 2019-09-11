@@ -23,7 +23,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "grakn-console-it",
     srcs = ["GraknConsoleIT.java"],
-    test_class = "grakn.core.console.test.GraknConsoleIT",
+    test_class = "grakn.console.test.GraknConsoleIT",
     deps = [
         # Package dependencies
         "//:console",

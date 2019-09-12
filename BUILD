@@ -18,8 +18,9 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
+load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
@@ -110,6 +111,26 @@ assemble_zip(
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
+)
+
+assemble_versioned(
+    name = "assemble-versioned-all",
+    targets = [
+        ":assemble-linux-targz",
+        ":assemble-mac-zip",
+        ":assemble-windows-zip",
+    ],
+    version_file = "//:VERSION",
+)
+
+deploy_github(
+    name = "deploy-github",
+    deployment_properties = "//:deployment.properties",
+    title = "Grakn Console",
+    title_append_version = True,
+    release_description = "//:RELEASE_TEMPLATE.md",
+    archive = ":assemble-versioned-all",
+    version_file = "//:VERSION"
 )
 
 assemble_apt(

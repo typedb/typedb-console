@@ -87,16 +87,6 @@ jobs:
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //:deploy-rpm -- snapshot
 
-  sync-dependencies-snapshot:
-    machine: true
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run: |
-          echo "TODO: this job should sync console:master to test:master once we have @graknlabs_test"
-#         TODO: this job should sync console:master to test:master once we have @graknlabs_test
-
   release-approval:
     machine: true
     steps:
@@ -188,19 +178,13 @@ workflows:
               only: master
           requires:
             - build
-      - sync-dependencies-snapshot:
+      - release-approval:
           filters:
             branches:
               only: master
           requires:
             - deploy-apt-snapshot
             - deploy-rpm-snapshot
-      - release-approval:
-          filters:
-            branches:
-              only: master
-          requires:
-            - sync-dependencies-snapshot
 
   console-release:
     jobs:

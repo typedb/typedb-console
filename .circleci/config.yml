@@ -94,10 +94,8 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
-          --source console@$CIRCLE_SHA1 \
-          --targets grakn:master
+          echo "TODO: this job should sync console:master to test:master once we have @graknlabs_test"
+#         TODO: this job should sync console:master to test:master once we have @graknlabs_test
 
   release-approval:
     machine: true

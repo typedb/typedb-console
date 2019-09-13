@@ -174,7 +174,7 @@ workflows:
           filters:
             branches:
               ignore: console-release-branch
-      - build:
+      - build-analysis:
           filters:
             branches:
               only: master

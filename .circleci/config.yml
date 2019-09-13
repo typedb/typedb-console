@@ -53,12 +53,20 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
+          command: bazel build //...
+
+  build-analysis:
+    machine: true
+    working_directory: ~/console
+    steps:
+      - apt-wait
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --project-key graknlabs_console --branch=$CIRCLE_BRANCH --commit-id=$CIRCLE_SHA1
-      - run-bazel-rbe:
-          command: bazel build //...
 
   deploy-apt-snapshot:
     machine: true
@@ -166,18 +174,24 @@ workflows:
           filters:
             branches:
               ignore: console-release-branch
+      - build:
+          filters:
+            branches:
+              only: master
       - deploy-apt-snapshot:
           filters:
             branches:
               only: master
           requires:
             - build
+            - build-analysis
       - deploy-rpm-snapshot:
           filters:
             branches:
               only: master
           requires:
             - build
+            - build-analysis
       - release-approval:
           filters:
             branches:

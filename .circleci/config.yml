@@ -96,6 +96,15 @@ jobs:
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
           bazel run @graknlabs_build_tools//ci:release-approval
 
+  release-validate:
+    machine: true
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_client_java
+
   deploy-github:
     machine: true
     working_directory: ~/console
@@ -150,7 +159,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin console-release-branch
+      - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/console $CIRCLE_BRANCH
 
 workflows:
   console:
@@ -187,10 +196,16 @@ workflows:
 
   console-release:
     jobs:
+      - release-validate:
+          filters:
+            branches:
+              only: console-release-branch
       - deploy-github:
           filters:
             branches:
               only: console-release-branch
+          requires:
+            - release-validate
       - deploy-approval:
           type: approval
           requires:

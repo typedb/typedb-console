@@ -103,7 +103,7 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
-            graknlabs_common graknlabs_console graknlabs_graql graknlabs_protocol
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_client_java
 
   deploy-github:
     machine: true
@@ -196,7 +196,7 @@ workflows:
 
   console-release:
     jobs:
-      - release-approval:
+      - release-validate:
           filters:
             branches:
               only: console-release-branch

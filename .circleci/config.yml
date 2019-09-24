@@ -159,7 +159,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin console-release-branch
+      - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/console $CIRCLE_BRANCH
 
 workflows:
   console:

@@ -41,11 +41,15 @@ java_test(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    data = ["file-(with-parentheses).gql", "invalid-data.cql"],
+    data = [
+        "file-(with-parentheses).gql",
+        "invalid-data.cql",
+        "//test/resources:grakn-properties",
+        "//test/resources:cassandra-embedded"],
     size = "large",
     classpath_resources = [
         # TODO: should be removed with #1
-        "@graknlabs_grakn_core//test-integration/resources:logback-test"
+        "@graknlabs_grakn_core//test-integration/resources:logback-test",
     ]
 )
 

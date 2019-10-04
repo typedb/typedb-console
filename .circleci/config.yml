@@ -50,6 +50,15 @@ jobs:
       - run-bazel-rbe:
           command: bazel build //...
 
+  test-integration:
+    machine: true
+    working_directory: ~/console
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test:grakn-console-it
+
   build-analysis:
     machine: true
     working_directory: ~/console

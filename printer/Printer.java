@@ -18,14 +18,14 @@
 
 package grakn.console.printer;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptList;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.answer.ConceptSetMeasure;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.type.AttributeType;
+import grakn.client.answer.AnswerGroup;
+import grakn.client.answer.ConceptList;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.ConceptSet;
+import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Numeric;
+import grakn.client.concept.api.AttributeType;
+import grakn.client.concept.api.Concept;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

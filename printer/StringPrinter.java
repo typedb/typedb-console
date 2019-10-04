@@ -18,19 +18,21 @@
 
 package grakn.console.printer;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSetMeasure;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.client.answer.AnswerGroup;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.concept.api.Attribute;
+import grakn.client.concept.api.AttributeType;
+import grakn.client.concept.api.Concept;
+import grakn.client.concept.api.ConceptId;
+import grakn.client.concept.api.Label;
+import grakn.client.concept.api.Role;
+import grakn.client.concept.api.SchemaConcept;
+import grakn.client.concept.api.Thing;
+import grakn.client.concept.api.Type;
 import graql.lang.Graql.Token.Char;
 import graql.lang.Graql.Token.Property;
+import graql.lang.statement.Variable;
 import graql.lang.util.StringUtil;
 
 import java.util.Collection;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Default printer that prints results in Graql syntax
@@ -148,7 +151,8 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         // Display any requested resources
         if (concept.isThing() && attributeTypes.length > 0) {
-            concept.asThing().attributes(attributeTypes).forEach(resource -> {
+            Stream<Attribute<?>> attributeStream = concept.asThing().attributes(attributeTypes);
+            attributeStream.forEach(resource -> {
                 String attributeType = colorType(resource.type());
                 String value = StringUtil.valueToString(resource.value());
                 output.append(Char.SPACE).append(colorKeyword(Property.HAS.toString())).append(Char.SPACE)
@@ -201,8 +205,12 @@ public class StringPrinter extends Printer<StringBuilder> {
     protected StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
-        answer.forEach((name, concept) -> builder.append(name).append(Char.SPACE)
-                .append(concept(concept)).append(Char.SEMICOLON).append(Char.SPACE));
+        for (Map.Entry<Variable, Concept> entry : answer.map().entrySet()) {
+            Variable name = entry.getKey();
+            Concept concept = entry.getValue();
+            builder.append(name).append(Char.SPACE)
+                    .append(concept(concept)).append(Char.SEMICOLON).append(Char.SPACE);
+        }
         return new StringBuilder(Char.CURLY_OPEN + builder.toString().trim() + Char.CURLY_CLOSE);
     }
 

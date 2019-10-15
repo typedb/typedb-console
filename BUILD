@@ -43,7 +43,6 @@ java_library(
         "printer/*.java",
     ]) + [":version"],
     deps = [
-        "@graknlabs_grakn_core//concept", # TODO: To be removed with issue #5288
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
 

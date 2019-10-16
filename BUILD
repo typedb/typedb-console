@@ -78,7 +78,6 @@ java_deps(
     name = "console-deps",
     target = ":console-binary",
     java_deps_root = "console/services/lib/",
-    version_file = "//:VERSION",
     visibility = ["//visibility:public"]
 )
 
@@ -119,7 +118,6 @@ assemble_versioned(
         ":assemble-mac-zip",
         ":assemble-windows-zip",
     ],
-    version_file = "//:VERSION",
 )
 
 deploy_github(
@@ -129,7 +127,6 @@ deploy_github(
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
-    version_file = "//:VERSION"
 )
 
 assemble_apt(
@@ -137,7 +134,6 @@ assemble_apt(
     package_name = "grakn-console",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (console)",
-    version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
       "grakn-bin (>=%{@graknlabs_common})"
@@ -163,7 +159,6 @@ assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-console",
     installation_dir = "/opt/grakn/core/",
-    version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-console.spec",
     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     archives = [":console-deps"],

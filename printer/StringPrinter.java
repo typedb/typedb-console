@@ -21,6 +21,7 @@ package grakn.console.printer;
 import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Void;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
@@ -235,6 +236,12 @@ public class StringPrinter extends Printer<StringBuilder> {
         }
 
         return builder;
+    }
+
+    @Override
+    protected StringBuilder voidAnswer(Void answer) {
+        StringBuilder builder = new StringBuilder();
+        return builder.append(answer.message());
     }
 
 

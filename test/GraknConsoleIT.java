@@ -233,6 +233,19 @@ public class GraknConsoleIT {
     }
 
     @Test
+    public void when_DeletingConcepts_expect_responseMessage() throws Exception {
+        assertConsoleSessionMatches(
+                "define person sub entity;",
+                anything(),
+                "insert $x isa person;",
+                anything(),
+                "match $x isa person; delete $x;",
+                containsString("success"),
+                "rollback"
+        );
+    }
+
+    @Test
     public void when_writingAggregateCountQuery_expect_correctCount() throws Exception {
         int NUM_METATYPES = 4;
         assertConsoleSessionMatches(

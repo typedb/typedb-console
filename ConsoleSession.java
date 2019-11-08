@@ -22,10 +22,12 @@ import grakn.client.GraknClient;
 import grakn.client.exception.GraknClientException;
 import grakn.console.exception.GraknConsoleException;
 import grakn.console.printer.Printer;
+import grakn.console.util.FlushableMemoryHistory;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
+import jline.console.history.PersistentHistory;
 import jline.console.history.FileHistory;
 
 import java.io.File;
@@ -76,7 +78,7 @@ public class ConsoleSession implements AutoCloseable {
     private final ConsoleReader consoleReader;
     private final Printer<?> printer = Printer.stringPrinter(true);
 
-    private final FileHistory historyFile;
+    private final PersistentHistory history;
 
     private final GraknClient client;
     private final GraknClient.Session session;
@@ -97,10 +99,16 @@ public class ConsoleSession implements AutoCloseable {
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
         this.printErr = printErr;
 
-        File file = new File(HISTORY_FILE);
-        file.createNewFile();
-        this.historyFile = new FileHistory(file);
-        this.consoleReader.setHistory(this.historyFile);
+        PersistentHistory history;
+        try {
+            File file = new File(HISTORY_FILE);
+            file.createNewFile();
+            history = new FileHistory(file);
+        } catch (IOException e) {
+            history = new FlushableMemoryHistory();
+        }
+        this.history = history;
+        this.consoleReader.setHistory(this.history);
     }
 
     void load(Path filePath) throws IOException {
@@ -280,7 +288,7 @@ public class ConsoleSession implements AutoCloseable {
         session.close();
         client.close();
         try {
-            historyFile.flush();
+            history.flush();
         } catch (IOException e) {
             // Print stacktrace to any available stream
             // nothing more to do here

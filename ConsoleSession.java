@@ -26,7 +26,11 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
+import jline.console.history.History;
 import jline.console.history.FileHistory;
+import jline.console.history.MemoryHistory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +52,7 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
  * A Grakn Console Session that allows a user to interact with the Grakn Server
  */
 public class ConsoleSession implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(ConsoleSession.class);
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
@@ -76,7 +81,7 @@ public class ConsoleSession implements AutoCloseable {
     private final ConsoleReader consoleReader;
     private final Printer<?> printer = Printer.stringPrinter(true);
 
-    private final FileHistory historyFile;
+    private final History history;
 
     private final GraknClient client;
     private final GraknClient.Session session;
@@ -97,10 +102,17 @@ public class ConsoleSession implements AutoCloseable {
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
         this.printErr = printErr;
 
-        File file = new File(HISTORY_FILE);
-        file.createNewFile();
-        this.historyFile = new FileHistory(file);
-        this.consoleReader.setHistory(this.historyFile);
+        History history;
+        try {
+            File file = new File(HISTORY_FILE);
+            file.createNewFile();
+            history = new FileHistory(file);
+        } catch (IOException e) {
+            LOG.warn("An in-memory history will be used due to exception raised while trying to access history file: ", e.getMessage());
+            history = new MemoryHistory();
+        }
+        this.history = history;
+        this.consoleReader.setHistory(this.history);
     }
 
     void load(Path filePath) throws IOException {
@@ -244,7 +256,6 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     /**
-     *
      * @return true if a clean took place, false otherwise
      * @throws IOException
      */
@@ -280,7 +291,9 @@ public class ConsoleSession implements AutoCloseable {
         session.close();
         client.close();
         try {
-            historyFile.flush();
+            if (history instanceof FileHistory) {
+                ((FileHistory) history).flush();
+            }
         } catch (IOException e) {
             // Print stacktrace to any available stream
             // nothing more to do here

@@ -41,7 +41,6 @@ java_library(
         "*.java",
         "exception/*.java",
         "printer/*.java",
-        "util/*.java",
     ]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",

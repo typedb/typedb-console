@@ -52,7 +52,7 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
  * A Grakn Console Session that allows a user to interact with the Grakn Server
  */
 public class ConsoleSession implements AutoCloseable {
-    Logger logger = LoggerFactory.getLogger(ConsoleSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConsoleSession.class);
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
@@ -108,7 +108,7 @@ public class ConsoleSession implements AutoCloseable {
             file.createNewFile();
             history = new FileHistory(file);
         } catch (IOException e) {
-            logger.warn("An in-memory history will be used due to exception raised while trying to access history file: ", e.getMessage());
+            LOG.warn("An in-memory history will be used due to exception raised while trying to access history file: ", e.getMessage());
             history = new MemoryHistory();
         }
         this.history = history;

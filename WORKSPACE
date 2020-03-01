@@ -30,7 +30,8 @@ load(
     "graknlabs_graql",
     "graknlabs_grakn_core",
     "graknlabs_protocol",
-    "graknlabs_client_java"
+    "graknlabs_client_java",
+    "graknlabs_grabl_tracing"
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -38,6 +39,7 @@ graknlabs_graql()
 graknlabs_grakn_core()
 graknlabs_protocol()
 graknlabs_client_java()
+graknlabs_grabl_tracing()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
@@ -121,6 +123,13 @@ graknlabs_benchmark_maven_dependencies()
 load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_docker")
 bazel_rules_docker()
 
+################################
+# Load Client Java dependencies #
+################################
+
+load("@graknlabs_client_java//dependencies/maven:dependencies.bzl",
+graknlabs_client_java_maven_dependencies = "maven_dependencies")
+graknlabs_client_java_maven_dependencies()
 
 #######################################
 # Load compiler dependencies for GRPC #

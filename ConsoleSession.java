@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -56,7 +55,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2019 Grakn Labs Limited\n\n";
+            "Copyright (C) 2020 Grakn Labs\n\n";
 
     private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";

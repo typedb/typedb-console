@@ -189,6 +189,7 @@ workflows:
           requires:
             - build
             - build-analysis
+            - test-integration
       - deploy-rpm-snapshot:
           filters:
             branches:
@@ -196,6 +197,7 @@ workflows:
           requires:
             - build
             - build-analysis
+            - test-integration
       - release-approval:
           filters:
             branches:

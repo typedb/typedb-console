@@ -432,6 +432,21 @@ public class GraknConsoleIT {
         assertThat(response.err(), not(containsString(".java")));
     }
 
+    @Test
+    public void when_ListKeyspaces_KeyspacesAreListed() throws Exception {
+        runConsoleSession("", "-k", "keyspace_a");
+        runConsoleSession("", "-k", "keyspace_b");
+        runConsoleSession("", "-k", "keyspace_c");
+
+        assertConsoleSessionMatches(
+                "keyspaces list",
+                containsString("grakn"),
+                containsString("keyspace_a"),
+                containsString("keyspace_b"),
+                containsString("keyspace_c")
+        );
+    }
+
     private void assertConsoleSessionMatches(Object... matchers) throws Exception {
         assertConsoleSessionMatchesWithArgs(ImmutableList.of(), matchers);
     }

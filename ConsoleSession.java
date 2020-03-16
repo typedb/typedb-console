@@ -39,9 +39,11 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -64,6 +66,10 @@ public class ConsoleSession implements AutoCloseable {
     private static final String CLEAR = "clear";
     private static final String EXIT = "exit";
     private static final String CLEAN = "clean";
+    private static final String KEYSPACE = "keyspaces";
+
+    // keyspace sub-commands
+    private static String LIST = "list";
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -170,7 +176,8 @@ public class ConsoleSession implements AutoCloseable {
             } else if (input.equals(EXIT)) {
                 consoleReader.flush();
                 return;
-
+            } else if (input.startsWith(KEYSPACE)) {
+                keyspaceCommand(input.substring(KEYSPACE.length()));
             } else if (!input.isEmpty()) {
                 executeQuery(input);
 
@@ -330,4 +337,13 @@ public class ConsoleSession implements AutoCloseable {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
+    private void keyspaceCommand(String subCommand) throws IOException {
+        String command = subCommand.trim();
+        if (command.equals(LIST)) {
+            List<String> keyspaces = client.keyspaces().retrieve().stream().sorted().collect(Collectors.toList());
+            for (String ksp : keyspaces) {
+                consoleReader.println(ksp);
+            }
+        }
+    }
 }

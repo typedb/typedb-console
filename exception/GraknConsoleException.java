@@ -18,6 +18,7 @@
 package grakn.console.exception;
 
 import grakn.client.exception.GraknClientException;
+import grakn.console.GraknConsole;
 
 public class GraknConsoleException extends GraknClientException {
 
@@ -39,6 +40,10 @@ public class GraknConsoleException extends GraknClientException {
 
     public static GraknConsoleException unreachableServer(String serverAddress, RuntimeException e) {
         return GraknConsoleException.create("Unable to create connection to Grakn instance at " + serverAddress, e);
+    }
+
+    public static GraknConsoleException nonexistantKeyspace(String keyspace) {
+        return GraknConsoleException.create("Keyspace " + keyspace + " does not exist");
     }
 
     @Override

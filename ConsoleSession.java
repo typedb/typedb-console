@@ -25,8 +25,8 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
-import jline.console.history.History;
 import jline.console.history.FileHistory;
+import jline.console.history.History;
 import jline.console.history.MemoryHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +39,9 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,10 +66,11 @@ public class ConsoleSession implements AutoCloseable {
     private static final String CLEAR = "clear";
     private static final String EXIT = "exit";
     private static final String CLEAN = "clean";
-    private static final String KEYSPACE = "keyspaces";
+    private static final String KEYSPACE = "keyspace";
 
     // keyspace sub-commands
     private static String LIST = "list";
+    private static String DELETE = "delete";
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -344,6 +345,14 @@ public class ConsoleSession implements AutoCloseable {
             for (String ksp : keyspaces) {
                 consoleReader.println(ksp);
             }
+        } else if (command.startsWith(DELETE + ' ')) {
+            String keyspaceToDelete = command.substring(DELETE.length() + 1).trim();
+            List<String> keyspaces = client.keyspaces().retrieve();
+            if (!keyspaces.contains(keyspaceToDelete)) {
+                throw GraknConsoleException.nonexistantKeyspace(keyspaceToDelete);
+            }
+            client.keyspaces().delete(keyspaceToDelete);
+            consoleReader.println("Successfully deleted keyspace: " + keyspaceToDelete);
         }
     }
 }

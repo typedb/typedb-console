@@ -434,16 +434,22 @@ public class GraknConsoleIT {
 
     @Test
     public void when_ListKeyspaces_KeyspacesAreListed() throws Exception {
-        runConsoleSession("", "-k", "keyspace_a");
-        runConsoleSession("", "-k", "keyspace_b");
-        runConsoleSession("", "-k", "keyspace_c");
+        // initialise a couple of sessions
+        // these are going to be ordered alphabetically, so make sure they are lower alphabetically
+        // than keyspaces created in other tests - no ordering guarantee between tests!
+        // and will use the same server without cleaning it every time
+        // TODO add server clean command to console tests
+        server.sessionFactory()
+        runConsoleSession("", "-k", "a0");
+        runConsoleSession("", "-k", "a1");
+        runConsoleSession("", "-k", "a2");
 
         assertConsoleSessionMatches(
                 "keyspaces list",
-                containsString("grakn"),
-                containsString("keyspace_a"),
-                containsString("keyspace_b"),
-                containsString("keyspace_c")
+                containsString("a0"),
+                containsString("a1"),
+                containsString("a2"),
+                anything()
         );
     }
 

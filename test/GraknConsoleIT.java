@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
+import grakn.console.exception.GraknConsoleException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.commons.io.output.TeeOutputStream;
@@ -434,7 +435,7 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_ListKeyspaces_KeyspacesAreListed() throws Exception {
+    public void when_ListKeyspaces_keyspacesAreListed() throws Exception {
         deleteAllKeyspaces();
 
         // initialise a couple of sessions
@@ -446,12 +447,28 @@ public class GraknConsoleIT {
                 "keyspace list",
                 containsString("a0"),
                 containsString("a1"),
-                containsString("a2")
+                containsString("a2"),
+                containsString("grakn")
         );
     }
 
     @Test
-    public void when_DeleteKeyspace_KeyspaceNotListed() throws Exception {
+    public void when_DeleteNonexistantKeyspace_showUsefulError() throws Exception {
+        deleteAllKeyspaces();
+
+        // initialise a couple of sessions
+        runConsoleSession("", "-k", "a0");
+        runConsoleSession("", "-k", "a1");
+        runConsoleSession("", "-k", "a2");
+
+        assertConsoleSessionMatches(
+                "keyspace delete notakeyspace",
+                containsString("Keyspace notakeyspace does not exist")
+        );
+    }
+
+    @Test
+    public void when_DeleteKeyspace_keyspaceNotListed() throws Exception {
         deleteAllKeyspaces();
 
         // initialise a couple of sessions
@@ -464,7 +481,8 @@ public class GraknConsoleIT {
                 containsString("Successfully deleted keyspace: a01"),
                 "keyspace list",
                 containsString("a1"),
-                containsString("a2")
+                containsString("a2"),
+                containsString("grakn")
         );
     }
 

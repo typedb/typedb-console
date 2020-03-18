@@ -41,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -349,7 +348,8 @@ public class ConsoleSession implements AutoCloseable {
             String keyspaceToDelete = command.substring(DELETE.length() + 1).trim();
             List<String> keyspaces = client.keyspaces().retrieve();
             if (!keyspaces.contains(keyspaceToDelete)) {
-                throw GraknConsoleException.nonexistantKeyspace(keyspaceToDelete);
+                consoleReader.println("Keyspace " + keyspaceToDelete + " does not exist");
+                return;
             }
             client.keyspaces().delete(keyspaceToDelete);
             consoleReader.println("Successfully deleted keyspace: " + keyspaceToDelete);

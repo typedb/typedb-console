@@ -32,6 +32,7 @@ java_test(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_client_java//:client-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",

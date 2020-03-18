@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
@@ -421,7 +422,7 @@ public class GraknConsoleIT {
         );
 
         assertThat(response.err(), not(containsString("error")));
-        assertThat(response.out(), containsString("1"));
+        assertThat(response.out(), containsString("4"));
     }
 
     @Test
@@ -434,11 +435,9 @@ public class GraknConsoleIT {
 
     @Test
     public void when_ListKeyspaces_KeyspacesAreListed() throws Exception {
+        deleteAllKeyspaces();
+
         // initialise a couple of sessions
-        // these are going to be ordered alphabetically, so make sure they are lower alphabetically
-        // than keyspaces created in other tests - no ordering guarantee between tests!
-        // and will use the same server without cleaning it every time
-        // TODO add server clean command to console tests
         runConsoleSession("", "-k", "a0");
         runConsoleSession("", "-k", "a1");
         runConsoleSession("", "-k", "a2");
@@ -447,18 +446,15 @@ public class GraknConsoleIT {
                 "keyspace list",
                 containsString("a0"),
                 containsString("a1"),
-                containsString("a2"),
-                anything()
+                containsString("a2")
         );
     }
 
     @Test
     public void when_DeleteKeyspace_KeyspaceNotListed() throws Exception {
+        deleteAllKeyspaces();
+
         // initialise a couple of sessions
-        // these are going to be ordered alphabetically, so make sure they are lower alphabetically
-        // than keyspaces created in other tests - no ordering guarantee between tests!
-        // and will use the same server without cleaning it every time
-        // TODO add server clean command to console tests
         runConsoleSession("", "-k", "a0");
         runConsoleSession("", "-k", "a1");
         runConsoleSession("", "-k", "a2");
@@ -468,9 +464,17 @@ public class GraknConsoleIT {
                 containsString("Successfully deleted keyspace: a01"),
                 "keyspace list",
                 containsString("a1"),
-                containsString("a2"),
-                anything()
+                containsString("a2")
         );
+    }
+
+    private void deleteAllKeyspaces() {
+        // TODO there should be a way to do this from a server directly...
+        GraknClient client = new GraknClient(server.grpcUri());
+        for (String ksp : client.keyspaces().retrieve()) {
+            client.keyspaces().delete(ksp);
+        }
+        client.close();
     }
 
     private void assertConsoleSessionMatches(Object... matchers) throws Exception {

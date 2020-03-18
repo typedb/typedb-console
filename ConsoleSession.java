@@ -177,7 +177,11 @@ public class ConsoleSession implements AutoCloseable {
                 consoleReader.flush();
                 return;
             } else if (input.startsWith(KEYSPACE)) {
-                keyspaceCommand(input.substring(KEYSPACE.length()));
+                boolean exit = keyspaceCommand(input.substring(KEYSPACE.length()));
+                if (exit) {
+                    consoleReader.flush();
+                    return;
+                }
             } else if (!input.isEmpty()) {
                 executeQuery(input);
 
@@ -327,7 +331,6 @@ public class ConsoleSession implements AutoCloseable {
             builder = new ProcessBuilder("/bin/bash", "-c", editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath());
         }
 
-
         builder.start().waitFor();
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
@@ -337,7 +340,10 @@ public class ConsoleSession implements AutoCloseable {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
-    private void keyspaceCommand(String subCommand) throws IOException {
+    /**
+     * @return boolean indicating whether the current keyspace has been deleted and we need to exit
+     */
+    private boolean keyspaceCommand(String subCommand) throws IOException {
         String command = subCommand.trim();
         if (command.equals(LIST)) {
             List<String> keyspaces = client.keyspaces().retrieve().stream().sorted().collect(Collectors.toList());
@@ -349,10 +355,16 @@ public class ConsoleSession implements AutoCloseable {
             List<String> keyspaces = client.keyspaces().retrieve();
             if (!keyspaces.contains(keyspaceToDelete)) {
                 consoleReader.println("Keyspace " + keyspaceToDelete + " does not exist");
-                return;
+                return false;
+            }
+            if (keyspaceToDelete.equals(session.keyspace().toString())) {
+                // redirect to clean() with confirmation, return status of clean()
+                // if we cleaned, we need to exit
+                return clean();
             }
             client.keyspaces().delete(keyspaceToDelete);
             consoleReader.println("Successfully deleted keyspace: " + keyspaceToDelete);
         }
+        return false;
     }
 }

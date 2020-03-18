@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
-import grakn.console.exception.GraknConsoleException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.commons.io.output.TeeOutputStream;
@@ -455,6 +454,8 @@ public class GraknConsoleIT {
     @Test
     public void when_DeleteNonexistantKeyspace_showUsefulError() throws Exception {
         deleteAllKeyspaces();
+        // reset keyspace suffix
+        keyspaceSuffix = 0;
 
         // initialise a couple of sessions
         runConsoleSession("", "-k", "a0");
@@ -471,14 +472,17 @@ public class GraknConsoleIT {
     public void when_DeleteKeyspace_keyspaceNotListed() throws Exception {
         deleteAllKeyspaces();
 
+        // reset keyspace suffix
+        keyspaceSuffix = 0;
+
         // initialise a couple of sessions
         runConsoleSession("", "-k", "a0");
         runConsoleSession("", "-k", "a1");
         runConsoleSession("", "-k", "a2");
 
         assertConsoleSessionMatches(
-                "keyspace delete a01", // need to include one because tests increment a counter??
-                containsString("Successfully deleted keyspace: a01"),
+                "keyspace delete a00", // need to include one because tests increment a counter??
+                containsString("Successfully deleted keyspace: a00"),
                 "keyspace list",
                 containsString("a1"),
                 containsString("a2"),

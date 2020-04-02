@@ -124,8 +124,7 @@ bazel_rules_docker()
 # Load Client Java dependencies #
 ################################
 load(
-    "@graknlabs_client_java//dependencies/graknlabs:dependencies.bzl",
-    graknlabs_grabl_tracing="graknlabs_grabl_tracing")
+    "@graknlabs_client_java//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
 
 load("@graknlabs_client_java//dependencies/maven:dependencies.bzl",

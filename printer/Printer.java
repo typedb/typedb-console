@@ -18,6 +18,7 @@
 
 package grakn.console.printer;
 
+import grakn.client.GraknClient;
 import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
@@ -52,7 +53,7 @@ public abstract class Printer<Builder> {
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
-    public static StringPrinter stringPrinter(boolean colorize, AttributeType... attributeTypes) {
+    public static StringPrinter stringPrinter(boolean colorize, AttributeType<?, ?, ?>... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
     }
 
@@ -62,9 +63,9 @@ public abstract class Printer<Builder> {
      * @param objects the objects to be printed
      * @return the stream of String print output for the object
      */
-    public Stream<String> toStream(Stream<?> objects) {
+    public Stream<String> toStream(GraknClient.Transaction tx, Stream<?> objects) {
         if (objects == null) return Stream.empty();
-        return objects.map(this::toString);
+        return objects.map(o -> toString(tx, o));
     }
 
     /**
@@ -74,8 +75,8 @@ public abstract class Printer<Builder> {
      * @return the String print output for the object
      */
     @CheckReturnValue
-    public String toString(Object object) {
-        Builder builder = build(object);
+    public String toString(GraknClient.Transaction tx, Object object) {
+        Builder builder = build(tx, object);
         return complete(builder);
     }
 
@@ -86,44 +87,44 @@ public abstract class Printer<Builder> {
      * @return the object as a builder
      */
     @CheckReturnValue
-    protected Builder build(Object object) {
+    protected Builder build(GraknClient.Transaction tx, Object object) {
         if (object instanceof Concept) {
-            return concept((Concept) object);
+            return concept(tx, (Concept<?>) object);
         }
         else if (object instanceof Boolean) {
             return bool((boolean) object);
         }
         else if (object instanceof Collection) {
-            return collection((Collection<?>) object);
+            return collection(tx, (Collection<?>) object);
         }
         else if (object instanceof AnswerGroup<?>) {
-            return answerGroup((AnswerGroup<?>) object);
+            return answerGroup(tx, (AnswerGroup<?>) object);
         }
         else if (object instanceof ConceptList) {
-            return conceptList((ConceptList) object);
+            return conceptList(tx, (ConceptList) object);
         }
         else if (object instanceof ConceptMap) {
-            return conceptMap((ConceptMap) object);
+            return conceptMap(tx, (ConceptMap) object);
         }
         else if (object instanceof ConceptSet) {
             if (object instanceof ConceptSetMeasure) {
-                return conceptSetMeasure((ConceptSetMeasure) object);
+                return conceptSetMeasure(tx, (ConceptSetMeasure) object);
             }
             else {
-                return conceptSet((ConceptSet) object);
+                return conceptSet(tx, (ConceptSet) object);
             }
         }
         else if (object instanceof Numeric) {
-            return value((Numeric) object);
+            return value(tx, (Numeric) object);
         }
         else if (object instanceof Void) {
             return voidAnswer((Void)object);
         }
         else if (object instanceof Map) {
-            return map((Map<?, ?>) object);
+            return map(tx, (Map<?, ?>) object);
         }
         else {
-            return object(object);
+            return object(tx, object);
         }
     }
 
@@ -143,7 +144,7 @@ public abstract class Printer<Builder> {
      * @return the concept as a builder
      */
     @CheckReturnValue
-    protected abstract Builder concept(Concept concept);
+    protected abstract Builder concept(GraknClient.Transaction tx, Concept<?> concept);
 
     /**
      * Convert any boolean into its print builder
@@ -161,7 +162,7 @@ public abstract class Printer<Builder> {
      * @return the collection as a builder
      */
     @CheckReturnValue
-    protected abstract Builder collection(Collection<?> collection);
+    protected abstract Builder collection(GraknClient.Transaction tx, Collection<?> collection);
 
     /**
      * Convert any map into its print builder
@@ -170,7 +171,7 @@ public abstract class Printer<Builder> {
      * @return the map as a builder
      */
     @CheckReturnValue
-    protected abstract Builder map(Map<?, ?> map);
+    protected abstract Builder map(GraknClient.Transaction tx, Map<?, ?> map);
 
     /**
      * Convert any {@link AnswerGroup} into its print builder
@@ -179,7 +180,7 @@ public abstract class Printer<Builder> {
      * @return the grouped answers as an output builder
      */
     @CheckReturnValue
-    protected abstract Builder answerGroup(AnswerGroup<?> answer);
+    protected abstract Builder answerGroup(GraknClient.Transaction tx, AnswerGroup<?> answer);
 
     /**
      * Convert any {@link ConceptList} into its print builder
@@ -188,8 +189,8 @@ public abstract class Printer<Builder> {
      * @return the concept list as an output builder
      */
     @CheckReturnValue
-    protected Builder conceptList(ConceptList answer) {
-        return collection(answer.list());
+    protected Builder conceptList(GraknClient.Transaction tx, ConceptList answer) {
+        return collection(tx, answer.list());
     }
 
     /**
@@ -199,7 +200,7 @@ public abstract class Printer<Builder> {
      * @return the concept map as an output builder
      */
     @CheckReturnValue
-    protected abstract Builder conceptMap(ConceptMap answer);
+    protected abstract Builder conceptMap(GraknClient.Transaction tx, ConceptMap answer);
 
     /**
      * Convert any {@link ConceptSet} into its print builder
@@ -208,8 +209,8 @@ public abstract class Printer<Builder> {
      * @return the concept set as an output builder
      */
     @CheckReturnValue
-    protected Builder conceptSet(ConceptSet answer) {
-        return collection(answer.set());
+    protected Builder conceptSet(GraknClient.Transaction tx, ConceptSet answer) {
+        return collection(tx, answer.set());
     }
 
     /**
@@ -219,7 +220,7 @@ public abstract class Printer<Builder> {
      * @return the concept set measure as an output builder
      */
     @CheckReturnValue
-    protected abstract Builder conceptSetMeasure(ConceptSetMeasure answer);
+    protected abstract Builder conceptSetMeasure(GraknClient.Transaction tx, ConceptSetMeasure answer);
 
     /**
      * Convert any {@link Numeric} into its print builder
@@ -228,8 +229,8 @@ public abstract class Printer<Builder> {
      * @return the number as an output builder
      */
     @CheckReturnValue
-    protected Builder value(Numeric answer) {
-        return object(answer.number());
+    protected Builder value(GraknClient.Transaction tx, Numeric answer) {
+        return object(tx, answer.number());
     }
 
     /**
@@ -245,5 +246,5 @@ public abstract class Printer<Builder> {
      * @return the object as a builder
      */
     @CheckReturnValue
-    protected abstract Builder object(Object object);
+    protected abstract Builder object(GraknClient.Transaction tx, Object object);
 }

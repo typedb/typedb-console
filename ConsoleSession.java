@@ -198,16 +198,27 @@ public class ConsoleSession implements AutoCloseable {
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
-            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx.stream(query, infer)));
+//            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx.stream(query, infer)));
+
+            long startTime = System.currentTimeMillis();
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx,
+                    tx.execute(query, infer).stream())
+            );
 
             // For each printed answer, print them on one line
-            answers.forEach(answer -> {
+            long answerCount = answers.peek(answer -> {
                 try {
                     consoleReader.println(answer);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            });
+            }).count();
+
+            long endTime = System.currentTimeMillis();
+
+            double timeInSecondsTo2dp = Math.round(((double) endTime - (double) startTime) / 10.0) / 100.0;
+
+            consoleReader.println(String.format("Fetched %d results in %.2fs", answerCount, timeInSecondsTo2dp));
         } catch (RuntimeException e) {
             // Flush out all answers from previous iterators in the stream
             consoleReader.flush();

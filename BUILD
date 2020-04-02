@@ -72,6 +72,8 @@ java_binary(
     name = "console-binary",
     main_class = "grakn.console.GraknConsole",
     runtime_deps = [":console"],
+    resources = ["//config/logback:logback.xml"],
+    resource_strip_prefix = "config/logback",
     visibility = ["//:__pkg__"],
 )
 

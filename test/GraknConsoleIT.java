@@ -303,7 +303,7 @@ public class GraknConsoleIT {
                 "define my-rule sub rule, when {$x isa man;}, then {$x isa person;};",
                 anything(),
                 "commit",
-                "match $_ isa person, has name $x; get;",
+                "match $y isa person, has name $x; get;",
                 containsString("felix") // Results after result is added
         );
     }

@@ -55,8 +55,8 @@ def graknlabs_protocol():
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/adammitchelldev/client-java", # TODO: Revert to graknlabs
-        commit = "cfcc7f0185dbb3d70c98e065d32971127610bd61", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+        remote = "https://github.com/graknlabs/client-java",
+        commit = "5dc16adf2c90ca139666bccda5350ba288807198", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
     )
 
 def graknlabs_grabl_tracing():

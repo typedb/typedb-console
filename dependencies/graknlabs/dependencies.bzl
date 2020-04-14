@@ -41,8 +41,8 @@ def graknlabs_graql():
 def graknlabs_grakn_core():
     git_repository(
         name = "graknlabs_grakn_core",
-        remote = "https://github.com/adammitchelldev/grakn", # TODO: Revert to graknlabs
-        commit = "d4b3b38ab621a437412186070b1c433355b998cc", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grakn_core
+        remote = "https://github.com/graknlabs/grakn",
+        commit = "351cc723b786cb7289063b22d236b0b109cd7594", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grakn_core
     )
 
 def graknlabs_protocol():

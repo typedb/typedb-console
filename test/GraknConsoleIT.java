@@ -567,8 +567,6 @@ public class GraknConsoleIT {
             printErr.flush();
         } finally {
             resetIO();
-            printErr.close();
-            printOut.close();
         }
 
         return Response.of(bufferOut.toString(), bufferErr.toString());

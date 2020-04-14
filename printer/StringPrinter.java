@@ -17,19 +17,20 @@
 
 package grakn.console.printer;
 
+import grakn.client.GraknClient;
 import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSetMeasure;
 import grakn.client.answer.Void;
-import grakn.client.concept.Attribute;
-import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
-import grakn.client.concept.Role;
+import grakn.client.concept.type.Role;
 import grakn.client.concept.SchemaConcept;
-import grakn.client.concept.Thing;
-import grakn.client.concept.Type;
+import grakn.client.concept.thing.Attribute;
+import grakn.client.concept.thing.Thing;
+import grakn.client.concept.type.AttributeType;
+import grakn.client.concept.type.Type;
 import graql.lang.Graql.Token.Char;
 import graql.lang.Graql.Token.Property;
 import graql.lang.statement.Variable;
@@ -39,7 +40,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,10 +49,10 @@ import java.util.stream.Stream;
  */
 public class StringPrinter extends Printer<StringBuilder> {
 
-    private final AttributeType[] attributeTypes;
+    private final AttributeType<?>[] attributeTypes;
     private final boolean colorize;
 
-    StringPrinter(boolean colorize, AttributeType... attributeTypes) {
+    StringPrinter(boolean colorize, AttributeType<?>... attributeTypes) {
         this.colorize = colorize;
         this.attributeTypes = attributeTypes;
     }
@@ -85,19 +85,19 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder concept(Concept concept) {
+    protected StringBuilder concept(GraknClient.Transaction tx, Concept<?> concept) {
         StringBuilder output = new StringBuilder();
 
         // Display values for resources and ids for everything else
         if (concept.isAttribute()) {
             output.append(StringUtil.valueToString(concept.asAttribute().value()));
         } else if (concept.isSchemaConcept()) {
-            SchemaConcept ontoConcept = concept.asSchemaConcept();
+            SchemaConcept<?> ontoConcept = concept.asSchemaConcept();
             output.append(colorKeyword(Property.TYPE.toString()))
                     .append(Char.SPACE)
                     .append(colorType(ontoConcept));
 
-            SchemaConcept superConcept = ontoConcept.sup();
+            SchemaConcept<?> superConcept = ontoConcept.asRemote(tx).sup();
 
             if (superConcept != null) {
                 output.append(Char.SPACE)
@@ -113,11 +113,12 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         if (concept.isRelation()) {
             List<String> rolePlayerList = new LinkedList<>();
-            for (Map.Entry<Role, List<Thing>> rolePlayers : concept.asRelation().rolePlayersMap().entrySet()) {
-                Role role = rolePlayers.getKey();
-                List<Thing> things = rolePlayers.getValue();
+            for (Map.Entry<Role.Remote, List<Thing.Remote<?, ?>>> rolePlayers
+                    : concept.asRelation().asRemote(tx).rolePlayersMap().entrySet()) {
+                Role.Remote role = rolePlayers.getKey();
+                List<Thing.Remote<?, ?>> things = rolePlayers.getValue();
 
-                for (Thing thing : things) {
+                for (Thing.Remote<?, ?> thing : things) {
                     rolePlayerList.add(
                             colorType(role) + Char.COLON + Char.SPACE +
                                     Property.ID + Char.SPACE + conceptId(thing.id()));
@@ -130,7 +131,7 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         // Display type of each instance
         if (concept.isThing()) {
-            Type type = concept.asThing().type();
+            Type<?, ?> type = concept.asThing().type();
             output.append(Char.SPACE)
                     .append(colorKeyword(Property.ISA.toString()))
                     .append(Char.SPACE)
@@ -141,17 +142,18 @@ public class StringPrinter extends Printer<StringBuilder> {
         if (concept.isRule()) {
             output.append(Char.SPACE).append(colorKeyword(Property.WHEN.toString())).append(Char.SPACE)
                     .append(Char.CURLY_OPEN).append(Char.SPACE)
-                    .append(concept.asRule().when())
+                    .append(concept.asRule().asRemote(tx).when())
                     .append(Char.SPACE).append(Char.CURLY_CLOSE);
             output.append(Char.SPACE).append(colorKeyword(Property.THEN.toString())).append(Char.SPACE)
                     .append(Char.CURLY_OPEN).append(Char.SPACE)
-                    .append(concept.asRule().then())
+                    .append(concept.asRule().asRemote(tx).then())
                     .append(Char.SPACE).append(Char.CURLY_CLOSE);
         }
 
         // Display any requested resources
         if (concept.isThing() && attributeTypes.length > 0) {
-            Stream<Attribute<?>> attributeStream = concept.asThing().attributes(attributeTypes);
+            Stream<Attribute.Remote<?>> attributeStream = concept.asThing().asRemote(tx)
+                    .attributes(attributeTypes);
             attributeStream.forEach(resource -> {
                 String attributeType = colorType(resource.type());
                 String value = StringUtil.valueToString(resource.value());
@@ -175,61 +177,61 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder collection(Collection<?> collection) {
+    protected StringBuilder collection(GraknClient.Transaction tx, Collection<?> collection) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(Char.CURLY_OPEN);
-        collection.stream().findFirst().ifPresent(item -> builder.append(build(item)));
-        collection.stream().skip(1).forEach(item -> builder.append(Char.COMMA_SPACE).append(build(item)));
+        collection.stream().findFirst().ifPresent(item -> builder.append(build(tx, item)));
+        collection.stream().skip(1).forEach(item -> builder.append(Char.COMMA_SPACE).append(build(tx, item)));
         builder.append(Char.CURLY_CLOSE);
 
         return builder;
     }
 
     @Override
-    protected StringBuilder map(Map<?, ?> map) {
-        return collection(map.entrySet());
+    protected StringBuilder map(GraknClient.Transaction tx, Map<?, ?> map) {
+        return collection(tx, map.entrySet());
     }
 
     @Override
-    protected StringBuilder answerGroup(AnswerGroup<?> answer) {
+    protected StringBuilder answerGroup(GraknClient.Transaction tx, AnswerGroup<?> answer) {
         StringBuilder builder = new StringBuilder();
         return builder.append(Char.CURLY_OPEN)
-                .append(concept(answer.owner()))
+                .append(concept(tx, answer.owner()))
                 .append(Char.COLON).append(Char.SPACE)
-                .append(build(answer.answers()))
+                .append(build(tx, answer.answers()))
                 .append(Char.CURLY_CLOSE);
     }
 
     @Override
-    protected StringBuilder conceptMap(ConceptMap answer) {
+    protected StringBuilder conceptMap(GraknClient.Transaction tx, ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
-        for (Map.Entry<Variable, Concept> entry : answer.map().entrySet()) {
+        for (Map.Entry<Variable, Concept<?>> entry : answer.map().entrySet()) {
             Variable name = entry.getKey();
-            Concept concept = entry.getValue();
+            Concept<?> concept = entry.getValue();
             builder.append(name).append(Char.SPACE)
-                    .append(concept(concept)).append(Char.SEMICOLON).append(Char.SPACE);
+                    .append(concept(tx, concept)).append(Char.SEMICOLON).append(Char.SPACE);
         }
         return new StringBuilder(Char.CURLY_OPEN + builder.toString().trim() + Char.CURLY_CLOSE);
     }
 
     @Override
-    protected StringBuilder conceptSetMeasure(ConceptSetMeasure answer) {
+    protected StringBuilder conceptSetMeasure(GraknClient.Transaction tx,ConceptSetMeasure answer) {
         StringBuilder builder = new StringBuilder();
-        return builder.append(answer.measurement()).append(Char.COLON).append(Char.SPACE).append(collection(answer.set()));
+        return builder.append(answer.measurement()).append(Char.COLON).append(Char.SPACE).append(collection(tx, answer.set()));
     }
 
     @Override
-    protected StringBuilder object(Object object) {
+    protected StringBuilder object(GraknClient.Transaction tx, Object object) {
         StringBuilder builder = new StringBuilder();
 
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
 
-            builder.append(build(entry.getKey()));
+            builder.append(build(tx, entry.getKey()));
             builder.append(Char.COLON).append(Char.SPACE);
-            builder.append(build(entry.getValue()));
+            builder.append(build(tx, entry.getValue()));
         } else if (object != null) {
             builder.append(object);
         }
@@ -262,7 +264,7 @@ public class StringPrinter extends Printer<StringBuilder> {
      * @param schemaConcept a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private String colorType(SchemaConcept schemaConcept) {
+    private String colorType(SchemaConcept<?> schemaConcept) {
         if(colorize) {
             return ANSI.color(label(schemaConcept.label()), ANSI.PURPLE);
         } else {

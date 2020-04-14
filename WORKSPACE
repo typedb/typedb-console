@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,7 @@ load(
     "graknlabs_graql",
     "graknlabs_grakn_core",
     "graknlabs_protocol",
-    "graknlabs_client_java"
+    "graknlabs_client_java",
 )
 graknlabs_client_java()
 graknlabs_build_tools()
@@ -128,6 +127,16 @@ graknlabs_grabl_tracing_maven_dependencies()
 load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_docker")
 bazel_rules_docker()
 
+################################
+# Load Client Java dependencies #
+################################
+load(
+    "@graknlabs_client_java//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
+graknlabs_grabl_tracing()
+
+load("@graknlabs_client_java//dependencies/maven:dependencies.bzl",
+graknlabs_client_java_maven_dependencies = "maven_dependencies")
+graknlabs_client_java_maven_dependencies()
 
 #######################################
 # Load compiler dependencies for GRPC #

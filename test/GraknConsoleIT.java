@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
@@ -303,7 +303,7 @@ public class GraknConsoleIT {
                 "define my-rule sub rule, when {$x isa man;}, then {$x isa person;};",
                 anything(),
                 "commit",
-                "match $_ isa person, has name $x; get;",
+                "match $y isa person, has name $x; get;",
                 containsString("felix") // Results after result is added
         );
     }
@@ -422,7 +422,7 @@ public class GraknConsoleIT {
         );
 
         assertThat(response.err(), not(containsString("error")));
-        assertThat(response.out(), containsString("1"));
+        assertThat(response.out(), containsString("4"));
     }
 
     @Test
@@ -431,6 +431,72 @@ public class GraknConsoleIT {
 
         assertFalse(response.out(), response.err().isEmpty());
         assertThat(response.err(), not(containsString(".java")));
+    }
+
+    @Test
+    public void when_ListKeyspaces_keyspacesAreListed() throws Exception {
+        deleteAllKeyspaces();
+
+        // initialise a couple of sessions
+        runConsoleSession("", "-k", "a0");
+        runConsoleSession("", "-k", "a1");
+        runConsoleSession("", "-k", "a2");
+
+        assertConsoleSessionMatches(
+                "keyspace list",
+                containsString("a0"),
+                containsString("a1"),
+                containsString("a2"),
+                containsString("grakn")
+        );
+    }
+
+    @Test
+    public void when_DeleteNonexistantKeyspace_showUsefulError() throws Exception {
+        deleteAllKeyspaces();
+        // reset keyspace suffix
+        keyspaceSuffix = 0;
+
+        // initialise a couple of sessions
+        runConsoleSession("", "-k", "a0");
+        runConsoleSession("", "-k", "a1");
+        runConsoleSession("", "-k", "a2");
+
+        assertConsoleSessionMatches(
+                "keyspace delete notakeyspace",
+                containsString("Keyspace notakeyspace does not exist")
+        );
+    }
+
+    @Test
+    public void when_DeleteKeyspace_keyspaceNotListed() throws Exception {
+        deleteAllKeyspaces();
+
+        // reset keyspace suffix
+        keyspaceSuffix = 0;
+
+        // initialise a couple of sessions
+        runConsoleSession("", "-k", "a0");
+        runConsoleSession("", "-k", "a1");
+        runConsoleSession("", "-k", "a2");
+
+        assertConsoleSessionMatches(
+                "keyspace delete a00", // need to include one because tests increment a counter??
+                containsString("Successfully deleted keyspace: a00"),
+                "keyspace list",
+                containsString("a1"),
+                containsString("a2"),
+                containsString("grakn")
+        );
+    }
+
+    private void deleteAllKeyspaces() {
+        // TODO there should be a way to do this from a server directly...
+        GraknClient client = new GraknClient(server.grpcUri());
+        for (String ksp : client.keyspaces().retrieve()) {
+            client.keyspaces().delete(ksp);
+        }
+        client.close();
     }
 
     private void assertConsoleSessionMatches(Object... matchers) throws Exception {

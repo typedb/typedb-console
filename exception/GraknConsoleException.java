@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +18,7 @@
 package grakn.console.exception;
 
 import grakn.client.exception.GraknClientException;
+import grakn.console.GraknConsole;
 
 public class GraknConsoleException extends GraknClientException {
 
@@ -40,6 +40,10 @@ public class GraknConsoleException extends GraknClientException {
 
     public static GraknConsoleException unreachableServer(String serverAddress, RuntimeException e) {
         return GraknConsoleException.create("Unable to create connection to Grakn instance at " + serverAddress, e);
+    }
+
+    public static GraknConsoleException nonexistantKeyspace(String keyspace) {
+        return GraknConsoleException.create("Keyspace " + keyspace + " does not exist");
     }
 
     @Override

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -119,10 +118,10 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         if (concept.isRelation()) {
             List<String> rolePlayerList = new LinkedList<>();
-            for (Map.Entry<RemoteRole, Set<RemoteThing<?, ?>>> rolePlayers
+            for (Map.Entry<RemoteRole, List<RemoteThing<?, ?>>> rolePlayers
                     : concept.asRelation().asRemote(tx).rolePlayersMap().entrySet()) {
                 RemoteRole role = rolePlayers.getKey();
-                Set<RemoteThing<?, ?>> things = rolePlayers.getValue();
+                List<RemoteThing<?, ?>> things = rolePlayers.getValue();
 
                 for (RemoteThing<?, ?> thing : things) {
                     rolePlayerList.add(

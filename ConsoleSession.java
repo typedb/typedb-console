@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,8 +25,8 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
-import jline.console.history.History;
 import jline.console.history.FileHistory;
+import jline.console.history.History;
 import jline.console.history.MemoryHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -56,7 +56,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2019 Grakn Labs Limited\n\n";
+            "Copyright (C) 2020 Grakn Labs\n\n";
 
     private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";
@@ -65,6 +65,11 @@ public class ConsoleSession implements AutoCloseable {
     private static final String CLEAR = "clear";
     private static final String EXIT = "exit";
     private static final String CLEAN = "clean";
+    private static final String KEYSPACE = "keyspace";
+
+    // keyspace sub-commands
+    private static String LIST = "list";
+    private static String DELETE = "delete";
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -171,7 +176,12 @@ public class ConsoleSession implements AutoCloseable {
             } else if (input.equals(EXIT)) {
                 consoleReader.flush();
                 return;
-
+            } else if (input.startsWith(KEYSPACE)) {
+                boolean exit = keyspaceCommand(input.substring(KEYSPACE.length()));
+                if (exit) {
+                    consoleReader.flush();
+                    return;
+                }
             } else if (!input.isEmpty()) {
                 executeQuery(input);
 
@@ -332,7 +342,6 @@ public class ConsoleSession implements AutoCloseable {
             builder = new ProcessBuilder("/bin/bash", "-c", editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath());
         }
 
-
         builder.start().waitFor();
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
@@ -342,4 +351,31 @@ public class ConsoleSession implements AutoCloseable {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
+    /**
+     * @return boolean indicating whether the current keyspace has been deleted and we need to exit
+     */
+    private boolean keyspaceCommand(String subCommand) throws IOException {
+        String command = subCommand.trim();
+        if (command.equals(LIST)) {
+            List<String> keyspaces = client.keyspaces().retrieve().stream().sorted().collect(Collectors.toList());
+            for (String ksp : keyspaces) {
+                consoleReader.println(ksp);
+            }
+        } else if (command.startsWith(DELETE + ' ')) {
+            String keyspaceToDelete = command.substring(DELETE.length() + 1).trim();
+            List<String> keyspaces = client.keyspaces().retrieve();
+            if (!keyspaces.contains(keyspaceToDelete)) {
+                consoleReader.println("Keyspace " + keyspaceToDelete + " does not exist");
+                return false;
+            }
+            if (keyspaceToDelete.equals(session.keyspace().toString())) {
+                // redirect to clean() with confirmation, return status of clean()
+                // if we cleaned, we need to exit
+                return clean();
+            }
+            client.keyspaces().delete(keyspaceToDelete);
+            consoleReader.println("Successfully deleted keyspace: " + keyspaceToDelete);
+        }
+        return false;
+    }
 }

@@ -22,19 +22,15 @@ import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSetMeasure;
 import grakn.client.answer.Void;
-import grakn.client.concept.Attribute;
-import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
-import grakn.client.concept.Role;
+import grakn.client.concept.type.Role;
 import grakn.client.concept.SchemaConcept;
-import grakn.client.concept.Thing;
-import grakn.client.concept.Type;
-import grakn.client.concept.remote.RemoteAttribute;
-import grakn.client.concept.remote.RemoteRole;
-import grakn.client.concept.remote.RemoteSchemaConcept;
-import grakn.client.concept.remote.RemoteThing;
+import grakn.client.concept.thing.Attribute;
+import grakn.client.concept.thing.Thing;
+import grakn.client.concept.type.AttributeType;
+import grakn.client.concept.type.Type;
 import graql.lang.Graql.Token.Char;
 import graql.lang.Graql.Token.Property;
 import graql.lang.statement.Variable;
@@ -44,7 +40,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,10 +49,10 @@ import java.util.stream.Stream;
  */
 public class StringPrinter extends Printer<StringBuilder> {
 
-    private final AttributeType<?, ?, ?>[] attributeTypes;
+    private final AttributeType<?>[] attributeTypes;
     private final boolean colorize;
 
-    StringPrinter(boolean colorize, AttributeType<?, ?, ?>... attributeTypes) {
+    StringPrinter(boolean colorize, AttributeType<?>... attributeTypes) {
         this.colorize = colorize;
         this.attributeTypes = attributeTypes;
     }
@@ -118,12 +113,12 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         if (concept.isRelation()) {
             List<String> rolePlayerList = new LinkedList<>();
-            for (Map.Entry<RemoteRole, List<RemoteThing<?, ?>>> rolePlayers
+            for (Map.Entry<Role.Remote, List<Thing.Remote<?, ?>>> rolePlayers
                     : concept.asRelation().asRemote(tx).rolePlayersMap().entrySet()) {
-                RemoteRole role = rolePlayers.getKey();
-                List<RemoteThing<?, ?>> things = rolePlayers.getValue();
+                Role.Remote role = rolePlayers.getKey();
+                List<Thing.Remote<?, ?>> things = rolePlayers.getValue();
 
-                for (RemoteThing<?, ?> thing : things) {
+                for (Thing.Remote<?, ?> thing : things) {
                     rolePlayerList.add(
                             colorType(role) + Char.COLON + Char.SPACE +
                                     Property.ID + Char.SPACE + conceptId(thing.id()));
@@ -157,7 +152,7 @@ public class StringPrinter extends Printer<StringBuilder> {
 
         // Display any requested resources
         if (concept.isThing() && attributeTypes.length > 0) {
-            Stream<RemoteAttribute<?>> attributeStream = ((RemoteThing<?, ?>) concept.asThing().asRemote(tx))
+            Stream<Attribute.Remote<?>> attributeStream = concept.asThing().asRemote(tx)
                     .attributes(attributeTypes);
             attributeStream.forEach(resource -> {
                 String attributeType = colorType(resource.type());

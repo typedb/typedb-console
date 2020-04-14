@@ -25,8 +25,8 @@ import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
 import grakn.client.answer.Numeric;
 import grakn.client.answer.Void;
-import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
+import grakn.client.concept.type.AttributeType;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -52,7 +52,7 @@ public abstract class Printer<Builder> {
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
-    public static StringPrinter stringPrinter(boolean colorize, AttributeType<?, ?, ?>... attributeTypes) {
+    public static StringPrinter stringPrinter(boolean colorize, AttributeType<?>... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
     }
 

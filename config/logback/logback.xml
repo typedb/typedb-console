@@ -24,8 +24,6 @@
         </encoder>
     </appender>
 
-    <logger name="grakn.client" level="TRACE" />
-
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

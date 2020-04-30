@@ -57,6 +57,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -177,6 +178,28 @@ public class GraknConsoleIT {
                 containsString("1")
         );
     }
+
+    @Test
+    public void when_givenRelativeFilePath_dataIsLoaded() throws Exception {
+        String fileName = "test.gql";
+        Files.write(Paths.get(fileName), "define person sub entity; name sub attribute, value string;\n".getBytes());
+        Response response = runConsoleSession("", "-k", "relative_path_load", "-f", fileName);
+        assertEquals("", response.err());
+        response = runConsoleSession("match $x sub thing; get;\n", "-k", "relative_path_load");
+        // Check for a few expected usage messages
+        assertThat(
+                response.out(),
+                allOf(
+                        containsString("thing"),
+                        containsString("entity"),
+                        containsString("person"),
+                        containsString("relation"),
+                        containsString("attribute"),
+                        containsString("name")
+                )
+        );
+    }
+
 
     @Test
     public void when_writingMatchQueries_expect_resultsReturned() {

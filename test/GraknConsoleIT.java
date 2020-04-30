@@ -215,7 +215,7 @@ public class GraknConsoleIT {
     @Test
     public void when_writingRelations_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
-                "define name sub attribute, datatype string;",
+                "define name sub attribute, value string;",
                 anything(),
                 "define marriage sub relation, relates spouse;",
                 anything(),
@@ -280,7 +280,7 @@ public class GraknConsoleIT {
     @Test
     public void when_writingAggregateGroupQuery_expect_correctGroupingOfAnswers() throws Exception {
         assertConsoleSessionMatches(
-                "define name sub attribute, datatype string;",
+                "define name sub attribute, value string;",
                 anything(),
                 "define person sub entity, has name;",
                 anything(),
@@ -298,7 +298,7 @@ public class GraknConsoleIT {
     public void when_startingConsoleWithOptionNoInfer_expect_queriesDoNotInfer() throws Exception {
         assertConsoleSessionMatchesWithArgs(
                 ImmutableList.of("--no_infer"),
-                "define man sub entity, has name; name sub attribute, datatype string;",
+                "define man sub entity, has name; name sub attribute, value string;",
                 anything(),
                 "define person sub entity;",
                 anything(),
@@ -315,7 +315,7 @@ public class GraknConsoleIT {
     @Test
     public void when_startingConsoleWithoutOptionNoInfer_expect_queriesToInfer() throws Exception {
         assertConsoleSessionMatches(
-                "define man sub entity, has name; name sub attribute, datatype string;",
+                "define man sub entity, has name; name sub attribute, value string;",
                 anything(),
                 "define person sub entity;",
                 anything(),

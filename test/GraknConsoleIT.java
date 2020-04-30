@@ -57,7 +57,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -163,7 +162,7 @@ public class GraknConsoleIT {
 
     @Test
     public void when_loadingInvalidDataFromFile_expectError() {
-        Response response = runConsoleSession("", "-f", "test/invalid-data.cql");
+        Response response = runConsoleSession("", "-f", "test/invalid-data.gql");
 
         assertThat(response.err(), allOf(containsString("Failed to load file:"), containsString("A structural validation error has occurred.")));
         assertThat(response.out(), not(containsString("Successful commit:")));
@@ -262,7 +261,7 @@ public class GraknConsoleIT {
                 anything(),
                 "insert $x isa person;",
                 anything(),
-                "match $x isa person; delete $x;",
+                "match $x isa person; delete $x isa person;",
                 containsString("success"),
                 "rollback"
         );

@@ -43,7 +43,7 @@ java_test(
     ],
     data = [
         "file-(with-parentheses).gql",
-        "invalid-data.cql",
+        "invalid-data.gql",
         "//test/resources:grakn-properties",
         "//test/resources:cassandra-embedded"],
     size = "large",

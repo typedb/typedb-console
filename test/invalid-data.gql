@@ -1,7 +1,7 @@
 define
 
 example-id sub attribute,
-    datatype long;
+    value long;
 
 person sub entity,
     has example-id,

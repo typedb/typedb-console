@@ -162,7 +162,7 @@ public class GraknConsoleIT {
 
     @Test
     public void when_loadingInvalidDataFromFile_expectError() {
-        Response response = runConsoleSession("", "-f", "test/invalid-data.cql");
+        Response response = runConsoleSession("", "-f", "test/invalid-data.gql");
 
         assertThat(response.err(), allOf(containsString("Failed to load file:"), containsString("A structural validation error has occurred.")));
         assertThat(response.out(), not(containsString("Successful commit:")));
@@ -179,6 +179,28 @@ public class GraknConsoleIT {
     }
 
     @Test
+    public void when_givenRelativeFilePath_dataIsLoaded() throws Exception {
+        String fileName = "test.gql";
+        Files.write(Paths.get(fileName), "define person sub entity; name sub attribute, value string;\n".getBytes());
+        Response response = runConsoleSession("", "-k", "relative_path_load", "-f", fileName);
+        assertEquals("", response.err());
+        response = runConsoleSession("match $x sub thing; get;\n", "-k", "relative_path_load");
+        // Check for a few expected usage messages
+        assertThat(
+                response.out(),
+                allOf(
+                        containsString("thing"),
+                        containsString("entity"),
+                        containsString("person"),
+                        containsString("relation"),
+                        containsString("attribute"),
+                        containsString("name")
+                )
+        );
+    }
+
+
+    @Test
     public void when_writingMatchQueries_expect_resultsReturned() {
         String[] result = runConsoleSessionWithoutExpectingErrors(
                 "match $x sub " + Graql.Token.Type.THING + "; get;\nexit"
@@ -192,7 +214,7 @@ public class GraknConsoleIT {
     @Test
     public void when_writingRelations_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
-                "define name sub attribute, datatype string;",
+                "define name sub attribute, value string;",
                 anything(),
                 "define marriage sub relation, relates spouse;",
                 anything(),
@@ -239,7 +261,7 @@ public class GraknConsoleIT {
                 anything(),
                 "insert $x isa person;",
                 anything(),
-                "match $x isa person; delete $x;",
+                "match $x isa person; delete $x isa person;",
                 containsString("success"),
                 "rollback"
         );
@@ -257,7 +279,7 @@ public class GraknConsoleIT {
     @Test
     public void when_writingAggregateGroupQuery_expect_correctGroupingOfAnswers() throws Exception {
         assertConsoleSessionMatches(
-                "define name sub attribute, datatype string;",
+                "define name sub attribute, value string;",
                 anything(),
                 "define person sub entity, has name;",
                 anything(),
@@ -275,7 +297,7 @@ public class GraknConsoleIT {
     public void when_startingConsoleWithOptionNoInfer_expect_queriesDoNotInfer() throws Exception {
         assertConsoleSessionMatchesWithArgs(
                 ImmutableList.of("--no_infer"),
-                "define man sub entity, has name; name sub attribute, datatype string;",
+                "define man sub entity, has name; name sub attribute, value string;",
                 anything(),
                 "define person sub entity;",
                 anything(),
@@ -292,7 +314,7 @@ public class GraknConsoleIT {
     @Test
     public void when_startingConsoleWithoutOptionNoInfer_expect_queriesToInfer() throws Exception {
         assertConsoleSessionMatches(
-                "define man sub entity, has name; name sub attribute, datatype string;",
+                "define man sub entity, has name; name sub attribute, value string;",
                 anything(),
                 "define person sub entity;",
                 anything(),

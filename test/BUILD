@@ -28,7 +28,7 @@ java_test(
         "//:console",
 
         # Internal dependencies # TODO: should be removed with #1
-        "@graknlabs_grakn_core//test-integration/rule:grakn-test-server",
+        "@graknlabs_grakn_core//test/rule:grakn-test-server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -49,7 +49,7 @@ java_test(
     size = "large",
     classpath_resources = [
         # TODO: should be removed with #1
-        "@graknlabs_grakn_core//test-integration/resources:logback-test",
+        "@graknlabs_grakn_core//test/resources:logback-test",
     ]
 )
 

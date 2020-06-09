@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;

@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
 import grakn.console.GraknConsole;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
@@ -262,7 +262,7 @@ public class GraknConsoleIT {
                 "insert $x isa person;",
                 anything(),
                 "match $x isa person; delete $x isa person;",
-                containsString("success"),
+                containsString("Deleted facts from"),
                 "rollback"
         );
     }

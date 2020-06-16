@@ -262,7 +262,7 @@ public class GraknConsoleIT {
                 "insert $x isa person;",
                 anything(),
                 "match $x isa person; delete $x isa person;",
-                containsString("success"),
+                containsString("Deleted facts from"),
                 "rollback"
         );
     }

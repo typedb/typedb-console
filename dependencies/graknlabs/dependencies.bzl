@@ -42,7 +42,7 @@ def graknlabs_grakn_core():
     git_repository(
         name = "graknlabs_grakn_core",
         remote = "https://github.com/flyingsilverfin/grakn",
-        commit = "879f415cfd63c0e949566bc734096e3e2ab56085", # do not sync @graknlabs_grakn_core, it will create a cyclic dependency
+        commit = "80affa25bfe0c71c7febeffc526c11bfed890f56", # do not sync @graknlabs_grakn_core, it will create a cyclic dependency
     )
 
 def graknlabs_protocol():

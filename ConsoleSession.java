@@ -208,7 +208,7 @@ public class ConsoleSession implements AutoCloseable {
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
-            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx, tx.stream(query, GraknClient.Options.infer(true)).get()));
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx, tx.stream(query, GraknClient.Transaction.Options.infer(infer)).get()));
 
             // For each printed answer, print them on one line
             answers.forEach(answer -> {

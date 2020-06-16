@@ -56,7 +56,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test:grakn-console-it
+          command: bazel test //test:grakn-console-it --test_output=errors
 
   build-analysis:
     machine: true

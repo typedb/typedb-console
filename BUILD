@@ -54,6 +54,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/info/picocli:picocli",
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],

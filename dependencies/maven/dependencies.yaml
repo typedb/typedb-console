@@ -88,3 +88,8 @@ dependencies:
     slf4j-api:
       version: "1.7.20"
       lang: java
+
+  info.picocli:
+    picocli:
+      version: "4.3.2"
+      lang: java

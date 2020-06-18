@@ -22,85 +22,59 @@ import grakn.client.exception.GraknClientException;
 import grakn.console.exception.ErrorMessage;
 import grakn.console.exception.GraknConsoleException;
 import io.grpc.Status;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.concurrent.Callable;
 
 /**
  * Grakn Console is a Command Line Application to interact with the Grakn Core database
  */
-public class GraknConsole {
+@Command(
+        name = "console",
+        mixinStandardHelpOptions = true,
+        version = {
+                "Grakn Console",
+                Version.VERSION
+        }
+)
+public class GraknConsole implements Callable<Integer> {
 
     public static final String DEFAULT_KEYSPACE = "grakn";
 
-    private static final String KEYSPACE = "k";
-    private static final String FILE = "f";
-    private static final String URI = "r";
-    private static final String NO_INFER = "n";
-    private static final String HELP = "h";
-
-    private final Options options = getOptions();
-    private final CommandLine commandLine;
     private final PrintStream printOut;
     private final PrintStream printErr;
 
-    private final Boolean infer;
-    private final String serverAddress;
-    private final String keyspace;
+    @Option(names = {"-n", "--no-infer"}, negatable = true, description = "Do not perform inference on results.")
+    Boolean infer = true;
 
-    public GraknConsole(String[] args, PrintStream printOut, PrintStream printErr) throws ParseException {
+    @Option(names = {"-r", "--address"}, description = "Grakn Server address.")
+    String serverAddress = GraknClient.DEFAULT_URI;
+
+    @Option(names = {"-k", "--keyspace"}, description = "Keyspace of the graph.")
+    String keyspace = DEFAULT_KEYSPACE;
+
+    @Option(names = {"-f", "--file"}, description = "Path to a Graql file.")
+    Path[] file;
+
+    public GraknConsole(PrintStream printOut, PrintStream printErr) {
         this.printOut = printOut;
         this.printErr = printErr;
-
-        this.commandLine = new DefaultParser().parse(options, args);
-        this.infer = !commandLine.hasOption(NO_INFER);
-
-        String serverAddressArg = commandLine.getOptionValue(URI);
-        this.serverAddress = serverAddressArg != null ? serverAddressArg : GraknClient.DEFAULT_URI;
-
-        String keyspaceArg = commandLine.getOptionValue(KEYSPACE);
-        this.keyspace = keyspaceArg != null ? keyspaceArg : DEFAULT_KEYSPACE;
     }
 
-    public static Options getOptions() {
-        Options options = new Options();
-        options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
-        options.addOption(FILE, "file", true, "path to a Graql file");
-        options.addOption(URI, "address", true, "Grakn Server address");
-        options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
-        options.addOption(HELP, "help", false, "print usage message");
-
-        return options;
-    }
-
-    public void run() throws InterruptedException, IOException {
-        // Print usage guidelines for Grakn Console
-        if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
-            printHelp(printOut);
-        }
+    public Integer call() throws InterruptedException, IOException {
         // Start a Console Session to load some Graql file(s)
-        else if (commandLine.hasOption(FILE)) {
+        if (file != null) {
             try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
                 //Intercept Ctrl+C and gracefully terminate connection with server
                 Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
-                String[] paths = commandLine.getOptionValues(FILE);
-                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(Collectors.toList());
-                for (Path file : filePaths) consoleSession.load(file);
+                for (Path filePath : file) consoleSession.load(filePath);
+                return 0;
             }
         }
         // Start a live Console Session for the user to interact with Grakn
@@ -109,53 +83,40 @@ public class GraknConsole {
                 //Intercept Ctrl+C and gracefully terminate connection with server
                 Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 consoleSession.run();
+                return 0;
             }
         }
     }
 
-    private void printHelp(PrintStream sout) {
-        HelpFormatter formatter = new HelpFormatter();
-        OutputStreamWriter writer = new OutputStreamWriter(sout, Charset.defaultCharset());
-        PrintWriter printer = new PrintWriter(new BufferedWriter(writer));
-        formatter.printHelp(
-                printer, formatter.getWidth(), "grakn console [options]", null,
-                options, formatter.getLeftPadding(), formatter.getDescPadding(), null
-        );
-        printer.flush();
+    public static int execute(String[] args, PrintStream out, PrintStream err) {
+        return new CommandLine(new GraknConsole(out, err))
+                .setOut(new PrintWriter(out))
+                .setErr(new PrintWriter(err))
+                .setExecutionExceptionHandler((e, commandLine, parseResult) -> {
+                    if (e instanceof GraknConsoleException) {
+                        err.println(e.getMessage());
+                        err.println("Cause: " + e.getCause().getClass().getName());
+                        err.println(e.getCause().getMessage());
+                        return 1;
+                    }
+                    if (e instanceof GraknClientException) {
+                        // TODO: don't do if-checks. Use different catch-clauses by class
+                        if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
+                            err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+                        } else {
+                            e.printStackTrace(err);
+                        }
+                        return 1;
+                    }
+                    e.printStackTrace(err);
+                    return 1;
+                }).execute(args);
     }
 
     /**
      * Invocation from bash script './grakn console'
      */
     public static void main(String[] args) {
-        String action = args.length > 1 ? args[1] : "";
-        if(action.equals("version")){
-            System.out.println(Version.VERSION);
-            System.exit(0);
-        }
-
-        try {
-            GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
-            console.run();
-            System.exit(0);
-        } catch (GraknConsoleException e) {
-            System.err.println(e.getMessage());
-            System.err.println("Cause: " + e.getCause().getClass().getName());
-            System.err.println(e.getCause().getMessage());
-            System.exit(1);
-
-        } catch (GraknClientException e) {
-            // TODO: don't do if-checks. Use different catch-clauses by class
-            if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
-                System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
-            } else {
-                e.printStackTrace(System.err);
-            }
-            System.exit(1);
-
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
+        System.exit(execute(args, System.out, System.err));
     }
 }

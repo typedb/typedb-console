@@ -580,8 +580,7 @@ public class GraknConsoleIT {
 
         try {
             System.setIn(new ByteArrayInputStream(input.getBytes()));
-            GraknConsole console = new GraknConsole(args, printOut, printErr);
-            console.run();
+            GraknConsole.execute(args, printOut, printErr);
             printOut.flush();
             printErr.flush();
         } catch (Exception e) {

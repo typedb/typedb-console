@@ -39,7 +39,6 @@ import java.util.concurrent.Callable;
         name = "console",
         mixinStandardHelpOptions = true,
         version = {
-                "Grakn Console",
                 Version.VERSION
         }
 )

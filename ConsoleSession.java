@@ -82,7 +82,6 @@ public class ConsoleSession implements AutoCloseable {
 
     private final boolean infer;
     private final String keyspace;
-    private final PrintStream printErr;
     private final ConsoleReader consoleReader;
     private final Printer<?> printer = Printer.stringPrinter(true);
 
@@ -94,7 +93,7 @@ public class ConsoleSession implements AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
 
-    ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException, GraknConsoleException {
+    ConsoleSession(String serverAddress, String keyspace, boolean infer) throws IOException, GraknConsoleException {
         this.keyspace = keyspace;
         this.infer = infer;
         try {
@@ -103,9 +102,8 @@ public class ConsoleSession implements AutoCloseable {
         } catch (StatusRuntimeException grpcException) {
             throw GraknConsoleException.unreachableServer(serverAddress, grpcException);
         }
-        this.consoleReader = new ConsoleReader(System.in, printOut);
+        this.consoleReader = new ConsoleReader(System.in, System.out);
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
-        this.printErr = printErr;
 
         History history;
         try {
@@ -133,8 +131,8 @@ public class ConsoleSession implements AutoCloseable {
             tx.commit();
             consoleReader.println("Successful commit: " + filePath.getFileName().toString());
         } catch (GraknClientException e) {
-            printErr.println("Failed to load file:");
-            printErr.println(e.getMessage());
+            System.err.println("Failed to load file:");
+            System.err.println(e.getMessage());
         } finally {
             consoleReader.flush();
         }
@@ -224,11 +222,11 @@ public class ConsoleSession implements AutoCloseable {
 
             if (catchRuntimeException) {
                 if (!e.getMessage().isEmpty()) {
-                    printErr.println("Error: " + e.getMessage());
+                    System.err.println("Error: " + e.getMessage());
                 } else {
-                    printErr.println("Error: " + e.getClass().getName());
+                    System.err.println("Error: " + e.getClass().getName());
                 }
-                printErr.println("All uncommitted data is cleared");
+                System.err.println("All uncommitted data is cleared");
                 //If console session was terminated by shutdown hook thread, do not try to reopen transaction
                 if (terminated.get()) return;
                 reopenTransaction();
@@ -248,8 +246,8 @@ public class ConsoleSession implements AutoCloseable {
         try {
             tx.commit();
         } catch (RuntimeException e) {
-            printErr.println(e.getMessage());
-            printErr.println("All uncommitted data is cleared");
+            System.err.println(e.getMessage());
+            System.err.println("All uncommitted data is cleared");
         } finally {
             reopenTransaction();
         }
@@ -259,7 +257,7 @@ public class ConsoleSession implements AutoCloseable {
         try {
             tx.close();
         } catch (RuntimeException e) {
-            printErr.println(e.getMessage());
+            System.err.println(e.getMessage());
         } finally {
             reopenTransaction();
         }

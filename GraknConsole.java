@@ -27,8 +27,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
@@ -46,8 +44,8 @@ public class GraknConsole implements Callable<Integer> {
 
     public static final String DEFAULT_KEYSPACE = "grakn";
 
-    private final PrintStream printOut;
-    private final PrintStream printErr;
+    @CommandLine.Spec
+    CommandLine.Model.CommandSpec commandSpec;
 
     @Option(names = {"-n", "--no-infer"}, negatable = true, description = "Do not perform inference on results.")
     Boolean infer = true;
@@ -61,15 +59,10 @@ public class GraknConsole implements Callable<Integer> {
     @Option(names = {"-f", "--file"}, description = "Path to a Graql file.")
     Path[] file;
 
-    public GraknConsole(PrintStream printOut, PrintStream printErr) {
-        this.printOut = printOut;
-        this.printErr = printErr;
-    }
-
     public Integer call() throws InterruptedException, IOException {
         // Start a Console Session to load some Graql file(s)
         if (file != null) {
-            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer)) {
                 //Intercept Ctrl+C and gracefully terminate connection with server
                 Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 for (Path filePath : file) consoleSession.load(filePath);
@@ -78,7 +71,7 @@ public class GraknConsole implements Callable<Integer> {
         }
         // Start a live Console Session for the user to interact with Grakn
         else {
-            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer)) {
                 //Intercept Ctrl+C and gracefully terminate connection with server
                 Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 consoleSession.run();
@@ -87,35 +80,33 @@ public class GraknConsole implements Callable<Integer> {
         }
     }
 
-    public static int execute(String[] args, PrintStream out, PrintStream err) {
-        return new CommandLine(new GraknConsole(out, err))
-                .setOut(new PrintWriter(out))
-                .setErr(new PrintWriter(err))
+    public static CommandLine buildCommand() {
+        return new CommandLine(new GraknConsole())
                 .setExecutionExceptionHandler((e, commandLine, parseResult) -> {
                     if (e instanceof GraknConsoleException) {
-                        err.println(e.getMessage());
-                        err.println("Cause: " + e.getCause().getClass().getName());
-                        err.println(e.getCause().getMessage());
+                        System.err.println(e.getMessage());
+                        System.err.println("Cause: " + e.getCause().getClass().getName());
+                        System.err.println(e.getCause().getMessage());
                         return 1;
                     }
                     if (e instanceof GraknClientException) {
                         // TODO: don't do if-checks. Use different catch-clauses by class
                         if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
-                            err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+                            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
                         } else {
-                            e.printStackTrace(err);
+                            e.printStackTrace(System.err);
                         }
                         return 1;
                     }
-                    e.printStackTrace(err);
+                    e.printStackTrace(System.err);
                     return 1;
-                }).execute(args);
+                });
     }
 
     /**
      * Invocation from bash script './grakn console'
      */
     public static void main(String[] args) {
-        System.exit(execute(args, System.out, System.err));
+        System.exit(buildCommand().execute(args));
     }
 }

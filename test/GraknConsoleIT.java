@@ -71,6 +71,8 @@ public class GraknConsoleIT {
     );
 
     private static InputStream trueIn;
+    private static PrintStream trueOut;
+    private static PrintStream trueErr;
     private static int keyspaceSuffix = 0;
 
     private final static String analyticsDataset = "define obj sub entity, plays rol; rel sub relation, relates rol; " +
@@ -80,6 +82,8 @@ public class GraknConsoleIT {
     @BeforeClass
     public static void setUpClass() throws IOException {
         trueIn = System.in;
+        trueOut = System.out;
+        trueErr = System.err;
         System.setProperty(
                 StandardSystemProperty.USER_HOME.key(),
                 Files.createTempDirectory("grakn-console").toString()
@@ -94,6 +98,8 @@ public class GraknConsoleIT {
     @AfterClass
     public static void resetIO() {
         System.setIn(trueIn);
+        System.setOut(trueOut);
+        System.setErr(trueErr);
     }
 
     @Test
@@ -580,7 +586,9 @@ public class GraknConsoleIT {
 
         try {
             System.setIn(new ByteArrayInputStream(input.getBytes()));
-            GraknConsole.execute(args, printOut, printErr);
+            System.setOut(printOut);
+            System.setErr(printErr);
+            GraknConsole.buildCommand(printOut, printErr).execute(args);
             printOut.flush();
             printErr.flush();
         } catch (Exception e) {

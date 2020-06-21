@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
  */
 @Command(
         name = "console",
+        description = "Connect to a Grakn instance to use Graql on the command line.",
         mixinStandardHelpOptions = true,
         version = {
                 Version.VERSION

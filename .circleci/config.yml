@@ -17,26 +17,24 @@
 
 version: 2.1
 commands:
-  install-bazel-linux-rbe:
+  bazel-install:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
-      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
-      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
+      - run: |
+          mkdir install
+          cd install
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/linux.sh
+          bash ./linux.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/rbe.sh
+          bash ./rbe.sh
+          cd ..
+          rm -rf install
 
-  install-bazel-mac:
-    steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
-      - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
-
-  run-bazel-rbe:
+  bazel-run-rbe:
     parameters:
       command:
         type: string
     steps:
-      - run:
-          command: bazel run @graknlabs_dependencies//tools/bazelrun:rbe -- << parameters.command >>
-          no_output_timeout: 1h
+      - run: bazel run @graknlabs_dependencies//tools/bazelrun:rbe -- << parameters.command >>
 
 jobs:
   build:
@@ -44,11 +42,11 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: bazel run @graknlabs_dependencies//tools/checkstyle:test-coverage
 
-      - run-bazel-rbe:
+      - bazel-run-rbe:
           command: bazel build //...
 
   test-integration:
@@ -56,9 +54,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
-      - run-bazel-rbe:
+      - bazel-run-rbe:
           command: bazel test //test:grakn-console-it --test_output=errors
 
   build-analysis:
@@ -66,7 +64,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
@@ -78,7 +76,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -90,7 +88,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -102,7 +100,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
@@ -113,7 +111,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tools/release:validate-deps -- \
@@ -124,7 +122,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           pip install certifi
@@ -139,7 +137,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: cat VERSION
       - run: |
@@ -152,7 +150,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -164,7 +162,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - bazel-install
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN

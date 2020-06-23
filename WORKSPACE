@@ -36,14 +36,14 @@ graknlabs_common()
 graknlabs_graql()
 graknlabs_grakn_core()
 
-load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
+load("@graknlabs_dependencies//distribution:deps.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
 
 ###########################
 # Load Bazel dependencies #
 ###########################
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_deps", "bazel_toolchain")
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
 bazel_deps()
 bazel_toolchain()
@@ -53,13 +53,13 @@ bazel_toolchain()
 # Load Build Tools dependencies #
 #################################
 
-load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
+load("@graknlabs_dependencies//tools/checkstyle:deps.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
 
-load("@graknlabs_build_tools//sonarcloud:dependencies.bzl", "sonarcloud_dependencies")
+load("@graknlabs_dependencies//tools/sonarcloud:deps.bzl", "sonarcloud_dependencies")
 sonarcloud_dependencies()
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_python")
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_rules_python")
 bazel_rules_python()
 
 load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
@@ -67,10 +67,10 @@ pip_repositories()
 
 pip3_import(
     name = "graknlabs_build_tools_ci_pip",
-    requirements = "@graknlabs_build_tools//ci:requirements.txt",
+    requirements = "@graknlabs_dependencies//tools/requirements.txt",
 )
 
-load("@graknlabs_build_tools_ci_pip//:requirements.bzl",
+load("@graknlabs_dependencies_pip//:requirements.bzl",
 graknlabs_build_tools_ci_pip_install = "pip_install")
 graknlabs_build_tools_ci_pip_install()
 
@@ -115,7 +115,7 @@ load("@graknlabs_grabl_tracing//dependencies/maven:dependencies.bzl",
 graknlabs_grabl_tracing_maven_dependencies = "maven_dependencies")
 graknlabs_grabl_tracing_maven_dependencies()
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_docker")
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_rules_docker")
 bazel_rules_docker()
 
 ################################
@@ -134,7 +134,7 @@ graknlabs_client_java_maven_dependencies()
 # Load compiler dependencies for GRPC #
 #######################################
 
-load("@graknlabs_build_tools//grpc:dependencies.bzl", "grpc_dependencies")
+load("@graknlabs_dependencies//builder/grpc/deps.bzl", "grpc_dependencies")
 grpc_dependencies()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
@@ -156,7 +156,7 @@ tcnksm_ghr()
 load("@graknlabs_bazel_distribution//common:dependencies.bzl", "bazelbuild_rules_pkg")
 bazelbuild_rules_pkg()
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_docker")
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_rules_docker")
 bazel_rules_docker()
 
 load("@io_bazel_rules_docker//repositories:repositories.bzl",

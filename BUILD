@@ -21,7 +21,7 @@ load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
-load("@graknlabs_dependencies//tools/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 genrule(
     name = "version",

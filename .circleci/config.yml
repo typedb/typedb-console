@@ -72,6 +72,17 @@ jobs:
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --project-key graknlabs_console --branch=$CIRCLE_BRANCH --commit-id=$CIRCLE_SHA1
 
+  deploy-distribution-snapshot:
+    machine: true
+    working_directory: ~/console
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-console-deps -- snapshot
+
   deploy-apt-snapshot:
     machine: 
       image: ubuntu-1604:201903-01
@@ -117,6 +128,17 @@ jobs:
       - run: |
           bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
             graknlabs_common graknlabs_graql graknlabs_client_java
+
+  deploy-distribution:
+    machine: true
+    working_directory: ~/console
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(cat VERSION) //:deploy-console-deps -- release
 
   deploy-github:
     machine: 
@@ -193,6 +215,14 @@ workflows:
           filters:
             branches:
               only: master
+      - deploy-distribution-snapshot:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+            - build-analysis
+            - test-integration
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -214,6 +244,7 @@ workflows:
             branches:
               only: master
           requires:
+            - deploy-distribution-snapshot
             - deploy-apt-snapshot
             - deploy-rpm-snapshot
 
@@ -236,6 +267,12 @@ workflows:
           filters:
             branches:
               only: console-release-branch
+      - deploy-distribution:
+          filters:
+            branches:
+              only: console-release-branch
+          requires:
+            - deploy-approval
       - deploy-apt:
           filters:
             branches:
@@ -253,6 +290,7 @@ workflows:
             branches:
               only: console-release-branch
           requires:
+            - deploy-distribution
             - deploy-apt
             - deploy-rpm
       - release-cleanup:

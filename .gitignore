@@ -57,3 +57,7 @@ grakn-test/test-biomed/data/*
 
 # Python cache #
 __pycache__
+
+
+# bazel-local #
+.local_deps*

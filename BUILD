@@ -86,6 +86,7 @@ java_deps(
 pkg_tar(
     name = "console-distribution",
     deps = [":console-deps"],
+    extension = "tgz",
     files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },

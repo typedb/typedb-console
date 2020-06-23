@@ -82,14 +82,6 @@ java_deps(
     visibility = ["//visibility:public"],
 )
 
-deploy_distribution(
-    name = "deploy-console-deps",
-    target = ":console-deps",
-    artifact_group = "graknlabs_console",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
-    visibility = ["//visibility:public"],
-)
-
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-console-linux",
@@ -98,6 +90,14 @@ assemble_targz(
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
+)
+
+deploy_distribution(
+    name = "deploy-console-distribution",
+    target = ":assemble-linux-targz",
+    artifact_group = "graknlabs_console",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    visibility = ["//visibility:public"],
 )
 
 assemble_zip(

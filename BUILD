@@ -84,7 +84,7 @@ java_deps(
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-console-linux",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
@@ -94,7 +94,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-console-mac",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
@@ -104,7 +104,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },

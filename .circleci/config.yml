@@ -40,7 +40,8 @@ commands:
 
 jobs:
   build:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -50,7 +51,8 @@ jobs:
           command: bazel build //...
 
   test-integration:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -59,7 +61,8 @@ jobs:
           command: bazel test //test:grakn-console-it --test_output=errors
 
   build-analysis:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -81,7 +84,8 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-console-deps -- snapshot
 
   deploy-apt-snapshot:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -92,7 +96,8 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
 
   deploy-rpm-snapshot:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -104,7 +109,8 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
 
   release-approval:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -114,7 +120,8 @@ jobs:
           bazel run @graknlabs_build_tools//ci:release-approval
 
   release-validate:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -134,7 +141,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-console-deps -- release
 
   deploy-github:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -148,7 +156,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
 
   deploy-apt:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -160,7 +169,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-apt -- release
 
   deploy-rpm:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
       - install-bazel-linux-rbe
@@ -172,7 +182,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
 
   sync-dependencies-release:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -183,7 +194,8 @@ jobs:
           --targets grakn:master
 
   release-cleanup:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/console $CIRCLE_BRANCH

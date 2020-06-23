@@ -16,6 +16,7 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
@@ -82,11 +83,10 @@ java_deps(
     visibility = ["//visibility:public"],
 )
 
-assemble_targz(
-    name = "assemble-linux-targz",
-    output_filename = "grakn-console-linux",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
-    additional_files = {
+pkg_tar(
+    name = "console-distribution",
+    deps = [":console-deps"],
+    files = {
         "//config/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
@@ -94,29 +94,30 @@ assemble_targz(
 
 deploy_distribution(
     name = "deploy-console-distribution",
-    target = ":assemble-linux-targz",
+    target = ":console-distribution",
     artifact_group = "graknlabs_console",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
     visibility = ["//visibility:public"],
 )
 
+assemble_targz(
+    name = "assemble-linux-targz",
+    output_filename = "grakn-console-linux",
+    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
+    visibility = ["//visibility:public"]
+)
+
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-console-mac",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
-    additional_files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
-    },
+    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-deps", "@graknlabs_common//bin:assemble-bash-targz"],
-    additional_files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
-    },
+    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 

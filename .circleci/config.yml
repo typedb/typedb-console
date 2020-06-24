@@ -17,19 +17,19 @@
 
 version: 2.1
 commands:
-  bazel-install:
+  install-bazel:
     steps:
       - run: |
           mkdir install
           cd install
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/linux.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/linux.sh
           bash ./linux.sh
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/rbe.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/rbe.sh
           bash ./rbe.sh
           cd ..
           rm -rf install
 
-  bazel-run-rbe:
+  run-bazel:
     parameters:
       command:
         type: string
@@ -42,11 +42,11 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
 
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel build //...
 
   test-integration:
@@ -54,9 +54,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test:grakn-console-it --test_output=errors
 
   build-analysis:
@@ -64,7 +64,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
@@ -76,7 +76,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -88,7 +88,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -100,7 +100,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
@@ -111,7 +111,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
@@ -122,7 +122,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           pip install certifi
@@ -137,7 +137,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: cat VERSION
       - run: |
@@ -150,7 +150,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -162,7 +162,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install
+      - install-bazel
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN

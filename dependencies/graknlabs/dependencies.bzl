@@ -42,12 +42,12 @@ def graknlabs_grakn_core():
     git_repository(
         name = "graknlabs_grakn_core",
         remote = "https://github.com/graknlabs/grakn",
-        commit = "921f8a7abb84b0d092241a77d5a687beb81d89ba", # do not sync @graknlabs_grakn_core, it will create a cyclic dependency
+        commit = "d7417991d97fa374172f97c96f028cef2c426f15", # do not sync @graknlabs_grakn_core, it will create a cyclic dependency
     )
 
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/graknlabs/client-java",
-        commit = "0fa3309739c56dfe35cd513c889a6c611c32894a",
+        commit = "514331e5b179a20174e61fa73e1f3f0004341725",
     )

@@ -85,7 +85,7 @@ deploy_distribution(
     name = "deploy-console-deps",
     target = ":console-deps",
     artifact_group = "graknlabs_console",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
     visibility = ["//visibility:public"],
 )
 

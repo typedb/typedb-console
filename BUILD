@@ -22,7 +22,7 @@ load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-
+load("@graknlabs_bazel_distribution//distribution:rules.bzl", "deploy_distribution")
 genrule(
     name = "version",
     srcs = [
@@ -63,7 +63,7 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":console"
+        ":console",
     ],
 )
 
@@ -78,7 +78,15 @@ java_deps(
     name = "console-deps",
     target = ":console-binary",
     java_deps_root = "console/services/lib/",
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+)
+
+deploy_distribution(
+    name = "deploy-console-deps",
+    target = ":console-deps",
+    artifact_group = "graknlabs_console",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    visibility = ["//visibility:public"],
 )
 
 assemble_targz(

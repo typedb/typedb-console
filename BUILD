@@ -49,13 +49,13 @@ java_library(
 
 
         # External dependencies
-        "//dependencies/maven/artifacts/commons-cli",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-api",
-        "//dependencies/maven/artifacts/jline:jline",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "@maven//:commons_cli_commons_cli",
+        "@maven//:commons_lang_commons_lang", # PREVIOUSLY UNDECLARED
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:io_grpc_grpc_core",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:jline_jline",
+        "@maven//:org_slf4j_slf4j_api",
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],

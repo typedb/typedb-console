@@ -16,15 +16,15 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
+
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_dependencies//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_bazel_distribution//distribution:rules.bzl", "deploy_distribution")
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
-
 genrule(
     name = "version",
     srcs = [
@@ -97,28 +97,28 @@ deploy_distribution(
     name = "deploy-console-distribution",
     target = ":console-distribution",
     artifact_group = "graknlabs_console",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
     visibility = ["//visibility:public"],
 )
 
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-console-linux",
-    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-console-mac",
-    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-distribution", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
@@ -163,7 +163,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-linux-apt",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
 
 assemble_rpm(
@@ -184,5 +184,5 @@ assemble_rpm(
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )

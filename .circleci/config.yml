@@ -17,26 +17,19 @@
 
 version: 2.1
 commands:
-  install-bazel-linux-rbe:
+  install-bazel:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
-      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
-      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh
+      - run: bash ./linux.sh && rm ./linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
+      - run: bash ./rbe.sh && rm ./rbe.sh          
 
-  install-bazel-mac:
-    steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
-      - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
-
-  run-bazel-rbe:
+  run-bazel:
     parameters:
       command:
         type: string
     steps:
-      - run:
-          command: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
-          no_output_timeout: 1h
+      - run: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
 
 jobs:
   build:
@@ -44,10 +37,11 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
-      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
-      - run-bazel-rbe:
+      - run: bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+
+      - run-bazel:
           command: bazel build //...
 
   test-integration:
@@ -55,9 +49,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
-      - run-bazel-rbe:
+      - run-bazel:
           command: bazel test //test:grakn-console-it --test_output=errors
 
   build-analysis:
@@ -65,18 +59,18 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
             --project-key graknlabs_console --branch=$CIRCLE_BRANCH --commit-id=$CIRCLE_SHA1
 
   deploy-distribution-snapshot:
     machine: true
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
@@ -88,7 +82,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -100,7 +94,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -112,28 +106,28 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:release-approval
+          bazel run @graknlabs_dependencies//tool/release:approval
 
   release-validate:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
-          bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
+          bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
             graknlabs_common graknlabs_graql graknlabs_client_java
 
   deploy-distribution:
     machine: true
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
@@ -145,12 +139,12 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           pip install certifi
           export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:release-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
+          bazel run @graknlabs_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
           bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
@@ -160,7 +154,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: cat VERSION
       - run: |
@@ -173,7 +167,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -185,11 +179,11 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
+          bazel run @graknlabs_dependencies//tool/sync:dependencies -- \
           --source console@$(cat VERSION) \
           --targets grakn:master
 

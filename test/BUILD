@@ -36,10 +36,10 @@ java_test(
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_io_commons_io",
+        "@maven//:io_grpc_grpc_core",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
     data = [
         "file-(with-parentheses).gql",

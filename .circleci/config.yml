@@ -75,7 +75,7 @@ jobs:
       - run: |
           export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-console-deps -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-console-distribution -- snapshot
 
   deploy-apt-snapshot:
     machine: 
@@ -132,7 +132,7 @@ jobs:
       - run: |
           export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-console-deps -- release
+          bazel run --define version=$(cat VERSION) //:deploy-console-distribution -- release
 
   deploy-github:
     machine: 

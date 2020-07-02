@@ -17,7 +17,6 @@
 
 package grakn.console.test;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -45,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -615,14 +615,40 @@ public class GraknConsoleIT {
         return argList.toArray(new String[argList.size()]);
     }
 
-    @AutoValue
-    static abstract class Response {
-        abstract String out();
+    static class Response {
+        private final String out;
+        private final String err;
 
-        abstract String err();
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Response r2 = (Response) o;
+            return Objects.equals(out, r2.out) &&
+                    Objects.equals(err, r2.err);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(out, err);
+        }
 
         static Response of(String out, String err) {
-            return new AutoValue_GraknConsoleIT_Response(out, err);
+            return new Response(out, err);
+        }
+
+        private Response(String out, String err) {
+            this.out = out;
+            this.err = err;
+        }
+
+        public String out() {
+            return out;
+        }
+
+        public String err() {
+            return err;
         }
     }
 }

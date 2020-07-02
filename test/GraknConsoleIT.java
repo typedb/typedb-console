@@ -619,6 +619,17 @@ public class GraknConsoleIT {
         private final String out;
         private final String err;
 
+        static Response of(String out, String err) {
+            return new Response(out, err);
+        }
+
+        public String out() {
+            return out;
+        }
+
+        public String err() {
+            return err;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -634,21 +645,9 @@ public class GraknConsoleIT {
             return Objects.hash(out, err);
         }
 
-        static Response of(String out, String err) {
-            return new Response(out, err);
-        }
-
         private Response(String out, String err) {
             this.out = out;
             this.err = err;
-        }
-
-        public String out() {
-            return out;
-        }
-
-        public String err() {
-            return err;
         }
     }
 }

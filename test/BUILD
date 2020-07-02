@@ -35,7 +35,6 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # External dependencies
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_io_commons_io",
         "@maven//:io_grpc_grpc_core",

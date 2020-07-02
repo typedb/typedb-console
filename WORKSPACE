@@ -30,9 +30,8 @@ load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
 # Load Bazel
-load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
+load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_toolchain")
 bazel_common()
-bazel_deps()
 bazel_toolchain()
 
 # Load gRPC
@@ -186,8 +185,6 @@ load("@graknlabs_console//dependencies/maven:artifacts.bzl", graknlabs_console_a
 ###############
 # Load @maven #
 ###############
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
-maven_dependencies()
 maven(
     graknlabs_grabl_tracing_artifacts +
     graknlabs_graql_artifacts +

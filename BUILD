@@ -105,21 +105,21 @@ deploy_artifact(
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-console-linux",
-    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-console-mac",
-    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-distribution", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 

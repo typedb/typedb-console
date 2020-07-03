@@ -18,13 +18,14 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_bazel_distribution//distribution:rules.bzl", "deploy_distribution")
+
 genrule(
     name = "version",
     srcs = [
@@ -84,7 +85,7 @@ java_deps(
 )
 
 pkg_tar(
-    name = "console-distribution",
+    name = "console-artifact",
     deps = [":console-deps"],
     extension = "tgz",
     files = {
@@ -93,11 +94,11 @@ pkg_tar(
     visibility = ["//visibility:public"]
 )
 
-deploy_distribution(
-    name = "deploy-console-distribution",
-    target = ":console-distribution",
+deploy_artifact(
+    name = "deploy-console-artifact",
+    target = ":console-artifact",
     artifact_group = "graknlabs_console",
-    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
+    artifact_name = "console-artifact.tgz",
     visibility = ["//visibility:public"],
 )
 

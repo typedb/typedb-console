@@ -70,16 +70,16 @@ jobs:
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
             --project-key graknlabs_console --branch=$CIRCLE_BRANCH --commit-id=$CIRCLE_SHA1
 
-  deploy-distribution-snapshot:
+  deploy-artifact-snapshot:
     machine: true
     working_directory: ~/console
     steps:
       - install-bazel
       - checkout
       - run: |
-          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-console-distribution -- snapshot
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-console-artifact -- snapshot
 
   deploy-apt-snapshot:
     machine: 
@@ -127,16 +127,16 @@ jobs:
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
             graknlabs_common graknlabs_graql graknlabs_client_java
 
-  deploy-distribution:
+  deploy-artifact:
     machine: true
     working_directory: ~/console
     steps:
       - install-bazel
       - checkout
       - run: |
-          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-console-distribution -- release
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(cat VERSION) //:deploy-console-artifact -- release
 
   deploy-github:
     machine: 
@@ -213,7 +213,7 @@ workflows:
           filters:
             branches:
               only: master
-      - deploy-distribution-snapshot:
+      - deploy-artifact-snapshot:
           filters:
             branches:
               only: master
@@ -242,7 +242,7 @@ workflows:
             branches:
               only: master
           requires:
-            - deploy-distribution-snapshot
+            - deploy-artifact-snapshot
             - deploy-apt-snapshot
             - deploy-rpm-snapshot
 
@@ -265,7 +265,7 @@ workflows:
           filters:
             branches:
               only: console-release-branch
-      - deploy-distribution:
+      - deploy-artifact:
           filters:
             branches:
               only: console-release-branch
@@ -288,7 +288,7 @@ workflows:
             branches:
               only: console-release-branch
           requires:
-            - deploy-distribution
+            - deploy-artifact
             - deploy-apt
             - deploy-rpm
       - release-cleanup:

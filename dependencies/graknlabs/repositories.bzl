@@ -39,12 +39,8 @@ def graknlabs_graql():
     )
 
 def graknlabs_client_java():
-#    git_repository(
-#        name = "graknlabs_client_java",
-#        remote = "https://github.com/graknlabs/client-java",
-#        commit = "4373dd79751432ca613be0e0b357097393844404",
-#    )
-    native.local_repository(
+    git_repository(
         name = "graknlabs_client_java",
-        path = "../client-java",
+        remote = "https://github.com/graknlabs/client-java",
+        commit = "e41da966a9c1127e4952004f1e99586c9a4e7741",
     )

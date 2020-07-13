@@ -18,17 +18,15 @@
 package(default_visibility = ["//visibility:__pkg__"])
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_common//test/server:rules.bzl", "grakn_test")
 
-java_test(
+grakn_test(
     name = "grakn-console-it",
     srcs = ["GraknConsoleIT.java"],
     test_class = "grakn.console.test.GraknConsoleIT",
     deps = [
         # Package dependencies
         "//:console",
-
-        # Internal dependencies # TODO: should be removed with #1
-        "@graknlabs_grakn_core//test/rule:grakn-test-server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -40,16 +38,12 @@ java_test(
         "@maven//:io_grpc_grpc_core",
         "@maven//:org_hamcrest_hamcrest_library",
     ],
+    grakn_artifact = "@graknlabs_grakn_core_artifact//file",
     data = [
         "file-(with-parentheses).gql",
         "invalid-data.gql",
-        "//test/resources:grakn-properties",
-        "//test/resources:cassandra-embedded"],
+    ],
     size = "large",
-    classpath_resources = [
-        # TODO: should be removed with #1
-        "@graknlabs_grakn_core//test/resources:logback-test",
-    ]
 )
 
 checkstyle_test(

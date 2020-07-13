@@ -23,15 +23,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
+import grakn.common.test.server.GraknProperties;
+import grakn.common.test.server.GraknSetup;
 import grakn.console.GraknConsole;
-import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -64,21 +65,21 @@ import static org.junit.Assert.assertTrue;
 
 public class GraknConsoleIT {
 
-    @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(
-            Paths.get("test/resources/grakn.properties"),
-            Paths.get("test/resources/cassandra-embedded.yaml")
-    );
-
     private static InputStream trueIn;
     private static int keyspaceSuffix = 0;
+
+    private static String graknAddress;
 
     private final static String analyticsDataset = "define obj sub entity, plays rol; rel sub relation, relates rol; " +
             "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
             "(rol: $a, rol: $b) isa rel; (rol: $a, rol: $c) isa rel; (rol: $a, rol: $d) isa rel; ";
 
     @BeforeClass
-    public static void setUpClass() throws IOException {
+    public static void setUpClass() throws IOException, TimeoutException, InterruptedException {
+        GraknSetup.bootup();
+
+        graknAddress = System.getProperty(GraknProperties.GRAKN_ADDRESS);
+
         trueIn = System.in;
         System.setProperty(
                 StandardSystemProperty.USER_HOME.key(),
@@ -92,6 +93,12 @@ public class GraknConsoleIT {
     }
 
     @AfterClass
+    public static void tearDownClass() throws InterruptedException, TimeoutException, IOException {
+        resetIO();
+
+        GraknSetup.shutdown();
+    }
+
     public static void resetIO() {
         System.setIn(trueIn);
     }
@@ -514,7 +521,7 @@ public class GraknConsoleIT {
 
     private void deleteAllKeyspaces() {
         // TODO there should be a way to do this from a server directly...
-        GraknClient client = new GraknClient(server.grpcUri());
+        GraknClient client = new GraknClient(graknAddress);
         for (String ksp : client.keyspaces().retrieve()) {
             client.keyspaces().delete(ksp);
         }
@@ -609,7 +616,7 @@ public class GraknConsoleIT {
         boolean uriSpecified = argList.contains("-r");
         if (!uriSpecified) {
             argList.add("-r");
-            argList.add(server.grpcUri());
+            argList.add(graknAddress);
         }
 
         return argList.toArray(new String[argList.size()]);

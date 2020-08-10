@@ -30,8 +30,7 @@ load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
 # Load Bazel
-load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_toolchain")
-bazel_common()
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_toolchain")
 bazel_toolchain()
 
 # Load gRPC

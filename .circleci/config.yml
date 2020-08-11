@@ -283,7 +283,7 @@ workflows:
               only: console-release-branch
           requires:
             - deploy-approval
-      - sync-dependencies-release:
+      - release-cleanup:
           filters:
             branches:
               only: console-release-branch
@@ -291,9 +291,3 @@ workflows:
             - deploy-artifact
             - deploy-apt
             - deploy-rpm
-      - release-cleanup:
-          filters:
-            branches:
-              only: console-release-branch
-          requires:
-            - sync-dependencies-release

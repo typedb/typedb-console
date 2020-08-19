@@ -21,6 +21,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
@@ -186,4 +187,16 @@ deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
     deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
+)
+
+
+release_validate_deps(
+    name = "release-validate-deps",
+    refs = "@graknlabs_console_workspace_refs//:refs.json",
+    tagged_deps = [
+        "graknlabs_common",
+        "graknlabs_graql",
+        "graknlabs_client_java",
+    ],
+    tags = ["manual"]  # in order for bazel test //... to not fail
 )

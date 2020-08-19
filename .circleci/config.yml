@@ -123,9 +123,7 @@ jobs:
     steps:
       - install-bazel
       - checkout
-      - run: |
-          bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_client_java
+      - run: bazel test //:release-validate-deps  --test_output=streamed
 
   deploy-artifact:
     machine: true

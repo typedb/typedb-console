@@ -56,6 +56,9 @@ load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_reg
 kotlin_repositories()
 kt_register_toolchains()
 
+# Load Kotlin Maven Dependencies
+load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl", graknlabs_dependencies_artifacts = "artifacts")
+
 # Load NodeJS
 load("@graknlabs_dependencies//builder/nodejs:deps.bzl", nodejs_deps = "deps")
 nodejs_deps()
@@ -183,6 +186,7 @@ graknlabs_grakn_core_artifact()
 # Load @maven #
 ###############
 maven(
+    graknlabs_dependencies_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_graql_artifacts +
     graknlabs_client_java_artifacts +

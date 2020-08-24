@@ -18,14 +18,15 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "deploy_artifact")
-load("@graknlabs_dependencies//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("//:deployment.bzl", deployment_console = "deployment")
 
 genrule(
     name = "version",
@@ -48,7 +49,7 @@ java_library(
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
-
+        "@graknlabs_graql//java/query",
 
         # External dependencies
         "@maven//:commons_cli_commons_cli",
@@ -100,27 +101,29 @@ deploy_artifact(
     target = ":console-artifact",
     artifact_group = "graknlabs_console",
     artifact_name = "console-artifact.tgz",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
 )
 
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-console-linux",
-    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-console-mac",
-    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-artifact", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
@@ -135,7 +138,8 @@ assemble_versioned(
 
 deploy_github(
     name = "deploy-github",
-    deployment_properties = "//:deployment.properties",
+    organisation = deployment_console["github.organisation"],
+    repository = deployment_console["github.repository"],
     title = "Grakn Console",
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
@@ -165,7 +169,8 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-linux-apt",
-    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release'],
 )
 
 assemble_rpm(
@@ -186,7 +191,8 @@ assemble_rpm(
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
-    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
+    snapshot = deployment['rpm.snapshot'],
+    release = deployment['rpm.release'],
 )
 
 

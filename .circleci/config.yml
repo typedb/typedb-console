@@ -31,14 +31,22 @@ commands:
     steps:
       - run: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
 
+  install-artifact-credentials:
+    steps:
+      - run: |
+          ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME \
+          ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD \
+          bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
+
 jobs:
   build:
     machine: 
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
       - run-bazel:
           command: bazel build //...
@@ -53,8 +61,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run-bazel:
           command: bazel test //test:grakn-console-it --test_output=errors
 
@@ -63,8 +72,8 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
@@ -74,8 +83,9 @@ jobs:
     machine: true
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -86,8 +96,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -98,8 +109,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
@@ -110,8 +122,8 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
@@ -121,16 +133,18 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: bazel test //:release-validate-deps  --test_output=streamed
 
   deploy-artifact:
     machine: true
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -141,8 +155,8 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
       - run: |
           pip install certifi
           export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
@@ -156,8 +170,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -169,8 +184,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/console
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
+      - install-artifact-credentials
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
@@ -181,8 +197,8 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - install-bazel
       - checkout
+      - install-bazel
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
           bazel run @graknlabs_dependencies//tool/sync:dependencies -- \

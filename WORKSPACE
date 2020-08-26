@@ -60,7 +60,7 @@ com_github_grpc_grpc_deps()
 load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
-# Load //distribution/Docker
+# Load //distribution/docker
 load("@graknlabs_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
 

@@ -104,35 +104,30 @@ github_deps()
 # Load @graknlabs dependencies #
 ################################
 
+# Load repositories
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common", "graknlabs_graql", "graknlabs_client_java")
 graknlabs_common()
 graknlabs_graql()
 graknlabs_client_java()
-
-# Load grabl-tracing (from client-java)
-load("@graknlabs_client_java//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing")
+load("@graknlabs_client_java//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing", "graknlabs_protocol")
 graknlabs_grabl_tracing()
-
-# Load protocol (from client-java)
-load("@graknlabs_client_java//dependencies/graknlabs:repositories.bzl", "graknlabs_protocol")
 graknlabs_protocol()
 
-# Load grakn-core artifact
+# Load artifacts
 load("//dependencies/graknlabs:artifacts.bzl", "graknlabs_grakn_core_artifact")
 graknlabs_grakn_core_artifact()
+
+# Load maven
+load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
+load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
+load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
+load("@graknlabs_console//dependencies/maven:artifacts.bzl", graknlabs_console_artifacts = "artifacts")
 
 ###############
 # Load @maven #
 ###############
 
 load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
-
-# Load graknlabs maven artifacts
-load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
-load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
-load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
-load("@graknlabs_console//dependencies/maven:artifacts.bzl", graknlabs_console_artifacts = "artifacts")
-
 maven(
     graknlabs_grabl_tracing_artifacts +
     graknlabs_graql_artifacts +

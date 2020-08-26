@@ -27,4 +27,3 @@ def graknlabs_grakn_core_artifact():
         commit_source = deployment_private["artifact.snapshot"],
         commit = "fa7d459906bbb85c4e9298a67c5170159d4de11c",
     )
-

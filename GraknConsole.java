@@ -17,8 +17,9 @@
 
 package grakn.console;
 
-import grakn.client.GraknClient;
-import grakn.client.exception.GraknClientException;
+import grakn.client.Grakn;
+import grakn.client.common.exception.GraknClientException;
+import grakn.client.rpc.GraknClient;
 import grakn.console.exception.ErrorMessage;
 import grakn.console.exception.GraknConsoleException;
 import io.grpc.Status;

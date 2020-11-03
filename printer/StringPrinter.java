@@ -17,11 +17,12 @@
 
 package grakn.console.printer;
 
-import grakn.client.GraknClient;
-import grakn.client.answer.AnswerGroup;
-import grakn.client.answer.ConceptMap;
-import grakn.client.answer.ConceptSetMeasure;
-import grakn.client.answer.Void;
+import grakn.client.Grakn;
+import grakn.client.concept.answer.AnswerGroup;
+import grakn.client.rpc.GraknClient;
+import grakn.client.concept.answer.ConceptMap;
+import grakn.client.concept.answer.ConceptSetMeasure;
+import grakn.client.concept.answer.Void;
 import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
@@ -49,10 +50,10 @@ import java.util.stream.Stream;
  */
 public class StringPrinter extends Printer<StringBuilder> {
 
-    private final AttributeType<?>[] attributeTypes;
+    private final AttributeType[] attributeTypes;
     private final boolean colorize;
 
-    StringPrinter(boolean colorize, AttributeType<?>... attributeTypes) {
+    StringPrinter(boolean colorize, AttributeType... attributeTypes) {
         this.colorize = colorize;
         this.attributeTypes = attributeTypes;
     }
@@ -85,7 +86,7 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder concept(GraknClient.Transaction tx, Concept<?> concept) {
+    protected StringBuilder concept(Grakn.Transaction tx, Concept<?> concept) {
         StringBuilder output = new StringBuilder();
 
         // Display values for resources and ids for everything else
@@ -177,7 +178,7 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder collection(GraknClient.Transaction tx, Collection<?> collection) {
+    protected StringBuilder collection(Grakn.Transaction tx, Collection<?> collection) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(Char.CURLY_OPEN);
@@ -189,12 +190,12 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder map(GraknClient.Transaction tx, Map<?, ?> map) {
+    protected StringBuilder map(Grakn.Transaction tx, Map<?, ?> map) {
         return collection(tx, map.entrySet());
     }
 
     @Override
-    protected StringBuilder answerGroup(GraknClient.Transaction tx, AnswerGroup<?> answer) {
+    protected StringBuilder answerGroup(Grakn.Transaction tx, AnswerGroup answer) {
         StringBuilder builder = new StringBuilder();
         return builder.append(Char.CURLY_OPEN)
                 .append(concept(tx, answer.owner()))
@@ -204,12 +205,12 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder conceptMap(GraknClient.Transaction tx, ConceptMap answer) {
+    protected StringBuilder conceptMap(Grakn.Transaction tx, ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
-        for (Map.Entry<Variable, Concept<?>> entry : answer.map().entrySet()) {
-            Variable name = entry.getKey();
-            Concept<?> concept = entry.getValue();
+        for (Map.Entry<String, Concept> entry : answer.map().entrySet()) {
+            String name = entry.getKey();
+            Concept concept = entry.getValue();
             builder.append(name).append(Char.SPACE)
                     .append(concept(tx, concept)).append(Char.SEMICOLON).append(Char.SPACE);
         }
@@ -217,13 +218,13 @@ public class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder conceptSetMeasure(GraknClient.Transaction tx,ConceptSetMeasure answer) {
+    protected StringBuilder conceptSetMeasure(Grakn.Transaction tx,ConceptSetMeasure answer) {
         StringBuilder builder = new StringBuilder();
         return builder.append(answer.measurement()).append(Char.COLON).append(Char.SPACE).append(collection(tx, answer.set()));
     }
 
     @Override
-    protected StringBuilder object(GraknClient.Transaction tx, Object object) {
+    protected StringBuilder object(Grakn.Transaction tx, Object object) {
         StringBuilder builder = new StringBuilder();
 
         if (object instanceof Map.Entry<?, ?>) {

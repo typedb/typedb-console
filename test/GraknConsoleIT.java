@@ -522,8 +522,8 @@ public class GraknConsoleIT {
     private void deleteAllKeyspaces() {
         // TODO there should be a way to do this from a server directly...
         GraknClient client = new GraknClient(graknAddress);
-        for (String ksp : client.keyspaces().retrieve()) {
-            client.keyspaces().delete(ksp);
+        for (String ksp : client.databases().all()) {
+            client.databases().delete(ksp);
         }
         client.close();
     }

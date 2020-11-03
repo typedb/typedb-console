@@ -17,8 +17,9 @@
 
 package grakn.console;
 
-import grakn.client.GraknClient;
-import grakn.client.exception.GraknClientException;
+import grakn.client.Grakn;
+import grakn.client.common.exception.GraknClientException;
+import grakn.client.rpc.GraknClient;
 import grakn.console.exception.GraknConsoleException;
 import grakn.console.printer.Printer;
 import graql.lang.Graql;
@@ -88,9 +89,9 @@ public class ConsoleSession implements AutoCloseable {
 
     private final History history;
 
-    private final GraknClient client;
-    private final GraknClient.Session session;
-    private GraknClient.Transaction tx;
+    private final Grakn.Client client;
+    private final Grakn.Session session;
+    private Grakn.Transaction tx;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
 
@@ -99,12 +100,12 @@ public class ConsoleSession implements AutoCloseable {
         this.infer = infer;
         try {
             this.client = new GraknClient(serverAddress);
-            this.session = client.session(keyspace);
+            this.session = client.session(keyspace, Grakn.Session.Type.DATA);
         } catch (StatusRuntimeException grpcException) {
             throw GraknConsoleException.unreachableServer(serverAddress, grpcException);
         }
         this.consoleReader = new ConsoleReader(System.in, printOut);
-        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
+        this.consoleReader.setPrompt(ANSI_PURPLE + session.database() + ANSI_RESET + "> ");
         this.printErr = printErr;
 
         History history;
@@ -125,7 +126,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.println("...");
         consoleReader.flush();
 
-        tx = session.transaction().write();
+        tx = session.transaction(Grakn.Transaction.Type.WRITE);
 
         try {
             String queries = readFile(filePath);
@@ -144,7 +145,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
-        tx = session.transaction().write();
+        tx = session.transaction(Grakn.Transaction.Type.WRITE);
         String input;
 
         while ((input = consoleReader.readLine()) != null && !terminated.get()) {
@@ -203,12 +204,12 @@ public class ConsoleSession implements AutoCloseable {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
             // Parse the string to get a stream of Graql Queries
-            Stream<GraqlQuery> queries = Graql.parseList(queryString);
+            Stream<GraqlQuery> queries = Graql.parseQueries(queryString);
 
             // Get the stream of answers for each query (query.stream())
             // Get the  stream of printed answers (printer.toStream(..))
             // Combine the stream of printed answers into one stream (queries.flatMap(..))
-            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx, tx.stream(query, GraknClient.Transaction.Options.infer(infer)).get()));
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(tx, tx.query(query, Grakn.Transaction.Options.infer(infer)).get()));
 
             // For each printed answer, print them on one line
             answers.forEach(answer -> {
@@ -280,7 +281,7 @@ public class ConsoleSession implements AutoCloseable {
             consoleReader.println("Cleaning keyspace: " + keyspace);
             consoleReader.println("...");
             consoleReader.flush();
-            client.keyspaces().delete(keyspace);
+            client.databases().delete(keyspace);
             consoleReader.println("Keyspace deleted: " + keyspace);
             return true;
         } else {
@@ -290,8 +291,8 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     private void reopenTransaction() {
-        if (!tx.isClosed()) tx.close();
-        tx = session.transaction().write();
+        if (tx.isOpen()) tx.close();
+        tx = session.transaction(Grakn.Transaction.Type.WRITE);
     }
 
     @Override
@@ -346,23 +347,23 @@ public class ConsoleSession implements AutoCloseable {
     private boolean keyspaceCommand(String subCommand) throws IOException {
         String command = subCommand.trim();
         if (command.equals(LIST)) {
-            List<String> keyspaces = client.keyspaces().retrieve().stream().sorted().collect(Collectors.toList());
+            List<String> keyspaces = client.databases().all().stream().sorted().collect(Collectors.toList());
             for (String ksp : keyspaces) {
                 consoleReader.println(ksp);
             }
         } else if (command.startsWith(DELETE + ' ')) {
             String keyspaceToDelete = command.substring(DELETE.length() + 1).trim();
-            List<String> keyspaces = client.keyspaces().retrieve();
+            List<String> keyspaces = client.databases().all();
             if (!keyspaces.contains(keyspaceToDelete)) {
                 consoleReader.println("Keyspace " + keyspaceToDelete + " does not exist");
                 return false;
             }
-            if (keyspaceToDelete.equals(session.keyspace().toString())) {
+            if (keyspaceToDelete.equals(session.database())) {
                 // redirect to clean() with confirmation, return status of clean()
                 // if we cleaned, we need to exit
                 return clean();
             }
-            client.keyspaces().delete(keyspaceToDelete);
+            client.databases().delete(keyspaceToDelete);
             consoleReader.println("Successfully deleted keyspace: " + keyspaceToDelete);
         }
         return false;

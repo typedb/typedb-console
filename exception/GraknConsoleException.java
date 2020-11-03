@@ -17,7 +17,7 @@
 
 package grakn.console.exception;
 
-import grakn.client.exception.GraknClientException;
+import grakn.client.common.exception.GraknClientException;
 import grakn.console.GraknConsole;
 
 public class GraknConsoleException extends GraknClientException {
@@ -27,7 +27,7 @@ public class GraknConsoleException extends GraknClientException {
     }
 
     protected GraknConsoleException(String error, RuntimeException e) {
-        super(error, e);
+        super(e);
     }
 
     public static GraknConsoleException create(String error) {

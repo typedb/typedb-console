@@ -48,7 +48,8 @@ grakn_test(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
+    include = [
         ":grakn-console-it",
     ],
+    license_type = "apache"
 )

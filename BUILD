@@ -67,9 +67,10 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
+    include = [
         ":console",
     ],
+    license_type = 'apache'
 )
 
 java_binary(

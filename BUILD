@@ -41,19 +41,13 @@ genrule(
 
 java_library(
     name = "console",
-    srcs = glob([
-        "*.java",
-        "exception/*.java",
-        "printer/*.java",
-    ]) + [":version"],
+    srcs = glob(["*.java"]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/query",
 
         # External dependencies
-        "@maven//:commons_cli_commons_cli",
-        "@maven//:commons_lang_commons_lang", # PREVIOUSLY UNDECLARED
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:io_grpc_grpc_core",
         "@maven//:io_grpc_grpc_api",
@@ -63,13 +57,6 @@ java_library(
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
     tags = ["maven_coordinates=io.grakn.console:grakn-console:{pom_version}"],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":console",
-    ],
 )
 
 java_binary(
@@ -205,6 +192,12 @@ release_validate_deps(
         "@graknlabs_client_java",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*", ".grabl/*"]),
+    license_type = "agpl",
 )
 
 # CI targets that are not declared in any BUILD file, but are called externally

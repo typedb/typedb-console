@@ -51,7 +51,8 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:io_grpc_grpc_core",
         "@maven//:io_grpc_grpc_api",
-        "@maven//:jline_jline",
+        "@maven//:org_jline_jline",
+        "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
     ],
     visibility = ["//visibility:public"],
@@ -78,7 +79,7 @@ pkg_tar(
     deps = [":console-deps"],
     extension = "tgz",
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -144,7 +145,7 @@ assemble_apt(
     ],
     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
@@ -164,11 +165,11 @@ assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-console",
     installation_dir = "/opt/grakn/core/",
-    spec_file = "//config/rpm:grakn-console.spec",
+    spec_file = "//conf/rpm:grakn-console.spec",
     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     archives = [":console-deps"],
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",

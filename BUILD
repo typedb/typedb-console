@@ -45,6 +45,7 @@ java_library(
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/query",
 
         # External dependencies

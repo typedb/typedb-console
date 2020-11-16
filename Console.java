@@ -121,8 +121,8 @@ public class Console {
     private boolean runTransactionRepl(Grakn.Client client, String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
         try (Grakn.Session session = client.session(database, sessionType);
              Grakn.Transaction tx = session.transaction(transactionType)) {
+            String prompt = database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase() + "> ";
             while (true) {
-                String prompt = database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase() + "> ";
                 TransactionReplCommand command = TransactionReplCommand.getCommand(reader, printer, prompt);
                 if (command instanceof TransactionReplCommand.Exit) {
                     return true;

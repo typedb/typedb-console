@@ -100,7 +100,7 @@ public abstract class TransactionReplCommand {
         while (words == null) {
             try {
                 String line = reader.readLine(prompt);
-                words = Utils.splitLine(line);
+                words = Utils.splitLineByWhitespace(line);
                 if (words.length == 0) words = null;
             } catch (UserInterruptException | EndOfFileException e) {
                 printer.info("Use command 'exit' to exit the console");

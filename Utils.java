@@ -20,7 +20,7 @@ package grakn.console;
 import java.util.Arrays;
 
 public class Utils {
-    public static String[] splitLine(String line) {
+    public static String[] splitLineByWhitespace(String line) {
         return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
     }
 }

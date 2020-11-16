@@ -48,7 +48,7 @@ public class Console {
             "database list                                   List the databases on the server\n" +
             "database create <db>                            Create a database with name <db> on the server\n" +
             "database delete <db>                            Delete a database with name <db> on the server\n" +
-            "transaction open <db> schema|data read|write    Start a transaction to database <db> with schema or data session, with read or write transaction\n";
+            "transaction <db> schema|data read|write         Start a transaction to database <db> with schema or data session, with read or write transaction\n";
     private static final String TRANSACTION_HELP_MENU =
             "\n" +
             "exit             Exit console\n" +

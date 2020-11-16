@@ -76,11 +76,11 @@ public abstract class ReplCommand {
             } else if (tokens.length == 3 && tokens[0].equals("database") && tokens[1].equals("delete")) {
                 String database = tokens[2];
                 command = new DatabaseDelete(database);
-            } else if (tokens.length == 5 && tokens[0].equals("transaction") && tokens[1].equals("open") &&
-                    (tokens[3].equals("schema") || tokens[3].equals("data") && (tokens[4].equals("read") || tokens[4].equals("write")))) {
-                String database = tokens[2];
-                Grakn.Session.Type sessionType = tokens[3].equals("schema") ? Grakn.Session.Type.SCHEMA : Grakn.Session.Type.DATA;
-                Grakn.Transaction.Type transactionType = tokens[4].equals("read") ? Grakn.Transaction.Type.READ : Grakn.Transaction.Type.WRITE;
+            } else if (tokens.length == 4 && tokens[0].equals("transaction") &&
+                    (tokens[2].equals("schema") || tokens[2].equals("data") && (tokens[3].equals("read") || tokens[3].equals("write")))) {
+                String database = tokens[1];
+                Grakn.Session.Type sessionType = tokens[2].equals("schema") ? Grakn.Session.Type.SCHEMA : Grakn.Session.Type.DATA;
+                Grakn.Transaction.Type transactionType = tokens[3].equals("read") ? Grakn.Transaction.Type.READ : Grakn.Transaction.Type.WRITE;
                 command = new Transaction(database, sessionType, transactionType);
             } else {
                 printer.error("Unrecognised command, please check help menu");

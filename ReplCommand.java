@@ -31,19 +31,19 @@ import static grakn.common.collection.Collections.pair;
 public abstract class ReplCommand {
     public static class Exit extends ReplCommand {
         private static String token = "exit";
-        private static String helpCommand = "exit";
+        private static String helpCommand = token;
         private static String description = "Exit console";
     }
 
     public static class Help extends ReplCommand {
         private static String token = "help";
-        private static String helpCommand = "help";
+        private static String helpCommand = token;
         private static String description = "Print this help menu";
     }
 
     public static class Clear extends ReplCommand {
         private static String token = "clear";
-        private static String helpCommand = "clear";
+        private static String helpCommand = token;
         private static String description = "Clear console screen";
     }
 
@@ -52,13 +52,13 @@ public abstract class ReplCommand {
 
         public static class List extends ReplCommand.Database {
             private static String token = "list";
-            private static String helpCommand = "database list";
+            private static String helpCommand = Database.token + " " + token;
             private static String description = "List the databases on the server";
         }
 
         public static class Create extends ReplCommand.Database {
             private static String token = "create";
-            private static String helpCommand = "database create <db>";
+            private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Create a database with name <db> on the server";
 
             private final String database;
@@ -70,7 +70,7 @@ public abstract class ReplCommand {
 
         public static class Delete extends ReplCommand.Database {
             private static String token = "delete";
-            private static String helpCommand = "database delete <db>";
+            private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Delete a database with name <db> on the server";
 
             private final String database;
@@ -83,7 +83,7 @@ public abstract class ReplCommand {
 
     public static class Transaction extends ReplCommand {
         private static String token = "transaction";
-        private static String helpCommand = "transaction <db> schema|data read|write";
+        private static String helpCommand = token + " <db> schema|data read|write";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;

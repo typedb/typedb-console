@@ -32,43 +32,43 @@ import static grakn.common.collection.Collections.pair;
 public abstract class TransactionReplCommand {
     public static class Exit extends TransactionReplCommand {
         private static String token = "exit";
-        private static String helpCommand = "exit";
+        private static String helpCommand = token;
         private static String description = "Exit console";
     }
 
     public static class Help extends TransactionReplCommand {
         private static String token = "help";
-        private static String helpCommand = "help";
+        private static String helpCommand = token;
         private static String description = "Print this help menu";
     }
 
     public static class Clear extends TransactionReplCommand {
         private static String token = "clear";
-        private static String helpCommand = "clear";
+        private static String helpCommand = token;
         private static String description = "Clear console screen";
     }
 
     public static class Commit extends TransactionReplCommand {
         private static String token = "commit";
-        private static String helpCommand = "commit";
+        private static String helpCommand = token;
         private static String description = "Commit the transaction changes and close";
     }
 
     public static class Rollback extends TransactionReplCommand {
         private static String token = "rollback";
-        private static String helpCommand = "rollback";
+        private static String helpCommand = token;
         private static String description = "Rollback the transaction to the beginning state";
     }
 
     public static class Close extends TransactionReplCommand {
         private static String token = "close";
-        private static String helpCommand = "close";
+        private static String helpCommand = token;
         private static String description = "Close the transaction without committing changes";
     }
 
     public static class Source extends TransactionReplCommand {
         private static String token = "source";
-        private static String helpCommand = "source <file>";
+        private static String helpCommand = token + " <file>";
         private static String description = "Run Graql queries in file";
 
         private final String file;

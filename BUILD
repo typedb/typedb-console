@@ -47,6 +47,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/query",
+        "@graknlabs_common//:common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",

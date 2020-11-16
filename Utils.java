@@ -17,10 +17,29 @@
 
 package grakn.console;
 
+import grakn.common.collection.Pair;
+
 import java.util.Arrays;
+import java.util.List;
 
 public class Utils {
     public static String[] splitLineByWhitespace(String line) {
         return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
+    }
+
+    public static String buildHelpMenu(List<Pair<String, String>> menu) {
+        if (menu.isEmpty()) return "\n";
+        int maxHelpCommandLength = menu.stream().map(x -> x.first().length()).max(Integer::compare).get();
+        int spacingLength = 4;
+        StringBuilder sb = new StringBuilder("\n");
+        for (Pair<String, String> item : menu) {
+            sb.append(item.first());
+            for (int i = 0; i < maxHelpCommandLength + spacingLength - item.first().length(); i++) {
+                sb.append(' ');
+            }
+            sb.append(item.second());
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 }

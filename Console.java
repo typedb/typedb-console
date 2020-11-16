@@ -40,26 +40,6 @@ public class Console {
             "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
             "Copyright (C) 2020 Grakn Labs\n";
-    private static final String HELP_MENU =
-            "\n" +
-            "exit                                            Exit console\n" +
-            "clear                                           Clear console screen\n" +
-            "help                                            Print this help menu\n" +
-            "database list                                   List the databases on the server\n" +
-            "database create <db>                            Create a database with name <db> on the server\n" +
-            "database delete <db>                            Delete a database with name <db> on the server\n" +
-            "transaction <db> schema|data read|write         Start a transaction to database <db> with schema or data session, with read or write transaction\n";
-    private static final String TRANSACTION_HELP_MENU =
-            "\n" +
-            "exit             Exit console\n" +
-            "clear            Clear console screen\n" +
-            "help             Print this help menu\n" +
-            "commit           Commit the transaction changes and close\n" +
-            "rollback         Rollback the transaction to the beginning state\n" +
-            "close            Close the transaction without committing changes\n" +
-            "<query>          Run graql queries\n" +
-            "source <file>    Run graql queries in file\n";
-
     private final CommandLineOptions options;
     private final LineReader reader;
     private final Printer printer;
@@ -85,23 +65,23 @@ public class Console {
             if (command instanceof ReplCommand.Exit) {
                 break;
             } else if (command instanceof ReplCommand.Help) {
-                printer.info(HELP_MENU);
+                printer.info(ReplCommand.getHelpMenu());
             } else if (command instanceof ReplCommand.Clear) {
                 reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-            } else if (command instanceof ReplCommand.DatabaseList) {
+            } else if (command instanceof ReplCommand.Database.List) {
                 try {
                     client.databases().all().forEach(database -> printer.info(database));
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }
-            } else if (command instanceof ReplCommand.DatabaseCreate) {
+            } else if (command instanceof ReplCommand.Database.Create) {
                 try {
                     client.databases().create(command.asDatabaseCreate().database());
                     printer.info("Database '" + command.asDatabaseCreate().database() + "' created");
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }
-            } else if (command instanceof ReplCommand.DatabaseDelete) {
+            } else if (command instanceof ReplCommand.Database.Delete) {
                 try {
                     client.databases().delete(command.asDatabaseDelete().database());
                     printer.info("Database '" + command.asDatabaseDelete().database() + "' deleted");
@@ -129,7 +109,7 @@ public class Console {
                 } else if (command instanceof TransactionReplCommand.Clear) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command instanceof TransactionReplCommand.Help) {
-                    printer.info(TRANSACTION_HELP_MENU);
+                    printer.info(TransactionReplCommand.getHelpMenu());
                 } else if (command instanceof TransactionReplCommand.Commit) {
                     tx.commit();
                     printer.info("Transaction changes committed");

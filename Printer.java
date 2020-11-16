@@ -61,12 +61,12 @@ public class Printer {
         for (Map.Entry<String, Concept> entry: conceptMap.map().entrySet()) {
             String variable = entry.getKey();
             Concept concept = entry.getValue();
-
             sb.append(variable);
             sb.append(" ");
             sb.append(getConceptDisplayString(concept, tx));
+            sb.append("; ");
         }
-        sb.append(" }");
+        sb.append("}");
         return sb.toString();
     }
 

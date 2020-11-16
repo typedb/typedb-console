@@ -83,7 +83,7 @@ public class Console {
         while (true) {
             ReplCommand command = ReplCommand.getCommand(reader, printer, "> ");
             if (command instanceof ReplCommand.Exit) {
-                break;
+                System.exit(0);
             } else if (command instanceof ReplCommand.Help) {
                 printer.info(HELP_MENU);
             } else if (command instanceof ReplCommand.Clear) {
@@ -112,20 +112,19 @@ public class Console {
                 String database = command.asTransaction().database();
                 Grakn.Session.Type sessionType = command.asTransaction().sessionType();
                 Grakn.Transaction.Type transactionType = command.asTransaction().transactionType();
-                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType);
-                if (shouldExit) break;
+                runTransactionRepl(client, database, sessionType, transactionType);
             }
         }
     }
 
-    private boolean runTransactionRepl(Grakn.Client client, String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
+    private void runTransactionRepl(Grakn.Client client, String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
         try (Grakn.Session session = client.session(database, sessionType);
              Grakn.Transaction tx = session.transaction(transactionType)) {
             while (true) {
                 String prompt = database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase() + "> ";
                 TransactionReplCommand command = TransactionReplCommand.getCommand(reader, printer, prompt);
                 if (command instanceof TransactionReplCommand.Exit) {
-                    return true;
+                    System.exit(0);
                 } else if (command instanceof TransactionReplCommand.Clear) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command instanceof TransactionReplCommand.Help) {
@@ -157,7 +156,6 @@ public class Console {
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         }
-        return false;
     }
 
     private static void runQuery(Grakn.Transaction tx, String queryString, Printer printer) {

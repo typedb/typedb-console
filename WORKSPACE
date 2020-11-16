@@ -105,11 +105,12 @@ github_deps()
 ################################
 
 # Load repositories
-load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common", "graknlabs_graql", "graknlabs_client_java")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common", "graknlabs_client_java")
 graknlabs_common()
-graknlabs_graql()
 graknlabs_client_java()
-load("@graknlabs_client_java//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing", "graknlabs_protocol")
+
+load("@graknlabs_client_java//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing", "graknlabs_protocol", "graknlabs_graql")
+graknlabs_graql()
 graknlabs_grabl_tracing()
 graknlabs_protocol()
 

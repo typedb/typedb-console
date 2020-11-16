@@ -1,0 +1,45 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.console;
+
+import grakn.common.collection.Pair;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Utils {
+    public static String[] splitLineByWhitespace(String line) {
+        return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
+    }
+
+    public static String buildHelpMenu(List<Pair<String, String>> menu) {
+        if (menu.isEmpty()) return "\n";
+        int maxHelpCommandLength = menu.stream().map(x -> x.first().length()).max(Integer::compare).get();
+        int spacingLength = 4;
+        StringBuilder sb = new StringBuilder("\n");
+        for (Pair<String, String> item : menu) {
+            sb.append(item.first());
+            for (int i = 0; i < maxHelpCommandLength + spacingLength - item.first().length(); i++) {
+                sb.append(' ');
+            }
+            sb.append(item.second());
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+}

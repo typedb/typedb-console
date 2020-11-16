@@ -22,12 +22,10 @@
 @maven//:com_google_j2objc_j2objc_annotations_1_1
 @maven//:com_google_protobuf_protobuf_java
 @maven//:com_google_protobuf_protobuf_java_3_5_1
-@maven//:commons_cli_commons_cli
-@maven//:commons_cli_commons_cli_1_4
 @maven//:commons_io_commons_io
 @maven//:commons_io_commons_io_2_3
-@maven//:commons_lang_commons_lang
-@maven//:commons_lang_commons_lang_2_6
+@maven//:info_picocli_picocli
+@maven//:info_picocli_picocli_4_3_2
 @maven//:io_cucumber_cucumber_core
 @maven//:io_cucumber_cucumber_core_5_1_3
 @maven//:io_cucumber_cucumber_expressions
@@ -96,8 +94,6 @@
 @maven//:io_perfmark_perfmark_api_0_17_0
 @maven//:javax_annotation_javax_annotation_api
 @maven//:javax_annotation_javax_annotation_api_1_3_2
-@maven//:jline_jline
-@maven//:jline_jline_2_12
 @maven//:junit_junit
 @maven//:junit_junit_4_12
 @maven//:net_bytebuddy_byte_buddy
@@ -120,6 +116,8 @@
 @maven//:org_hamcrest_hamcrest_core_1_3
 @maven//:org_hamcrest_hamcrest_library
 @maven//:org_hamcrest_hamcrest_library_1_3
+@maven//:org_jline_jline
+@maven//:org_jline_jline_3_17_1
 @maven//:org_mockito_mockito_core
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis

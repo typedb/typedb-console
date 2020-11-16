@@ -15,26 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.exception;
+package grakn.console;
 
-/**
- * Enum containing error messages.
- *
- * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
- * accepts arguments to be passed to the format string.
- *
- */
-public enum ErrorMessage {
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
 
-    COULD_NOT_CONNECT("Could not connect to Grakn. Have you run 'grakn server start'?");
+import java.io.PrintStream;
 
-    private final String message;
+public class Printer {
+    private final PrintStream out;
+    private final PrintStream err;
 
-    ErrorMessage(String message) {
-        this.message = message;
+    public Printer(PrintStream out, PrintStream err) {
+        this.out = out;
+        this.err = err;
     }
 
-    public String getMessage(Object... args) {
-        return String.format(message, args);
+    public void info(String s) {
+        out.println(s);
+    }
+
+    public void error(String s) {
+        err.println(new AttributedString(s, AttributedStyle.DEFAULT.foreground(AttributedStyle.RED)).toAnsi());
     }
 }

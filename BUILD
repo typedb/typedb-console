@@ -41,35 +41,25 @@ genrule(
 
 java_library(
     name = "console",
-    srcs = glob([
-        "*.java",
-        "exception/*.java",
-        "printer/*.java",
-    ]) + [":version"],
+    srcs = glob(["*.java"]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/query",
+        "@graknlabs_common//:common",
 
         # External dependencies
-        "@maven//:commons_cli_commons_cli",
-        "@maven//:commons_lang_commons_lang", # PREVIOUSLY UNDECLARED
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:io_grpc_grpc_core",
         "@maven//:io_grpc_grpc_api",
-        "@maven//:jline_jline",
+        "@maven//:org_jline_jline",
+        "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
     tags = ["maven_coordinates=io.grakn.console:grakn-console:{pom_version}"],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":console",
-    ],
 )
 
 java_binary(
@@ -91,7 +81,7 @@ pkg_tar(
     deps = [":console-deps"],
     extension = "tgz",
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -157,7 +147,7 @@ assemble_apt(
     ],
     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
@@ -177,11 +167,11 @@ assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-console",
     installation_dir = "/opt/grakn/core/",
-    spec_file = "//config/rpm:grakn-console.spec",
+    spec_file = "//conf/rpm:grakn-console.spec",
     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
     archives = [":console-deps"],
     files = {
-        "//config/logback:logback.xml": "console/conf/logback.xml"
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
@@ -205,6 +195,12 @@ release_validate_deps(
         "@graknlabs_client_java",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*", ".grabl/*"]),
+    license_type = "agpl",
 )
 
 # CI targets that are not declared in any BUILD file, but are called externally

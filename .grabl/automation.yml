@@ -3,10 +3,10 @@ config:
 
 build:
   quality:
+    filter:
+      owner: graknlabs
+      branch: master
     build-analysis:
-      filter:
-        owner: graknlabs
-        branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
       script: |

@@ -199,7 +199,7 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", ".grabl/*"]),
+    include = glob(["*", ".grabl/*", "templates/*", "dependencies/**/*", "conf/**/*"]),
     license_type = "agpl",
 )
 

@@ -184,7 +184,7 @@ public class GraknConsole {
                 tx.query().undefine(query.asUndefine()).get();
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
-                Stream<ConceptMap> result = tx.query().insert(query.asInsert()).get();
+                Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 printCancellableResult(tx, result);
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();

@@ -135,7 +135,7 @@ public class Printer {
     }
 
     private String attributeDisplayString(Attribute<?> attribute) {
-        return attribute.toString();
+        return graql.lang.common.util.Strings.valueToString(attribute.getValue());
     }
 
     private String colorKeyword(String s) {

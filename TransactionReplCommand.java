@@ -105,9 +105,9 @@ public abstract class TransactionReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    public static TransactionReplCommand getCommand(LineReader reader, Printer printer, String prompt) {
+    public static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
         TransactionReplCommand command;
-        String[] tokens = getTokens(reader, printer, prompt);
+        String[] tokens = Utils.getTokens(reader, prompt);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
             command = new Exit();
         } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
@@ -149,19 +149,5 @@ public abstract class TransactionReplCommand {
             }
         }
         return String.join("\n", queryLines);
-    }
-
-    private static String[] getTokens(LineReader reader, Printer printer, String prompt) {
-        String[] words = null;
-        while (words == null) {
-            try {
-                String line = reader.readLine(prompt);
-                words = Utils.splitLineByWhitespace(line);
-                if (words.length == 0) words = null;
-            } catch (UserInterruptException | EndOfFileException e) {
-                printer.info("Use command '" + Exit.token + "' to exit the console");
-            }
-        }
-        return words;
     }
 }

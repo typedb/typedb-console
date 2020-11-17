@@ -19,9 +19,7 @@ package grakn.console;
 
 import grakn.client.Grakn;
 import grakn.common.collection.Pair;
-import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
-import org.jline.reader.UserInterruptException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -115,10 +113,10 @@ public abstract class ReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    public static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) {
+    public static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) throws InterruptedException {
         ReplCommand command = null;
         while (command == null) {
-            String[] tokens = getTokens(reader, printer, prompt);
+            String[] tokens = Utils.getTokens(reader, prompt);
             if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
                 command = new Exit();
             } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
@@ -144,19 +142,5 @@ public abstract class ReplCommand {
             }
         }
         return command;
-    }
-
-    private static String[] getTokens(LineReader reader, Printer printer, String prompt) {
-        String[] words = null;
-        while (words == null) {
-            try {
-                String line = reader.readLine(prompt);
-                words = Utils.splitLineByWhitespace(line);
-                if (words.length == 0) words = null;
-            } catch (UserInterruptException | EndOfFileException e) {
-                printer.info("Use command '" + Exit.token + "' to exit the console");
-            }
-        }
-        return words;
     }
 }

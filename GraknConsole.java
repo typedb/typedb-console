@@ -45,13 +45,18 @@ public class GraknConsole {
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
             "Copyright (C) 2020 Grakn Labs\n";
     private final CommandLineOptions options;
-    private final Terminal terminal;
     private final Printer printer;
+    private Terminal terminal;
 
-    public GraknConsole(CommandLineOptions options, Terminal terminal, Printer printer) {
+    public GraknConsole(CommandLineOptions options, Printer printer) {
         this.options = options;
-        this.terminal = terminal;
         this.printer = printer;
+        try {
+            this.terminal = TerminalBuilder.builder().build();
+        } catch (IOException e) {
+            System.err.println("Failed to initialise terminal: " + e.getMessage());
+            System.exit(1);
+        }
     }
 
     public void run() {
@@ -66,10 +71,15 @@ public class GraknConsole {
     private void runRepl(Grakn.Client client) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), "~/.grakn-console-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-history").toAbsolutePath())
                 .build();
         while (true) {
-            ReplCommand command = ReplCommand.getCommand(reader, printer, "> ");
+            ReplCommand command;
+            try {
+                command = ReplCommand.getCommand(reader, printer, "> ");
+            } catch (InterruptedException e) {
+                break;
+            }
             if (command instanceof ReplCommand.Exit) {
                 break;
             } else if (command instanceof ReplCommand.Help) {
@@ -115,7 +125,12 @@ public class GraknConsole {
         try (Grakn.Session session = client.session(database, sessionType);
              Grakn.Transaction tx = session.transaction(transactionType)) {
             while (true) {
-                TransactionReplCommand command = TransactionReplCommand.getCommand(reader, printer, prompt);
+                TransactionReplCommand command;
+                try {
+                    command = TransactionReplCommand.getCommand(reader, prompt);
+                } catch (InterruptedException e) {
+                    break;
+                }
                 if (command instanceof TransactionReplCommand.Exit) {
                     return true;
                 } else if (command instanceof TransactionReplCommand.Clear) {
@@ -183,15 +198,8 @@ public class GraknConsole {
 
     public static void main(String[] args) {
         CommandLineOptions options = parseCommandLine(args);
-        Terminal terminal = null;
-        try {
-            terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
-        } catch (IOException e) {
-            System.err.println("Failed to initialise terminal: " + e.getMessage());
-            System.exit(1);
-        }
         Printer printer = new Printer(System.out, System.err);
-        GraknConsole console = new GraknConsole(options, terminal, printer);
+        GraknConsole console = new GraknConsole(options, printer);
         console.run();
     }
 

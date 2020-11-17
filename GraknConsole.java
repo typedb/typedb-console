@@ -202,7 +202,7 @@ public class GraknConsole {
             boolean[] isCancelled = new boolean[1];
             terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
             Iterator<ConceptMap> iterator = conceptMaps.iterator();
-            while (!isCancelled[0]) {
+            while (!isCancelled[0] && iterator.hasNext()) {
                 printer.conceptMap(iterator.next(), tx);
             }
         } finally {

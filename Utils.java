@@ -18,15 +18,14 @@
 package grakn.console;
 
 import grakn.common.collection.Pair;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.UserInterruptException;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class Utils {
-    public static String[] splitLineByWhitespace(String line) {
-        return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
-    }
-
     public static String buildHelpMenu(List<Pair<String, String>> menu) {
         if (menu.isEmpty()) return "\n";
         int maxHelpCommandLength = menu.stream().map(x -> x.first().length()).max(Integer::compare).get();
@@ -41,5 +40,27 @@ public class Utils {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    public static String[] getTokens(LineReader reader, String prompt) throws InterruptedException {
+        String[] words = null;
+        while (words == null) {
+            try {
+                String line = reader.readLine(prompt);
+                words = Utils.splitLineByWhitespace(line);
+                if (words.length == 0) words = null;
+            } catch (UserInterruptException e) {
+                if (reader.getBuffer().toString().isEmpty()) {
+                    throw new InterruptedException();
+                }
+            } catch (EndOfFileException e) {
+                throw new InterruptedException();
+            }
+        }
+        return words;
+    }
+
+    private static String[] splitLineByWhitespace(String line) {
+        return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
     }
 }

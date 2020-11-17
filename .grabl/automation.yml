@@ -3,6 +3,9 @@ config:
 
 build:
   quality:
+    filter:
+      owner: graknlabs
+      branch: master
     build-analysis:
       machine: graknlabs-ubuntu-20.04
       type: foreground
@@ -25,7 +28,7 @@ build:
     deploy-artifact-snapshot:
       filter:
         owner: graknlabs
-        branch: development
+        branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build, test-integration]
@@ -39,7 +42,7 @@ build:
     deploy-apt-snapshot:
       filter:
         owner: graknlabs
-        branch: development
+        branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build, test-integration]
@@ -53,7 +56,7 @@ build:
     deploy-rpm-snapshot:
       filter:
         owner: graknlabs
-        branch: development
+        branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build, test-integration]

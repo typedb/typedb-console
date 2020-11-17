@@ -52,10 +52,10 @@ public class Printer {
     }
 
     public void conceptMap(ConceptMap conceptMap, Grakn.Transaction tx) {
-        out.println(getConceptMapDisplayString(conceptMap, tx));
+        out.println(conceptMapDisplayString(conceptMap, tx));
     }
 
-    private String getConceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {
+    private String conceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry: conceptMap.map().entrySet()) {
@@ -63,55 +63,79 @@ public class Printer {
             Concept concept = entry.getValue();
             sb.append(variable);
             sb.append(" ");
-            sb.append(getConceptDisplayString(concept, tx));
+            sb.append(conceptDisplayString(concept, tx));
             sb.append("; ");
         }
         sb.append("}");
         return sb.toString();
     }
 
-    private String getConceptDisplayString(Concept concept, Grakn.Transaction tx) {
+    private String conceptDisplayString(Concept concept, Grakn.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         if (concept instanceof Attribute<?>) {
-            String value = concept.asThing().asAttribute().toString();
-            sb.append(value);
+            sb.append(attributeDisplayString(concept.asThing().asAttribute()));
         } else if (concept instanceof Type) {
-            sb.append(colorKeyword(GraqlToken.Constraint.TYPE.toString()))
+            sb.append(typeDisplayString(concept.asType(), tx));
+        } else {
+            sb.append(iidDisplayString(concept.asThing()));
+        }
+        if (concept instanceof Relation) {
+            sb.append(" ").append(relationDisplayString(concept.asThing().asRelation(), tx));
+        }
+        if (concept instanceof Thing) {
+            sb.append(" ").append(isaDisplayString(concept.asThing(), tx));
+        }
+        return sb.toString();
+    }
+
+    private String isaDisplayString(Thing thing, Grakn.Transaction tx) {
+        StringBuilder sb = new StringBuilder();
+        Type type = thing.asRemote(tx).getType();
+        sb.append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel()));
+        return sb.toString();
+    }
+
+    private String relationDisplayString(Relation relation, Grakn.Transaction tx) {
+        StringBuilder sb = new StringBuilder();
+        List<String> rolePlayerStrings = new ArrayList<>();
+        Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.asRemote(tx).getPlayersByRoleType();
+        for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayer : rolePlayers.entrySet()) {
+            RoleType role = rolePlayer.getKey();
+            List<? extends Thing> things = rolePlayer.getValue();
+            for (Thing thing : things) {
+                String rolePlayerString = colorType(role.getLabel()) + ": " + colorKeyword(GraqlToken.Constraint.IID.toString()) + " " + thing.getIID();
+                rolePlayerStrings.add(rolePlayerString);
+            }
+        }
+        sb.append("(").append(String.join(", ", rolePlayerStrings)).append(")");
+        return sb.toString();
+    }
+
+    private String iidDisplayString(Thing thing) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(colorKeyword(GraqlToken.Constraint.IID.toString()))
                 .append(" ")
-                .append(colorType(concept.asType().getLabel()));
-            Type superType = concept.asType().asRemote(tx).getSupertype();
-            if (superType != null) {
-                sb.append(" ")
+                .append(thing.getIID());
+        return sb.toString();
+    }
+
+    private String typeDisplayString(Type type, Grakn.Transaction tx) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(colorKeyword(GraqlToken.Constraint.TYPE.toString()))
+                .append(" ")
+                .append(colorType(type.getLabel()));
+        Type superType = type.asRemote(tx).getSupertype();
+        if (superType != null) {
+            sb.append(" ")
                     .append(colorKeyword(GraqlToken.Constraint.SUB.toString()))
                     .append(" ")
                     .append(colorType(superType.getLabel()));
-            }
-        } else {
-            sb.append(colorKeyword(GraqlToken.Constraint.IID.toString()))
-                .append(" ")
-                .append(concept.asThing().getIID());
         }
-
-        if (concept instanceof Relation) {
-            List<String> rolePlayerStrings = new ArrayList<>();
-            Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = concept.asThing().asRelation().asRemote(tx).getPlayersByRoleType();
-            for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayer : rolePlayers.entrySet()) {
-                RoleType role = rolePlayer.getKey();
-                List<? extends Thing> things = rolePlayer.getValue();
-                for (Thing thing : things) {
-                    String rolePlayerString = colorType(role.getLabel()) + ": " + colorKeyword(GraqlToken.Constraint.IID.toString()) + " " + thing.getIID();
-                    rolePlayerStrings.add(rolePlayerString);
-                }
-            }
-            sb.append(" (").append(String.join(", ", rolePlayerStrings)).append(")");
-        }
-
-        if (concept instanceof Thing) {
-            Type type = concept.asThing().asRemote(tx).getType();
-            sb.append(" ").append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel()));
-        }
-
         return sb.toString();
+    }
+
+    private String attributeDisplayString(Attribute<?> attribute) {
+        return attribute.toString();
     }
 
     private String colorKeyword(String s) {

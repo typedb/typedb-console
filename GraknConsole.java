@@ -169,7 +169,7 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert()).get();
-                result.forEach(cm -> printer.info(cm + " has been inserted"));
+                result.forEach(conceptMap -> printer.conceptMap(conceptMap, tx));
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");

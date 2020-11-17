@@ -31,7 +31,7 @@ build:
         branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
-      dependencies: [build, test-integration]
+      dependencies: [build]
       script: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -45,7 +45,7 @@ build:
         branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
-      dependencies: [build, test-integration]
+      dependencies: [build]
       script: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -59,7 +59,7 @@ build:
         branch: master
       machine: graknlabs-ubuntu-20.04
       type: foreground
-      dependencies: [build, test-integration]
+      dependencies: [build]
       script: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD

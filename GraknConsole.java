@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,7 +53,7 @@ public class GraknConsole {
         this.options = options;
         this.printer = printer;
         try {
-            this.terminal = TerminalBuilder.builder().build();
+            this.terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException e) {
             System.err.println("Failed to initialise terminal: " + e.getMessage());
             System.exit(1);
@@ -156,9 +157,9 @@ public class GraknConsole {
                         printer.error("Failed to open file '" + command.asSource().file() + "'");
                         continue;
                     }
-                    runQuery(tx, queryString, printer);
+                    runQuery(tx, queryString);
                 } else if (command instanceof TransactionReplCommand.Query) {
-                    runQuery(tx, command.asQuery().query(), printer);
+                    runQuery(tx, command.asQuery().query());
                 }
             }
         } catch (GraknClientException e) {
@@ -167,7 +168,7 @@ public class GraknConsole {
         return false;
     }
 
-    private static void runQuery(Grakn.Transaction tx, String queryString, Printer printer) {
+    private void runQuery(Grakn.Transaction tx, String queryString) {
         List<GraqlQuery> queries;
         try {
             queries = Graql.parseQueries(queryString).collect(Collectors.toList());
@@ -184,7 +185,7 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert()).get();
-                result.forEach(conceptMap -> printer.conceptMap(conceptMap, tx));
+                printCancellableResult(tx, result);
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
@@ -193,6 +194,19 @@ public class GraknConsole {
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }
+        }
+    }
+
+    private void printCancellableResult(Grakn.Transaction tx, Stream<ConceptMap> conceptMaps) {
+        try {
+            boolean[] isCancelled = new boolean[1];
+            terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
+            Iterator<ConceptMap> iterator = conceptMaps.iterator();
+            while (!isCancelled[0]) {
+                printer.conceptMap(iterator.next(), tx);
+            }
+        } finally {
+            terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }
     }
 

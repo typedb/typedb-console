@@ -51,7 +51,7 @@ public abstract class TransactionReplCommand {
     public static class Commit extends TransactionReplCommand {
         private static String token = "commit";
         private static String helpCommand = token;
-        private static String description = "Commit the transaction changes and close";
+        private static String description = "Commit the transaction changes and close transaction";
     }
 
     public static class Rollback extends TransactionReplCommand {
@@ -94,14 +94,15 @@ public abstract class TransactionReplCommand {
 
     public static String getHelpMenu() {
         List<Pair<String, String>> menu = Arrays.asList(
-                pair(TransactionReplCommand.Exit.helpCommand, TransactionReplCommand.Exit.description),
-                pair(TransactionReplCommand.Help.helpCommand, TransactionReplCommand.Help.description),
-                pair(TransactionReplCommand.Clear.helpCommand, TransactionReplCommand.Clear.description),
+                pair(TransactionReplCommand.Query.helpCommand, TransactionReplCommand.Query.description),
+                pair(TransactionReplCommand.Source.helpCommand, TransactionReplCommand.Source.description),
                 pair(TransactionReplCommand.Commit.helpCommand, TransactionReplCommand.Commit.description),
                 pair(TransactionReplCommand.Rollback.helpCommand, TransactionReplCommand.Rollback.description),
                 pair(TransactionReplCommand.Close.helpCommand, TransactionReplCommand.Close.description),
-                pair(TransactionReplCommand.Source.helpCommand, TransactionReplCommand.Source.description),
-                pair(TransactionReplCommand.Query.helpCommand, TransactionReplCommand.Query.description));
+                pair(TransactionReplCommand.Help.helpCommand, TransactionReplCommand.Help.description),
+                pair(TransactionReplCommand.Clear.helpCommand, TransactionReplCommand.Clear.description),
+                pair(TransactionReplCommand.Exit.helpCommand, TransactionReplCommand.Exit.description)
+        );
         return Utils.buildHelpMenu(menu);
     }
 

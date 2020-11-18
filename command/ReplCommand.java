@@ -103,13 +103,14 @@ public abstract class ReplCommand {
 
     public static String getHelpMenu() {
         List<Pair<String, String>> menu = Arrays.asList(
-                pair(Exit.helpCommand, Exit.description),
-                pair(Help.helpCommand, Help.description),
-                pair(Clear.helpCommand, Clear.description),
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
                 pair(Database.Delete.helpCommand, Database.Delete.description),
-                pair(Transaction.helpCommand, Transaction.description));
+                pair(Transaction.helpCommand, Transaction.description),
+                pair(Help.helpCommand, Help.description),
+                pair(Clear.helpCommand, Clear.description),
+                pair(Exit.helpCommand, Exit.description)
+        );
         return Utils.buildHelpMenu(menu);
     }
 

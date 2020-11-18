@@ -22,7 +22,7 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
 public class CommandLineOptions {
-    @CommandLine.Option(names = {"--server-address"},
+    @CommandLine.Option(names = {"--server"},
             defaultValue = GraknClient.DEFAULT_URI,
             description = "Server address to which the console will connect to")
     private String address;

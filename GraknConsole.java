@@ -240,4 +240,16 @@ public class GraknConsole {
         }
         return null;
     }
+
+    @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
+    public static class CommandLineOptions {
+        @CommandLine.Option(names = {"--server"},
+                defaultValue = GraknClient.DEFAULT_URI,
+                description = "Server address to which the console will connect to")
+        private String address;
+
+        public String address() {
+            return address;
+        }
+    }
 }

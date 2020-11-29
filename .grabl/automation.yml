@@ -12,7 +12,7 @@ build:
       script: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
            bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-           --project-key graknlabs_console --branch=$CIRCLE_BRANCH --commit-id=$CIRCLE_SHA1
+           --project-key graknlabs_console --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
   correctness:
     build:
       machine: graknlabs-ubuntu-20.04
@@ -93,7 +93,7 @@ release:
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @graknlabs_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
+        bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-apt-release:
       machine: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]

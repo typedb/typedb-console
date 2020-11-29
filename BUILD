@@ -134,6 +134,7 @@ deploy_github(
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
+    draft = False
 )
 
 assemble_apt(

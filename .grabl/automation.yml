@@ -82,16 +82,6 @@ release:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         bazel test //:release-validate-deps  --test_output=streamed
   deployment:
-    deploy-artifact:
-      machine: graknlabs-ubuntu-20.04
-      type: foreground
-      script: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(cat VERSION) //:deploy-console-artifact -- release
     deploy-github:
       machine: graknlabs-ubuntu-20.04
       type: foreground
@@ -104,8 +94,9 @@ release:
         bazel run @graknlabs_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
-    deploy-apt:
+    deploy-apt-release:
       machine: graknlabs-ubuntu-20.04
+      dependencies: [deploy-github]
       type: foreground
       script: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
@@ -115,8 +106,9 @@ release:
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
-    deploy-rpm:
+    deploy-rpm-release:
       machine: graknlabs-ubuntu-20.04
+      dependencies: [deploy-github]
       type: foreground
       script: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
@@ -125,3 +117,15 @@ release:
         export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
+    deploy-artifact-release:
+      machine: graknlabs-ubuntu-20.04
+      dependencies: [deploy-github]
+      type: foreground
+      script: |
+        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        bazel run --define version=$(cat VERSION) //:deploy-console-artifact -- release
+    

@@ -30,7 +30,7 @@ build:
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel build //...
+        bazel build --config=rbe //...
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
     deploy-artifact-snapshot:

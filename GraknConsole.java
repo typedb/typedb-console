@@ -190,7 +190,9 @@ public class GraknConsole {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
-                throw new GraknClientException("Match query is not yet supported");
+                tx.query().match(query.asMatch()).forEach(answer ->
+                    printer.conceptMap(answer, tx)
+                );
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }

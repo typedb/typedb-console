@@ -2,8 +2,8 @@ config:
   version-candidate: VERSION
   dependencies:
     dependencies: [build]
-    common: [build, release]
-    client-java: [build, release]
+    common: [build]
+    client-java: [build]
 
 build:
   quality:

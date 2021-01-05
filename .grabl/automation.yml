@@ -13,19 +13,19 @@ build:
     build-analysis:
       image: graknlabs-ubuntu-20.04
       type: foreground
-      script: |
+      command: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
            bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
            --project-key graknlabs_console --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
   correctness:
     build:
       image: graknlabs-ubuntu-20.04
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -40,7 +40,7 @@ build:
       image: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build]
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -54,7 +54,7 @@ build:
       image: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build]
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -68,7 +68,7 @@ build:
       image: graknlabs-ubuntu-20.04
       type: foreground
       dependencies: [build]
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -84,7 +84,7 @@ release:
     validate-dependencies:
       image: graknlabs-ubuntu-20.04
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -93,7 +93,7 @@ release:
     deploy-github:
       image: graknlabs-ubuntu-20.04
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -106,7 +106,7 @@ release:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -118,7 +118,7 @@ release:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
@@ -129,7 +129,7 @@ release:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
       type: foreground
-      script: |
+      command: |
         export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc

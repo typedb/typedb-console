@@ -20,6 +20,9 @@ package grakn.console;
 import grakn.client.Grakn;
 import grakn.client.concept.Concept;
 import grakn.client.concept.answer.ConceptMap;
+import grakn.client.concept.answer.ConceptMapGroup;
+import grakn.client.concept.answer.Numeric;
+import grakn.client.concept.answer.NumericGroup;
 import grakn.client.concept.thing.Attribute;
 import grakn.client.concept.thing.Relation;
 import grakn.client.concept.thing.Thing;
@@ -53,6 +56,18 @@ public class Printer {
 
     public void conceptMap(ConceptMap conceptMap, Grakn.Transaction tx) {
         out.println(conceptMapDisplayString(conceptMap, tx));
+    }
+
+    public void conceptMapGroup(ConceptMapGroup answer, Grakn.Transaction tx) {
+        // TODO
+    }
+
+    public void numeric(Numeric answer) {
+        // TODO
+    }
+
+    public void numericGroup(NumericGroup answer, Grakn.Transaction tx) {
+        // TODO
     }
 
     private String conceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {

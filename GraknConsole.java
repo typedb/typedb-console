@@ -20,7 +20,8 @@ package grakn.console;
 import grakn.client.Grakn;
 import grakn.client.common.exception.GraknClientException;
 import grakn.client.concept.answer.ConceptMap;
-import grakn.client.rpc.GraknClient;
+import grakn.client.GraknClient;
+import grakn.client.concept.answer.Numeric;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;
 import graql.lang.query.*;
@@ -192,6 +193,19 @@ public class GraknConsole {
             } else if (query instanceof GraqlMatch) {
                 tx.query().match(query.asMatch()).forEach(answer ->
                     printer.conceptMap(answer, tx)
+                );
+            }
+            else if (query instanceof GraqlMatch.Aggregate) {
+                Numeric answer = tx.query().match(query.asMatchAggregate()).get();
+                printer.numeric(answer);
+            }
+            else if (query instanceof GraqlMatch.Group) {
+                tx.query().match(query.asMatchGroup()).forEach(answer ->
+                        printer.conceptMapGroup(answer, tx)
+                );
+            } else if (query instanceof GraqlMatch.Group.Aggregate) {
+                tx.query().match(query.asMatchGroupAggregate()).forEach(answer ->
+                        printer.numericGroup(answer, tx)
                 );
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");

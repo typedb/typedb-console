@@ -20,8 +20,10 @@ package grakn.console;
 import grakn.client.Grakn;
 import grakn.client.common.exception.GraknClientException;
 import grakn.client.concept.answer.ConceptMap;
-import grakn.client.GraknClient;
+import grakn.client.concept.answer.ConceptMapGroup;
 import grakn.client.concept.answer.Numeric;
+import grakn.client.concept.answer.NumericGroup;
+import grakn.client.GraknClient;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;
 import graql.lang.query.*;
@@ -38,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -186,40 +189,35 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-                printCancellableResult(tx, result);
+                printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
-                tx.query().match(query.asMatch()).forEach(answer ->
-                    printer.conceptMap(answer, tx)
-                );
-            }
-            else if (query instanceof GraqlMatch.Aggregate) {
+                Stream<ConceptMap> result = tx.query().match(query.asMatch());
+                printCancellableResult(result, x -> printer.conceptMap(x, tx));
+            } else if (query instanceof GraqlMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
-            }
-            else if (query instanceof GraqlMatch.Group) {
-                tx.query().match(query.asMatchGroup()).forEach(answer ->
-                        printer.conceptMapGroup(answer, tx)
-                );
+            } else if (query instanceof GraqlMatch.Group) {
+                Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
+                printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
             } else if (query instanceof GraqlMatch.Group.Aggregate) {
-                tx.query().match(query.asMatchGroupAggregate()).forEach(answer ->
-                        printer.numericGroup(answer, tx)
-                );
+                Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
+                printCancellableResult(result, x -> printer.numericGroup(x, tx));
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }
         }
     }
 
-    private void printCancellableResult(Grakn.Transaction tx, Stream<ConceptMap> conceptMaps) {
+    private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
         try {
             boolean[] isCancelled = new boolean[1];
             terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
-            Iterator<ConceptMap> iterator = conceptMaps.iterator();
+            Iterator<T> iterator = results.iterator();
             while (!isCancelled[0] && iterator.hasNext()) {
-                printer.conceptMap(iterator.next(), tx);
+                printFn.accept(iterator.next());
             }
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);

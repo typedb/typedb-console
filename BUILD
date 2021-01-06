@@ -164,27 +164,27 @@ deploy_apt(
     release = deployment['apt.release'],
 )
 
-assemble_rpm(
-    name = "assemble-linux-rpm",
-    package_name = "grakn-console",
-    installation_dir = "/opt/grakn/core/",
-    spec_file = "//conf/rpm:grakn-console.spec",
-    workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
-    archives = [":console-deps"],
-    files = {
-        "//conf/logback:logback.xml": "console/conf/logback.xml"
-    },
-    empty_dirs = [
-         "opt/grakn/core/console/services/lib/",
-    ],
-)
+# assemble_rpm(
+#     name = "assemble-linux-rpm",
+#     package_name = "grakn-console",
+#     installation_dir = "/opt/grakn/core/",
+#     spec_file = "//conf/rpm:grakn-console.spec",
+#     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
+#     archives = [":console-deps"],
+#     files = {
+#         "//conf/logback:logback.xml": "console/conf/logback.xml"
+#     },
+#     empty_dirs = [
+#          "opt/grakn/core/console/services/lib/",
+#     ],
+# )
 
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-linux-rpm",
-    snapshot = deployment['rpm.snapshot'],
-    release = deployment['rpm.release'],
-)
+# deploy_rpm(
+#     name = "deploy-rpm",
+#     target = ":assemble-linux-rpm",
+#     snapshot = deployment['rpm.snapshot'],
+#     release = deployment['rpm.release'],
+# )
 
 
 release_validate_deps(

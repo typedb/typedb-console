@@ -59,15 +59,17 @@ public class Printer {
     }
 
     public void conceptMapGroup(ConceptMapGroup answer, Grakn.Transaction tx) {
-        // TODO
+        for (ConceptMap conceptMap: answer.conceptMaps()) {
+            out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
+        }
     }
 
     public void numeric(Numeric answer) {
-        // TODO
+        out.println(answer.asNumber());
     }
 
     public void numericGroup(NumericGroup answer, Grakn.Transaction tx) {
-        // TODO
+        out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
     }
 
     private String conceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {

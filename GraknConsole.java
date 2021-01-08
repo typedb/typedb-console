@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,13 @@ import grakn.client.concept.answer.NumericGroup;
 import grakn.client.GraknClient;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;
-import graql.lang.query.*;
+import graql.lang.query.GraqlQuery;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlUndefine;
+import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlMatch;
+import graql.lang.query.GraqlCompute;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
@@ -48,7 +54,7 @@ public class GraknConsole {
     private static final String COPYRIGHT =
             "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2020 Grakn Labs\n";
+            "Copyright (C) 2021 Grakn Labs\n";
     private final CommandLineOptions options;
     private final Printer printer;
     private Terminal terminal;

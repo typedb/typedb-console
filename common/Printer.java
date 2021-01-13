@@ -28,6 +28,7 @@ import grakn.client.concept.thing.Relation;
 import grakn.client.concept.thing.Thing;
 import grakn.client.concept.type.RoleType;
 import grakn.client.concept.type.Type;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.common.GraqlToken;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
@@ -76,9 +77,9 @@ public class Printer {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry: conceptMap.map().entrySet()) {
-            String variable = entry.getKey();
+            Reference.Name variable = Reference.named(entry.getKey());
             Concept concept = entry.getValue();
-            sb.append(variable);
+            sb.append(variable.syntax());
             sb.append(" ");
             sb.append(conceptDisplayString(concept, tx));
             sb.append("; ");
@@ -138,9 +139,13 @@ public class Printer {
 
     private String typeDisplayString(Type type, Grakn.Transaction tx) {
         StringBuilder sb = new StringBuilder();
+
+        String label = type.isRoleType() ? type.asRoleType().getScopedLabel() : type.asThingType().getLabel();
+
         sb.append(colorKeyword(GraqlToken.Constraint.TYPE.toString()))
                 .append(" ")
-                .append(colorType(type.getLabel()));
+                .append(colorType(label));
+
         Type superType = type.asRemote(tx).getSupertype();
         if (superType != null) {
             sb.append(" ")

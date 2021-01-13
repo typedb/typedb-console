@@ -82,7 +82,7 @@ public class GraknConsole {
     private void runRepl(Grakn.Client client) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-command-history").toAbsolutePath())
                 .build();
         while (true) {
             ReplCommand command;

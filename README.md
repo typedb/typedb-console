@@ -25,7 +25,7 @@ You can provide several command arguments when running console in the terminal.
 
 ## Console commands
 
-Grakn Console provides two levels of interaction: database-level commands and transaction-level commands. The database-level command is the first level of interaction, i.e. first-level REPL. From one of the database-level commands, you cna open a transaction to the database. This will open a transaction-level interface, i.e. second-level REPL.
+Grakn Console provides two levels of interaction: database-level commands and transaction-level commands. The database-level command is the first level of interaction, i.e. first-level REPL. From one of the database-level commands, you can open a transaction to the database. This will open a transaction-level interface, i.e. second-level REPL.
 
 ### Database-level commands
 

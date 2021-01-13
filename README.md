@@ -55,7 +55,7 @@ Grakn Console provides two levels of interaction: database-level commands and tr
 
 ### Transaction-level commands
 
-- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line Graql query, and will execute it when you hit enter twice.. For example:
+- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line Graql query, and will execute it when you hit enter twice. For example:
   ```
   my-grakn-database::schema::write> define
                                     name sub attribute, value string;

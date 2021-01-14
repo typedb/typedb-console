@@ -27,71 +27,230 @@ import java.util.Arrays;
 import java.util.List;
 
 import static grakn.common.collection.Collections.pair;
+import static grakn.console.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class TransactionReplCommand {
-    public static class Exit extends TransactionReplCommand {
+public interface TransactionReplCommand {
+
+    default boolean isExit() {
+        return false;
+    }
+
+    default TransactionReplCommand.Exit asExit() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isHelp() {
+        return false;
+    }
+
+    default TransactionReplCommand.Help asHelp() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isClear() {
+        return false;
+    }
+
+    default TransactionReplCommand.Clear asClear() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isCommit() {
+        return false;
+    }
+
+    default TransactionReplCommand.Commit asCommit() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isRollback() {
+        return false;
+    }
+
+    default TransactionReplCommand.Rollback asRollback() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isClose() {
+        return false;
+    }
+
+    default TransactionReplCommand.Close asClose() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isSource() {
+        return false;
+    }
+
+    default TransactionReplCommand.Source asSource() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isQuery() {
+        return false;
+    }
+
+    default TransactionReplCommand.Query asQuery() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    class Exit implements TransactionReplCommand {
+
         private static String token = "exit";
         private static String helpCommand = token;
         private static String description = "Exit console";
+
+        @Override
+        public boolean isExit() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Exit asExit() {
+            return this;
+        }
     }
 
-    public static class Help extends TransactionReplCommand {
+    class Help implements TransactionReplCommand {
+
         private static String token = "help";
         private static String helpCommand = token;
         private static String description = "Print this help menu";
+
+        @Override
+        public boolean isHelp() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Help asHelp() {
+            return this;
+        }
     }
 
-    public static class Clear extends TransactionReplCommand {
+    class Clear implements TransactionReplCommand {
+
         private static String token = "clear";
         private static String helpCommand = token;
         private static String description = "Clear console screen";
+
+        @Override
+        public boolean isClear() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Clear asClear() {
+            return this;
+        }
     }
 
-    public static class Commit extends TransactionReplCommand {
+    class Commit implements TransactionReplCommand {
+
         private static String token = "commit";
         private static String helpCommand = token;
         private static String description = "Commit the transaction changes and close transaction";
+
+        @Override
+        public boolean isCommit() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Commit asCommit() {
+            return this;
+        }
     }
 
-    public static class Rollback extends TransactionReplCommand {
+    class Rollback implements TransactionReplCommand {
+
         private static String token = "rollback";
         private static String helpCommand = token;
         private static String description = "Rollback the transaction to the beginning state";
+
+        @Override
+        public boolean isRollback() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Rollback asRollback() {
+            return this;
+        }
     }
 
-    public static class Close extends TransactionReplCommand {
+    class Close implements TransactionReplCommand {
+
         private static String token = "close";
         private static String helpCommand = token;
         private static String description = "Close the transaction without committing changes";
+
+        @Override
+        public boolean isClose() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Close asClose() {
+            return this;
+        }
     }
 
-    public static class Source extends TransactionReplCommand {
+    class Source implements TransactionReplCommand {
+
         private static String token = "source";
         private static String helpCommand = token + " <file>";
         private static String description = "Run Graql queries in file";
 
         private final String file;
+
         public Source(String file) {
             this.file = file;
         }
-        public String file() { return file; }
+
+        public String file() {
+            return file;
+        }
+
+        @Override
+        public boolean isSource() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Source asSource() {
+            return this;
+        }
     }
 
-    public static class Query extends TransactionReplCommand {
+    class Query implements TransactionReplCommand {
+
         private static String helpCommand = "<query>";
         private static String description = "Run Graql query";
 
         private final String query;
+
         public Query(String query) {
             this.query = query;
         }
-        public String query() { return query; }
+
+        public String query() {
+            return query;
+        }
+
+        @Override
+        public boolean isQuery() {
+            return true;
+        }
+
+        @Override
+        public TransactionReplCommand.Query asQuery() {
+            return this;
+        }
     }
 
-    public TransactionReplCommand.Source asSource() { return (TransactionReplCommand.Source)this; }
-    public TransactionReplCommand.Query asQuery() { return (TransactionReplCommand.Query)this; }
-
-    public static String getHelpMenu() {
+    static String getHelpMenu() {
         List<Pair<String, String>> menu = Arrays.asList(
                 pair(TransactionReplCommand.Query.helpCommand, TransactionReplCommand.Query.description),
                 pair(TransactionReplCommand.Source.helpCommand, TransactionReplCommand.Source.description),
@@ -105,7 +264,7 @@ public abstract class TransactionReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    public static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
+    static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
         TransactionReplCommand command;
         String line = Utils.readNonEmptyLine(reader, prompt);
         String[] tokens = Utils.splitLineByWhitespace(line);
@@ -133,7 +292,7 @@ public abstract class TransactionReplCommand {
         return command;
     }
 
-    private static String readQuery(LineReader reader, String prompt, String firstQueryLine) {
+    static String readQuery(LineReader reader, String prompt, String firstQueryLine) {
         List<String> queryLines = new ArrayList<>();
         queryLines.add(firstQueryLine);
         while (true) {

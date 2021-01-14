@@ -91,33 +91,33 @@ public class GraknConsole {
             } catch (InterruptedException e) {
                 break;
             }
-            if (command instanceof ReplCommand.Exit) {
+            if (command.isExit()) {
                 break;
-            } else if (command instanceof ReplCommand.Help) {
+            } else if (command.isHelp()) {
                 printer.info(ReplCommand.getHelpMenu());
-            } else if (command instanceof ReplCommand.Clear) {
+            } else if (command.isClear()) {
                 reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-            } else if (command instanceof ReplCommand.Database.List) {
+            } else if (command.isDatabaseList()) {
                 try {
                     client.databases().all().forEach(database -> printer.info(database));
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }
-            } else if (command instanceof ReplCommand.Database.Create) {
+            } else if (command.isDatabaseCreate()) {
                 try {
                     client.databases().create(command.asDatabaseCreate().database());
                     printer.info("Database '" + command.asDatabaseCreate().database() + "' created");
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }
-            } else if (command instanceof ReplCommand.Database.Delete) {
+            } else if (command.isDatabaseDelete()) {
                 try {
                     client.databases().delete(command.asDatabaseDelete().database());
                     printer.info("Database '" + command.asDatabaseDelete().database() + "' deleted");
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }
-            } else if (command instanceof ReplCommand.Transaction) {
+            } else if (command.isTransaction()) {
                 String database = command.asTransaction().database();
                 Grakn.Session.Type sessionType = command.asTransaction().sessionType();
                 Grakn.Transaction.Type transactionType = command.asTransaction().transactionType();
@@ -142,24 +142,24 @@ public class GraknConsole {
                 } catch (InterruptedException e) {
                     break;
                 }
-                if (command instanceof TransactionReplCommand.Exit) {
+                if (command.isExit()) {
                     return true;
-                } else if (command instanceof TransactionReplCommand.Clear) {
+                } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-                } else if (command instanceof TransactionReplCommand.Help) {
+                } else if (command.isHelp()) {
                     printer.info(TransactionReplCommand.getHelpMenu());
-                } else if (command instanceof TransactionReplCommand.Commit) {
+                } else if (command.isCommit()) {
                     tx.commit();
                     printer.info("Transaction changes committed");
                     break;
-                } else if (command instanceof TransactionReplCommand.Rollback) {
+                } else if (command.isRollback()) {
                     tx.rollback();
                     printer.info("Rolled back to the beginning of the transaction");
-                } else if (command instanceof TransactionReplCommand.Close) {
+                } else if (command.isClose()) {
                     tx.close();
                     printer.info("Transaction closed without committing changes");
                     break;
-                } else if (command instanceof TransactionReplCommand.Source) {
+                } else if (command.isSource()) {
                     String queryString;
                     try {
                         queryString = new String(Files.readAllBytes(Paths.get(command.asSource().file())), StandardCharsets.UTF_8);
@@ -168,7 +168,7 @@ public class GraknConsole {
                         continue;
                     }
                     runQuery(tx, queryString);
-                } else if (command instanceof TransactionReplCommand.Query) {
+                } else if (command.isQuery()) {
                     runQuery(tx, command.asQuery().query());
                 }
             }

@@ -23,9 +23,11 @@ import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Utils {
+
     public static String buildHelpMenu(List<Pair<String, String>> menu) {
         if (menu.isEmpty()) return "\n";
         int maxHelpCommandLength = menu.stream().map(x -> x.first().length()).max(Integer::compare).get();
@@ -42,13 +44,23 @@ public class Utils {
         return sb.toString();
     }
 
-    public static String[] getTokens(LineReader reader, String prompt) throws InterruptedException {
-        String[] words = null;
-        while (words == null) {
+    public static String readLineWithoutHistory(LineReader reader, String prompt) {
+        String continuationPrompt = getContinuationPrompt(prompt);
+        reader.variable(LineReader.SECONDARY_PROMPT_PATTERN, continuationPrompt);
+        try {
+            reader.variable(LineReader.DISABLE_HISTORY, true);
+            return reader.readLine(prompt);
+        } finally {
+            reader.variable(LineReader.DISABLE_HISTORY, false);
+        }
+    }
+
+    public static String readNonEmptyLine(LineReader reader, String prompt) throws InterruptedException {
+        String line = null;
+        while (line == null) {
             try {
-                String line = reader.readLine(prompt);
-                words = Utils.splitLineByWhitespace(line);
-                if (words.length == 0) words = null;
+                line = readLineWithoutHistory(reader, prompt);
+                if (line.trim().isEmpty()) line = null;
             } catch (UserInterruptException e) {
                 if (reader.getBuffer().toString().isEmpty()) {
                     throw new InterruptedException();
@@ -57,10 +69,14 @@ public class Utils {
                 throw new InterruptedException();
             }
         }
-        return words;
+        return line;
     }
 
-    private static String[] splitLineByWhitespace(String line) {
+    public static String getContinuationPrompt(String prompt) {
+        return String.join("", Collections.nCopies(prompt.length(), " "));
+    }
+
+    public static String[] splitLineByWhitespace(String line) {
         return Arrays.stream(line.split("\\s+")).map(String::trim).filter(x -> !x.isEmpty()).toArray(String[]::new);
     }
 }

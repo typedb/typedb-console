@@ -24,7 +24,6 @@ import org.jline.reader.UserInterruptException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static grakn.common.collection.Collections.pair;
@@ -108,7 +107,8 @@ public abstract class TransactionReplCommand {
 
     public static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
         TransactionReplCommand command;
-        String[] tokens = Utils.getTokens(reader, prompt);
+        String line = Utils.readNonEmptyLine(reader, prompt);
+        String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
             command = new Exit();
         } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
@@ -125,21 +125,22 @@ public abstract class TransactionReplCommand {
             String file = tokens[1];
             command = new Source(file);
         } else {
-            String firstQueryLine = String.join(" ", tokens);
-            String query = getQuery(reader, firstQueryLine, prompt.length());
+            String query = readQuery(reader, prompt, line);
             command = new Query(query);
         }
+        if (command instanceof Query) reader.getHistory().add(command.asQuery().query().trim());
+        else reader.getHistory().add(line.trim());
         return command;
     }
 
-    private static String getQuery(LineReader reader, String firstQueryLine, int indentation) {
+    private static String readQuery(LineReader reader, String prompt, String firstQueryLine) {
         List<String> queryLines = new ArrayList<>();
         queryLines.add(firstQueryLine);
         while (true) {
-            String prompt = String.join("", Collections.nCopies(indentation, " "));
+            String queryPrompt = Utils.getContinuationPrompt(prompt);
             String queryLine;
             try {
-                queryLine = reader.readLine(prompt);
+                queryLine = Utils.readLineWithoutHistory(reader, queryPrompt);
             } catch (UserInterruptException | EndOfFileException e) {
                 break;
             }

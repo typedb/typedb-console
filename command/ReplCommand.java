@@ -117,7 +117,8 @@ public abstract class ReplCommand {
     public static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) throws InterruptedException {
         ReplCommand command = null;
         while (command == null) {
-            String[] tokens = Utils.getTokens(reader, prompt);
+            String line = Utils.readNonEmptyLine(reader, prompt);
+            String[] tokens = Utils.splitLineByWhitespace(line);
             if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
                 command = new Exit();
             } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
@@ -141,6 +142,7 @@ public abstract class ReplCommand {
             } else {
                 printer.error("Unrecognised command, please check help menu");
             }
+            reader.getHistory().add(line.trim());
         }
         return command;
     }

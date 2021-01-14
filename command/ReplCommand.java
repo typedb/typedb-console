@@ -25,61 +25,195 @@ import java.util.Arrays;
 import java.util.List;
 
 import static grakn.common.collection.Collections.pair;
+import static grakn.console.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class ReplCommand {
-    public static class Exit extends ReplCommand {
+public interface ReplCommand {
+
+    default boolean isExit() {
+        return false;
+    }
+
+    default Exit asExit() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isHelp() {
+        return false;
+    }
+
+    default Help asHelp() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isClear() {
+        return false;
+    }
+
+    default Clear asClear() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isDatabaseList() {
+        return false;
+    }
+
+    default Database.List asDatabaseList() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isDatabaseCreate() {
+        return false;
+    }
+
+    default Database.Create asDatabaseCreate() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isDatabaseDelete() {
+        return false;
+    }
+
+    default Database.Delete asDatabaseDelete() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isTransaction() {
+        return false;
+    }
+
+    default Transaction asTransaction() {
+        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    class Exit implements ReplCommand {
+
         private static String token = "exit";
         private static String helpCommand = token;
         private static String description = "Exit console";
+
+        @Override
+        public boolean isExit() {
+            return true;
+        }
+
+        @Override
+        public Exit asExit() {
+            return this;
+        }
     }
 
-    public static class Help extends ReplCommand {
+    class Help implements ReplCommand {
+
         private static String token = "help";
         private static String helpCommand = token;
         private static String description = "Print this help menu";
+
+        @Override
+        public boolean isHelp() {
+            return true;
+        }
+
+        @Override
+        public Help asHelp() {
+            return this;
+        }
     }
 
-    public static class Clear extends ReplCommand {
+    class Clear implements ReplCommand {
+
         private static String token = "clear";
         private static String helpCommand = token;
         private static String description = "Clear console screen";
+
+        @Override
+        public boolean isClear() {
+            return true;
+        }
+
+        @Override
+        public Clear asClear() {
+            return this;
+        }
     }
 
-    public static abstract class Database extends ReplCommand {
+    abstract class Database implements ReplCommand {
+
         private static String token = "database";
 
         public static class List extends ReplCommand.Database {
+
             private static String token = "list";
             private static String helpCommand = Database.token + " " + token;
             private static String description = "List the databases on the server";
+
+            @Override
+            public boolean isDatabaseList() {
+                return true;
+            }
+
+            @Override
+            public Database.List asDatabaseList() {
+                return this;
+            }
         }
 
         public static class Create extends ReplCommand.Database {
+
             private static String token = "create";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Create a database with name <db> on the server";
 
             private final String database;
+
             public Create(String database) {
                 this.database = database;
             }
-            public String database() { return database; }
+
+            public String database() {
+                return database;
+            }
+
+            @Override
+            public boolean isDatabaseCreate() {
+                return true;
+            }
+
+            @Override
+            public Database.Create asDatabaseCreate() {
+                return this;
+            }
         }
 
         public static class Delete extends ReplCommand.Database {
+
             private static String token = "delete";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Delete a database with name <db> on the server";
 
             private final String database;
+
             public Delete(String database) {
                 this.database = database;
             }
-            public String database() { return database; }
+
+            public String database() {
+                return database;
+            }
+
+            @Override
+            public boolean isDatabaseDelete() {
+                return true;
+            }
+
+            @Override
+            public Database.Delete asDatabaseDelete() {
+                return this;
+            }
         }
     }
 
-    public static class Transaction extends ReplCommand {
+    class Transaction implements ReplCommand {
+
         private static String token = "transaction";
         private static String helpCommand = token + " <db> schema|data read|write";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
@@ -87,21 +221,37 @@ public abstract class ReplCommand {
         private final String database;
         private final Grakn.Session.Type sessionType;
         private final Grakn.Transaction.Type transactionType;
+
         public Transaction(String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
             this.database = database;
             this.sessionType = sessionType;
             this.transactionType = transactionType;
         }
-        public String database() { return database; }
-        public Grakn.Session.Type sessionType() { return sessionType; }
-        public Grakn.Transaction.Type transactionType() { return transactionType; }
+
+        public String database() {
+            return database;
+        }
+
+        public Grakn.Session.Type sessionType() {
+            return sessionType;
+        }
+
+        public Grakn.Transaction.Type transactionType() {
+            return transactionType;
+        }
+
+        @Override
+        public boolean isTransaction() {
+            return true;
+        }
+
+        @Override
+        public Transaction asTransaction() {
+            return this;
+        }
     }
 
-    public Database.Create asDatabaseCreate() { return (Database.Create)this; }
-    public Database.Delete asDatabaseDelete() { return (Database.Delete)this; }
-    public Transaction asTransaction() { return (Transaction) this; }
-
-    public static String getHelpMenu() {
+    static String getHelpMenu() {
         List<Pair<String, String>> menu = Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
@@ -114,7 +264,7 @@ public abstract class ReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    public static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) throws InterruptedException {
+    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) throws InterruptedException {
         ReplCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);

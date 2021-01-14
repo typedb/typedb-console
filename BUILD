@@ -41,7 +41,7 @@ genrule(
 
 java_library(
     name = "console",
-    srcs = glob(["*.java", "command/*.java", "common/*.java"]) + [":version"],
+    srcs = glob(["*.java", "command/*.java", "common/*.java", "common/exception/*.java"]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
@@ -201,7 +201,7 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "command/*", "common/*", ".grabl/*"]),
+    include = glob(["*", "command/*", "common/*", "common/exception/*", ".grabl/*"]),
     license_type = "agpl",
 )
 

@@ -194,27 +194,35 @@ public class GraknConsole {
                 tx.query().undefine(query.asUndefine()).get();
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
+                long start = System.nanoTime();
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 int counter = printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                printer.info("Number of answers: " + counter);
+                long end = System.nanoTime();
+                printer.info("Number of answers: " + counter + ", it took " + (end - start) +" nanoseconds.");
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
+                long start = System.nanoTime();
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
                 int counter = printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                printer.info("Number of answers: " + counter);
+                long end = System.nanoTime();
+                printer.info("Number of answers: " + counter + ", it took " + (end - start) +" nanoseconds.");
             } else if (query instanceof GraqlMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
             } else if (query instanceof GraqlMatch.Group) {
+                long start = System.nanoTime();
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
                 int counter = printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
-                printer.info("Number of answers: " + counter);
+                long end = System.nanoTime();
+                printer.info("Number of answers: " + counter + ", it took " + (end - start) +" nanoseconds.");
             } else if (query instanceof GraqlMatch.Group.Aggregate) {
+                long start = System.nanoTime();
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
                 int counter = printCancellableResult(result, x -> printer.numericGroup(x, tx));
-                printer.info("Number of answers: " + counter);
+                long end = System.nanoTime();
+                printer.info("Number of answers: " + counter + ", it took " + (end - start) +" nanoseconds.");
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }

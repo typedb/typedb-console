@@ -195,39 +195,46 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-                printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                int counter = printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                printer.info("Number of answers: " + counter);
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
-                printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                int counter = printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                printer.info("Number of answers: " + counter);
             } else if (query instanceof GraqlMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
             } else if (query instanceof GraqlMatch.Group) {
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
-                printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
+                int counter = printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
+                printer.info("Number of answers: " + counter);
             } else if (query instanceof GraqlMatch.Group.Aggregate) {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
-                printCancellableResult(result, x -> printer.numericGroup(x, tx));
+                int counter = printCancellableResult(result, x -> printer.numericGroup(x, tx));
+                printer.info("Number of answers: " + counter);
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }
         }
     }
 
-    private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
+    private <T> int printCancellableResult(Stream<T> results, Consumer<T> printFn) {
+        int counter = 0;
         try {
             boolean[] isCancelled = new boolean[1];
             terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
             Iterator<T> iterator = results.iterator();
             while (!isCancelled[0] && iterator.hasNext()) {
                 printFn.accept(iterator.next());
+                counter++;
             }
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }
+        return counter;
     }
 
     public static void main(String[] args) {

@@ -72,7 +72,7 @@ public class GraknConsole {
 
     public void run() {
         printer.info(COPYRIGHT);
-        try (Grakn.Client client = new GraknClient(options.address())) {
+        try (Grakn.Client client = new GraknClient.Cluster(options.address())) {
             runRepl(client);
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
@@ -264,7 +264,7 @@ public class GraknConsole {
     @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
     public static class CommandLineOptions {
         @CommandLine.Option(names = {"--server"},
-                defaultValue = GraknClient.DEFAULT_URI,
+                defaultValue = GraknClient.DEFAULT_ADDRESS,
                 description = "Server address to which the console will connect to")
         private String address;
 

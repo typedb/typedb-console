@@ -44,6 +44,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -219,7 +221,7 @@ public class GraknConsole {
 
     private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
         long counter = 0;
-        long start = System.nanoTime();
+        Instant start = Instant.now();
 
         try {
             boolean[] isCancelled = new boolean[1];
@@ -232,8 +234,8 @@ public class GraknConsole {
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }
-        long end = System.nanoTime();
-        printer.info("answers: " + counter + ", duration: " + (end - start) / 1000000 +" ms");
+        Instant end = Instant.now();
+        printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
     }
 
     public static void main(String[] args) {

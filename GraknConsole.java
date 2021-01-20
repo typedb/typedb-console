@@ -194,14 +194,12 @@ public class GraknConsole {
                 tx.query().undefine(query.asUndefine()).get();
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
-                System.nanoTime();
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
-                System.nanoTime();
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
                 printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlMatch.Aggregate) {

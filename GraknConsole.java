@@ -18,21 +18,21 @@
 package grakn.console;
 
 import grakn.client.Grakn;
+import grakn.client.GraknClient;
 import grakn.client.common.exception.GraknClientException;
 import grakn.client.concept.answer.ConceptMap;
 import grakn.client.concept.answer.ConceptMapGroup;
 import grakn.client.concept.answer.Numeric;
 import grakn.client.concept.answer.NumericGroup;
-import grakn.client.GraknClient;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;
-import graql.lang.query.GraqlQuery;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlUndefine;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlCompute;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlMatch;
+import graql.lang.query.GraqlQuery;
+import graql.lang.query.GraqlUndefine;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
@@ -40,6 +40,7 @@ import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.InfoCmp;
 import picocli.CommandLine;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,8 +54,8 @@ import java.util.stream.Stream;
 public class GraknConsole {
     private static final String COPYRIGHT =
             "\n" +
-            "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2021 Grakn Labs\n";
+                    "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
+                    "Copyright (C) 2021 Grakn Labs\n";
     private final CommandLineOptions options;
     private final Printer printer;
     private Terminal terminal;
@@ -72,11 +73,23 @@ public class GraknConsole {
 
     public void run() {
         printer.info(COPYRIGHT);
-        try (Grakn.Client client = new GraknClient.Cluster(options.address())) {
+        try (Grakn.Client client = createGraknClient(options)) {
             runRepl(client);
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         }
+    }
+
+    private Grakn.Client createGraknClient(CommandLineOptions options) {
+        Grakn.Client client;
+        if (options.server() != null) {
+            client = GraknClient.core(options.server());
+        } else if (options.cluster() != null) {
+            client = GraknClient.cluster(options.cluster());
+        } else {
+            client = GraknClient.core();
+        }
+        return client;
     }
 
     private void runRepl(Grakn.Client client) {
@@ -263,13 +276,25 @@ public class GraknConsole {
 
     @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
     public static class CommandLineOptions {
-        @CommandLine.Option(names = {"--server"},
-                defaultValue = GraknClient.DEFAULT_ADDRESS,
-                description = "Server address to which the console will connect to")
-        private String address;
 
-        public String address() {
-            return address;
+        @CommandLine.Option(names = {"--server"},
+                description = "Grakn Core address to which Console will connect to")
+        private @Nullable
+        String server;
+
+        @Nullable
+        public String server() {
+            return server;
+        }
+
+        @CommandLine.Option(names = {"--cluster"},
+                description = "Grakn Cluster address to which Console will connect to")
+        private @Nullable
+        String cluster;
+
+        @Nullable
+        public String cluster() {
+            return cluster;
         }
     }
 }

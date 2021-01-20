@@ -28,8 +28,8 @@ import grakn.client.concept.thing.Relation;
 import grakn.client.concept.thing.Thing;
 import grakn.client.concept.type.RoleType;
 import grakn.client.concept.type.Type;
-import graql.lang.pattern.variable.Reference;
 import graql.lang.common.GraqlToken;
+import graql.lang.pattern.variable.Reference;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -60,7 +60,7 @@ public class Printer {
     }
 
     public void conceptMapGroup(ConceptMapGroup answer, Grakn.Transaction tx) {
-        for (ConceptMap conceptMap: answer.conceptMaps()) {
+        for (ConceptMap conceptMap : answer.conceptMaps()) {
             out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
         }
     }
@@ -76,7 +76,7 @@ public class Printer {
     private String conceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
-        for (Map.Entry<String, Concept> entry: conceptMap.map().entrySet()) {
+        for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
             Reference.Name variable = Reference.named(entry.getKey());
             Concept concept = entry.getValue();
             sb.append(variable.syntax());

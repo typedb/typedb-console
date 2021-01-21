@@ -77,7 +77,7 @@ public class Printer {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
-            Reference.Name variable = Reference.named(entry.getKey());
+            Reference.Name variable = Reference.name(entry.getKey());
             Concept concept = entry.getValue();
             sb.append(variable.syntax());
             sb.append(" ");

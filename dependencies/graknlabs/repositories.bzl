@@ -21,7 +21,7 @@ def graknlabs_dependencies():
     git_repository(
         name = "graknlabs_dependencies",
         remote = "https://github.com/graknlabs/dependencies",
-        commit = "f40b54f36acc91f1ef089058773ec0304dc38ce8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+        commit = "ca7d021093fe1308b7da52d45809bf06a1d95bc6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
     )
 
 def graknlabs_common():
@@ -35,5 +35,5 @@ def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/graknlabs/client-java",
-        commit = "05b0470962430dadf15a5d04a7e6eb4ff29db820",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+        commit = "206a1c277a51c7e135e1d2e20fa9f988c0b387ad",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
     )

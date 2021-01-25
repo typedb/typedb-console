@@ -114,7 +114,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-console-windows",
-    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"]
 )
 

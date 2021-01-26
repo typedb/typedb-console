@@ -47,7 +47,7 @@ build:
         export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel build //...
+        bazel build --config=rbe //...
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
     deploy-artifact-snapshot:
@@ -63,7 +63,7 @@ build:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-console-artifact -- snapshot
+        bazel run --config=rbe --define version=$(git rev-parse HEAD) //:deploy-console-artifact -- snapshot
     deploy-apt-snapshot:
       filter:
         owner: graknlabs
@@ -77,7 +77,7 @@ build:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
+        bazel run --config=rbe --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     # deploy-rpm-snapshot:
     #   filter:
     #     owner: graknlabs
@@ -91,7 +91,7 @@ build:
     #     bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
     #     export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
     #     export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-    #     bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
+    #     bazel run --config=rbe --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
 
 release:
   filter:
@@ -118,7 +118,7 @@ release:
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @graknlabs_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
+        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-apt-release:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
@@ -130,7 +130,7 @@ release:
         cat VERSION
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(cat VERSION) //:deploy-apt -- release
+        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-apt -- release
     # deploy-rpm-release:
     #   image: graknlabs-ubuntu-20.04
     #   dependencies: [deploy-github]
@@ -141,7 +141,7 @@ release:
     #     bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
     #     export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
     #     export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-    #     bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
+    #     bazel run --config=rbe --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
     deploy-artifact-release:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
@@ -152,5 +152,5 @@ release:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(cat VERSION) //:deploy-console-artifact -- release
+        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-console-artifact -- release
     

@@ -114,7 +114,8 @@ public class GraknConsole {
                 reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
             } else if (command.isDatabaseList()) {
                 try {
-                    client.databases().all().forEach(database -> printer.info(database));
+                    if (client.databases().all().size() > 0) client.databases().all().forEach(printer::info);
+                    else printer.info("No databases are present on the server.");
                 } catch (GraknClientException e) {
                     printer.error(e.getMessage());
                 }

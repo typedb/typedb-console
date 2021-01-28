@@ -17,7 +17,7 @@
 
 package grakn.console;
 
-import grakn.client.Grakn;
+import grakn.client.GraknClient;
 import grakn.client.concept.Concept;
 import grakn.client.concept.answer.ConceptMap;
 import grakn.client.concept.answer.ConceptMapGroup;
@@ -55,11 +55,11 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptMap(ConceptMap conceptMap, Grakn.Transaction tx) {
+    public void conceptMap(ConceptMap conceptMap, GraknClient.Transaction tx) {
         out.println(conceptMapDisplayString(conceptMap, tx));
     }
 
-    public void conceptMapGroup(ConceptMapGroup answer, Grakn.Transaction tx) {
+    public void conceptMapGroup(ConceptMapGroup answer, GraknClient.Transaction tx) {
         for (ConceptMap conceptMap : answer.conceptMaps()) {
             out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
         }
@@ -69,11 +69,11 @@ public class Printer {
         out.println(answer.asNumber());
     }
 
-    public void numericGroup(NumericGroup answer, Grakn.Transaction tx) {
+    public void numericGroup(NumericGroup answer, GraknClient.Transaction tx) {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
     }
 
-    private String conceptMapDisplayString(ConceptMap conceptMap, Grakn.Transaction tx) {
+    private String conceptMapDisplayString(ConceptMap conceptMap, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
@@ -88,7 +88,7 @@ public class Printer {
         return sb.toString();
     }
 
-    private String conceptDisplayString(Concept concept, Grakn.Transaction tx) {
+    private String conceptDisplayString(Concept concept, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         if (concept instanceof Attribute<?>) {
             sb.append(attributeDisplayString(concept.asThing().asAttribute()));
@@ -106,14 +106,14 @@ public class Printer {
         return sb.toString();
     }
 
-    private String isaDisplayString(Thing thing, Grakn.Transaction tx) {
+    private String isaDisplayString(Thing thing, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         Type type = thing.asRemote(tx).getType();
         sb.append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel()));
         return sb.toString();
     }
 
-    private String relationDisplayString(Relation relation, Grakn.Transaction tx) {
+    private String relationDisplayString(Relation relation, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         List<String> rolePlayerStrings = new ArrayList<>();
         Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.asRemote(tx).getPlayersByRoleType();
@@ -137,7 +137,7 @@ public class Printer {
         return sb.toString();
     }
 
-    private String typeDisplayString(Type type, Grakn.Transaction tx) {
+    private String typeDisplayString(Type type, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
 
         String label = type.isRoleType() ? type.asRoleType().getScopedLabel() : type.asThingType().getLabel();

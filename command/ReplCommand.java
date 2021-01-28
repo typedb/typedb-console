@@ -17,7 +17,7 @@
 
 package grakn.console;
 
-import grakn.client.Grakn;
+import grakn.client.GraknClient;
 import grakn.common.collection.Pair;
 import org.jline.reader.LineReader;
 
@@ -219,10 +219,10 @@ public interface ReplCommand {
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
-        private final Grakn.Session.Type sessionType;
-        private final Grakn.Transaction.Type transactionType;
+        private final GraknClient.Session.Type sessionType;
+        private final GraknClient.Transaction.Type transactionType;
 
-        public Transaction(String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
+        public Transaction(String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType) {
             this.database = database;
             this.sessionType = sessionType;
             this.transactionType = transactionType;
@@ -232,11 +232,11 @@ public interface ReplCommand {
             return database;
         }
 
-        public Grakn.Session.Type sessionType() {
+        public GraknClient.Session.Type sessionType() {
             return sessionType;
         }
 
-        public Grakn.Transaction.Type transactionType() {
+        public GraknClient.Transaction.Type transactionType() {
             return transactionType;
         }
 
@@ -286,8 +286,8 @@ public interface ReplCommand {
             } else if (tokens.length == 4 && tokens[0].equals(Transaction.token) &&
                     (tokens[2].equals("schema") || tokens[2].equals("data") && (tokens[3].equals("read") || tokens[3].equals("write")))) {
                 String database = tokens[1];
-                Grakn.Session.Type sessionType = tokens[2].equals("schema") ? Grakn.Session.Type.SCHEMA : Grakn.Session.Type.DATA;
-                Grakn.Transaction.Type transactionType = tokens[3].equals("read") ? Grakn.Transaction.Type.READ : Grakn.Transaction.Type.WRITE;
+                GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
+                GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
                 command = new Transaction(database, sessionType, transactionType);
             } else {
                 printer.error("Unrecognised command, please check help menu");

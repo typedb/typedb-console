@@ -17,7 +17,6 @@
 
 package grakn.console;
 
-import grakn.client.Grakn;
 import grakn.client.GraknClient;
 import grakn.client.common.exception.GraknClientException;
 import grakn.client.concept.answer.ConceptMap;
@@ -75,15 +74,15 @@ public class GraknConsole {
 
     public void run() {
         printer.info(COPYRIGHT);
-        try (Grakn.Client client = createGraknClient(options)) {
+        try (GraknClient client = createGraknClient(options)) {
             runRepl(client);
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         }
     }
 
-    private Grakn.Client createGraknClient(CommandLineOptions options) {
-        Grakn.Client client;
+    private GraknClient createGraknClient(CommandLineOptions options) {
+        GraknClient client;
         if (options.server() != null) {
             client = GraknClient.core(options.server());
         } else if (options.cluster() != null) {
@@ -94,7 +93,7 @@ public class GraknConsole {
         return client;
     }
 
-    private void runRepl(Grakn.Client client) {
+    private void runRepl(GraknClient client) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-command-history").toAbsolutePath())
@@ -135,22 +134,22 @@ public class GraknConsole {
                 }
             } else if (command.isTransaction()) {
                 String database = command.asTransaction().database();
-                Grakn.Session.Type sessionType = command.asTransaction().sessionType();
-                Grakn.Transaction.Type transactionType = command.asTransaction().transactionType();
+                GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
+                GraknClient.Transaction.Type transactionType = command.asTransaction().transactionType();
                 boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType);
                 if (shouldExit) break;
             }
         }
     }
 
-    private boolean runTransactionRepl(Grakn.Client client, String database, Grakn.Session.Type sessionType, Grakn.Transaction.Type transactionType) {
+    private boolean runTransactionRepl(GraknClient client, String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-transaction-history").toAbsolutePath())
                 .build();
         String prompt = database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase() + "> ";
-        try (Grakn.Session session = client.session(database, sessionType);
-             Grakn.Transaction tx = session.transaction(transactionType)) {
+        try (GraknClient.Session session = client.session(database, sessionType);
+             GraknClient.Transaction tx = session.transaction(transactionType)) {
             while (true) {
                 TransactionReplCommand command;
                 try {
@@ -194,7 +193,7 @@ public class GraknConsole {
         return false;
     }
 
-    private void runQuery(Grakn.Transaction tx, String queryString) {
+    private void runQuery(GraknClient.Transaction tx, String queryString) {
         List<GraqlQuery> queries;
         try {
             queries = Graql.parseQueries(queryString).collect(Collectors.toList());

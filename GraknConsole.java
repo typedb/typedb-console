@@ -269,7 +269,8 @@ public class GraknConsole {
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
-            executorService.shutdown();
+
+            printer.info("Stream was shut down in the console, but the Grakn Server might still be working on last answers for some time.");
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }

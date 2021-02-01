@@ -48,6 +48,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -201,6 +205,9 @@ public class GraknConsole {
             printer.error(e.getMessage());
             return;
         }
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
         for (GraqlQuery query : queries) {
             if (query instanceof GraqlDefine) {
                 tx.query().define(query.asDefine()).get();
@@ -210,39 +217,49 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-                printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                printCancellableResult(executorService, result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
-                printCancellableResult(result, x -> printer.conceptMap(x, tx));
+                printCancellableResult(executorService, result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
             } else if (query instanceof GraqlMatch.Group) {
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
-                printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
+                printCancellableResult(executorService, result, x -> printer.conceptMapGroup(x, tx));
             } else if (query instanceof GraqlMatch.Group.Aggregate) {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
-                printCancellableResult(result, x -> printer.numericGroup(x, tx));
+                printCancellableResult(executorService, result, x -> printer.numericGroup(x, tx));
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }
         }
     }
 
-    private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
-        long counter = 0;
+    private <T> void printCancellableResult(ExecutorService executorService, Stream<T> results, Consumer<T> printFn) {
+        AtomicLong counter = new AtomicLong();
         Instant start = Instant.now();
 
         try {
             boolean[] isCancelled = new boolean[1];
             terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
+
             Iterator<T> iterator = results.iterator();
+
             while (!isCancelled[0] && iterator.hasNext()) {
-                counter++;
-                printFn.accept(iterator.next());
+                Future<?> future = executorService.submit(() -> {
+                    printFn.accept(iterator.next());
+                    counter.getAndIncrement();
+                });
+
+                while(!future.isDone()) {
+                    if(isCancelled[0]) {
+                        future.cancel(true);
+                    }
+                }
             }
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);

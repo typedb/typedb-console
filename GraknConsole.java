@@ -48,12 +48,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -68,9 +63,12 @@ public class GraknConsole {
     private final Printer printer;
     private Terminal terminal;
 
+    private static ExecutorService executorService = null;
+
     public GraknConsole(CommandLineOptions options, Printer printer) {
         this.options = options;
         this.printer = printer;
+        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         try {
             this.terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException e) {
@@ -109,7 +107,15 @@ public class GraknConsole {
             ReplCommand command;
             try {
                 command = ReplCommand.getCommand(reader, printer, "> ");
-            } catch (InterruptedException e) {
+            } catch (InterruptedException e1) {
+                executorService.shutdown();
+                try {
+                    if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                        executorService.shutdownNow();
+                    }
+                } catch (InterruptedException e2) {
+                    executorService.shutdownNow();
+                }
                 break;
             }
             if (command.isExit()) {
@@ -209,7 +215,6 @@ public class GraknConsole {
             return;
         }
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         for (GraqlQuery query : queries) {
             if (query instanceof GraqlDefine) {
@@ -220,44 +225,35 @@ public class GraknConsole {
                 printer.info("Concepts have been undefined");
             } else if (query instanceof GraqlInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-                printCancellableResult(executorService, result, x -> printer.conceptMap(x, tx));
+                printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
             } else if (query instanceof GraqlMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
-                printCancellableResult(executorService, result, x -> printer.conceptMap(x, tx));
+                printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof GraqlMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
             } else if (query instanceof GraqlMatch.Group) {
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
-                printCancellableResult(executorService, result, x -> printer.conceptMapGroup(x, tx));
+                printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
             } else if (query instanceof GraqlMatch.Group.Aggregate) {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
-                printCancellableResult(executorService, result, x -> printer.numericGroup(x, tx));
+                printCancellableResult(result, x -> printer.numericGroup(x, tx));
             } else if (query instanceof GraqlCompute) {
                 throw new GraknClientException("Compute query is not yet supported");
             }
         }
-
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-        }
     }
 
-    private <T> void printCancellableResult(ExecutorService executorService, Stream<T> results, Consumer<T> printFn) {
+    private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
         AtomicLong counter = new AtomicLong();
         Instant start = Instant.now();
         try {
             Iterator<T> iterator = results.iterator();
             Future<?> answerPrintingJob = executorService.submit(() -> {
-                while (iterator.hasNext()) {
+                while (iterator.hasNext() && !Thread.interrupted()) {
                     printFn.accept(iterator.next());
                     counter.getAndIncrement();
                 }

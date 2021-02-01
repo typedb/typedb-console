@@ -238,6 +238,15 @@ public class GraknConsole {
                 throw new GraknClientException("Compute query is not yet supported");
             }
         }
+
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+        }
     }
 
     private <T> void printCancellableResult(ExecutorService executorService, Stream<T> results, Consumer<T> printFn) {
@@ -260,7 +269,8 @@ public class GraknConsole {
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
-        }finally {
+            executorService.shutdown();
+        } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }
     }

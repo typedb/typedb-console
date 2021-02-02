@@ -48,6 +48,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,9 +63,12 @@ public class GraknConsole {
     private final Printer printer;
     private Terminal terminal;
 
+    private static ExecutorService executorService = null;
+
     public GraknConsole(CommandLineOptions options, Printer printer) {
         this.options = options;
         this.printer = printer;
+        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         try {
             this.terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException e) {
@@ -102,7 +107,15 @@ public class GraknConsole {
             ReplCommand command;
             try {
                 command = ReplCommand.getCommand(reader, printer, "> ");
-            } catch (InterruptedException e) {
+            } catch (InterruptedException e1) {
+                executorService.shutdown();
+                try {
+                    if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                        executorService.shutdownNow();
+                    }
+                } catch (InterruptedException e2) {
+                    executorService.shutdownNow();
+                }
                 break;
             }
             if (command.isExit()) {
@@ -201,6 +214,8 @@ public class GraknConsole {
             printer.error(e.getMessage());
             return;
         }
+
+
         for (GraqlQuery query : queries) {
             if (query instanceof GraqlDefine) {
                 tx.query().define(query.asDefine()).get();
@@ -233,22 +248,30 @@ public class GraknConsole {
     }
 
     private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
-        long counter = 0;
+        AtomicLong counter = new AtomicLong();
         Instant start = Instant.now();
-
         try {
-            boolean[] isCancelled = new boolean[1];
-            terminal.handle(Terminal.Signal.INT, s -> isCancelled[0] = true);
             Iterator<T> iterator = results.iterator();
-            while (!isCancelled[0] && iterator.hasNext()) {
-                counter++;
-                printFn.accept(iterator.next());
-            }
+            Future<?> answerPrintingJob = executorService.submit(() -> {
+                while (iterator.hasNext() && !Thread.interrupted()) {
+                    printFn.accept(iterator.next());
+                    counter.getAndIncrement();
+                }
+            });
+            terminal.handle(Terminal.Signal.INT, s -> answerPrintingJob.cancel(true));
+            answerPrintingJob.get();
+            Instant end = Instant.now();
+            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } catch (CancellationException e) {
+            Instant end = Instant.now();
+            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
+
+            printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
         }
-        Instant end = Instant.now();
-        printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
     }
 
     public static void main(String[] args) {

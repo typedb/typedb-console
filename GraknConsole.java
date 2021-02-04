@@ -108,11 +108,11 @@ public class GraknConsole {
             try {
                 command = ReplCommand.getCommand(reader, printer, "> ");
             } catch (InterruptedException e) {
-                shutdownQueryJobs();
+                executorService.shutdownNow();
                 break;
             }
             if (command.isExit()) {
-                shutdownQueryJobs();
+                executorService.shutdownNow();
                 break;
             } else if (command.isHelp()) {
                 printer.info(ReplCommand.getHelpMenu());
@@ -165,7 +165,7 @@ public class GraknConsole {
                     break;
                 }
                 if (command.isExit()) {
-                    shutdownQueryJobs();
+                    executorService.shutdownNow();
                     return true;
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
@@ -265,17 +265,6 @@ public class GraknConsole {
             printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);
-        }
-    }
-
-    private void shutdownQueryJobs() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
         }
     }
 

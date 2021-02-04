@@ -258,7 +258,7 @@ public class GraknConsole {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            throw (RuntimeException)e.getCause();
+            throw (GraknClientException)e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() + " ms");

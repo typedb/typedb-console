@@ -107,7 +107,7 @@ public class GraknConsole {
             ReplCommand command;
             try {
                 command = ReplCommand.getCommand(reader, printer, "> ");
-            } catch (InterruptedException e1) {
+            } catch (InterruptedException e) {
                 shutdownQueryJobs();
                 break;
             }
@@ -274,7 +274,7 @@ public class GraknConsole {
             if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS)) {
                 executorService.shutdownNow();
             }
-        } catch (InterruptedException e2) {
+        } catch (InterruptedException e) {
             executorService.shutdownNow();
         }
     }

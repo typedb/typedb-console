@@ -107,18 +107,12 @@ public class GraknConsole {
             ReplCommand command;
             try {
                 command = ReplCommand.getCommand(reader, printer, "> ");
-            } catch (InterruptedException e1) {
-                executorService.shutdown();
-                try {
-                    if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
-                        executorService.shutdownNow();
-                    }
-                } catch (InterruptedException e2) {
-                    executorService.shutdownNow();
-                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
                 break;
             }
             if (command.isExit()) {
+                executorService.shutdownNow();
                 break;
             } else if (command.isHelp()) {
                 printer.info(ReplCommand.getHelpMenu());
@@ -171,6 +165,7 @@ public class GraknConsole {
                     break;
                 }
                 if (command.isExit()) {
+                    executorService.shutdownNow();
                     return true;
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
@@ -214,8 +209,6 @@ public class GraknConsole {
             printer.error(e.getMessage());
             return;
         }
-
-
         for (GraqlQuery query : queries) {
             if (query instanceof GraqlDefine) {
                 tx.query().define(query.asDefine()).get();
@@ -261,13 +254,14 @@ public class GraknConsole {
             terminal.handle(Terminal.Signal.INT, s -> answerPrintingJob.cancel(true));
             answerPrintingJob.get();
             Instant end = Instant.now();
-            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
-        } catch (InterruptedException | ExecutionException e) {
+            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() + " ms");
+        } catch (InterruptedException e) {
             e.printStackTrace();
+        } catch (ExecutionException e) {
+            throw (RuntimeException)e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
-            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() +" ms");
-
+            printer.info("answers: " + counter + ", duration: " + Duration.between(start, end).toMillis() + " ms");
             printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
         } finally {
             terminal.handle(Terminal.Signal.INT, Terminal.SignalHandler.SIG_IGN);

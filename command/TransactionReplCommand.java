@@ -265,8 +265,19 @@ public interface TransactionReplCommand {
     }
 
     static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
-        TransactionReplCommand command;
         String line = Utils.readNonEmptyLine(reader, prompt);
+        TransactionReplCommand command = getCommand(line);
+        if (command.isQuery()) {
+            String query = readMultilineQuery(reader, prompt, command.asQuery().query());
+            command = new Query(query);
+        }
+        if (command.isQuery()) reader.getHistory().add(command.asQuery().query().trim());
+        else reader.getHistory().add(line.trim());
+        return command;
+    }
+
+    static TransactionReplCommand getCommand(String line) {
+        TransactionReplCommand command;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
             command = new Exit();
@@ -284,15 +295,12 @@ public interface TransactionReplCommand {
             String file = tokens[1];
             command = new Source(file);
         } else {
-            String query = readQuery(reader, prompt, line);
-            command = new Query(query);
+            command = new Query(line);
         }
-        if (command instanceof Query) reader.getHistory().add(command.asQuery().query().trim());
-        else reader.getHistory().add(line.trim());
         return command;
     }
 
-    static String readQuery(LineReader reader, String prompt, String firstQueryLine) {
+    static String readMultilineQuery(LineReader reader, String prompt, String firstQueryLine) {
         List<String> queryLines = new ArrayList<>();
         queryLines.add(firstQueryLine);
         while (true) {

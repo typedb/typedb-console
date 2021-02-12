@@ -19,7 +19,9 @@ cd <your_grakn_console_dir>/
 
 You can provide several command arguments when running console in the terminal.
 
-- `--server=<address>` : Server address to which the console will connect to.
+- `--server=<address>` : Grakn Core server address to which the console will connect to.
+- `--cluster=<address>` : Grakn Cluster server address to which the console will connect to.
+- `--script=<script>` : Run commands in the script file in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
 
@@ -87,3 +89,52 @@ Grakn Console provides two levels of interaction: database-level commands and tr
 - `help` : Print this help menu
 - `clear` : Clear console screen
 - `exit` : Exit console
+
+### Scripting
+
+To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./grakn console --script=<script>`.
+
+For example given the following command script file:
+
+```
+database create test
+transaction test schema write
+    define person sub entity;
+    commit
+transaction test data write
+    insert $x isa person;
+    commit
+transaction test data read
+    match $x isa person;
+    close
+database delete test
+```
+
+You will see the following output:
+
+```
+> ./grakn console --script=script                                                                                                                                                                                                                    73.830s
++ database create test
+Database 'test' created
++ transaction test schema write
+++ define person sub entity;
+Concepts have been defined
+++ commit
+Transaction changes committed
++ transaction test data write
+++ insert $x isa person;
+{ $x iid 0x966e80017fffffffffffffff isa person; }
+answers: 1, duration: 87 ms
+++ commit
+Transaction changes committed
++ transaction test data read
+++ match $x isa person;
+{ $x iid 0x966e80018000000000000000 isa person; }
+answers: 1, duration: 25 ms
+++ close
+Transaction closed without committing changes
++ database delete test
+Database 'test' deleted
+```
+
+The indentation in the script file are only for visual guide and will be ignored by the console. Each line in the script is interpreted as one command, so multiline query is not available in this mode.

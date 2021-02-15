@@ -268,31 +268,38 @@ public interface ReplCommand {
         ReplCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            String[] tokens = Utils.splitLineByWhitespace(line);
-            if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
-                command = new Exit();
-            } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
-                command = new Help();
-            } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
-                command = new Clear();
-            } else if (tokens.length == 2 && tokens[0].equals(Database.token) && tokens[1].equals(Database.List.token)) {
-                command = new Database.List();
-            } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Create.token)) {
-                String database = tokens[2];
-                command = new Database.Create(database);
-            } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Delete.token)) {
-                String database = tokens[2];
-                command = new Database.Delete(database);
-            } else if (tokens.length == 4 && tokens[0].equals(Transaction.token) &&
-                    (tokens[2].equals("schema") || tokens[2].equals("data") && (tokens[3].equals("read") || tokens[3].equals("write")))) {
-                String database = tokens[1];
-                GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
-                GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
-                command = new Transaction(database, sessionType, transactionType);
-            } else {
+            command = getCommand(line);
+            if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
             reader.getHistory().add(line.trim());
+        }
+        return command;
+    }
+
+    static ReplCommand getCommand(String line) {
+        ReplCommand command = null;
+        String[] tokens = Utils.splitLineByWhitespace(line);
+        if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
+            command = new Exit();
+        } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
+            command = new Help();
+        } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
+            command = new Clear();
+        } else if (tokens.length == 2 && tokens[0].equals(Database.token) && tokens[1].equals(Database.List.token)) {
+            command = new Database.List();
+        } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Create.token)) {
+            String database = tokens[2];
+            command = new Database.Create(database);
+        } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Delete.token)) {
+            String database = tokens[2];
+            command = new Database.Delete(database);
+        } else if (tokens.length == 4 && tokens[0].equals(Transaction.token) &&
+                (tokens[2].equals("schema") || tokens[2].equals("data") && (tokens[3].equals("read") || tokens[3].equals("write")))) {
+            String database = tokens[1];
+            GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
+            GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
+            command = new Transaction(database, sessionType, transactionType);
         }
         return command;
     }

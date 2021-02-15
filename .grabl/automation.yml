@@ -63,7 +63,9 @@ build:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-console-artifact -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       filter:
         owner: graknlabs
@@ -154,5 +156,7 @@ release:
         bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(cat VERSION) //:deploy-console-artifact -- release
-    
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- release
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- release
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- release
+

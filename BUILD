@@ -80,21 +80,11 @@ java_deps(
 pkg_tar(
     name = "console-artifact",
     deps = [":console-deps"],
-    extension = "tgz",
+    extension = "tar.gz",
     files = {
         "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
-)
-
-deploy_artifact(
-    name = "deploy-console-artifact",
-    target = ":console-artifact",
-    artifact_group = "graknlabs_console",
-    artifact_name = "console-artifact.tgz",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
-    visibility = ["//visibility:public"],
 )
 
 assemble_targz(
@@ -116,6 +106,36 @@ assemble_zip(
     output_filename = "grakn-console-windows",
     targets = [":console-artifact", "@graknlabs_common//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"]
+)
+
+deploy_artifact(
+    name = "deploy-linux-targz",
+    target = ":assemble-linux-targz",
+    artifact_group = "graknlabs_console",
+    artifact_name = "grakn-core-console-linux-{version}.tar.gz",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    visibility = ["//visibility:public"],
+)
+
+deploy_artifact(
+    name = "deploy-mac-zip",
+    target = ":assemble-mac-zip",
+    artifact_group = "graknlabs_console",
+    artifact_name = "grakn-core-console-mac-{version}.tar.gz",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    visibility = ["//visibility:public"],
+)
+
+deploy_artifact(
+    name = "deploy-windows-zip",
+    target = ":assemble-windows-zip",
+    artifact_group = "graknlabs_console",
+    artifact_name = "grakn-core-console-windows-{version}.tar.gz",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    visibility = ["//visibility:public"],
 )
 
 assemble_versioned(

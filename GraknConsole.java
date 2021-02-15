@@ -90,13 +90,13 @@ public class GraknConsole {
         return client;
     }
 
-    public void runScript(CommandLineOptions options) {
+    public boolean runScript(CommandLineOptions options) {
         String scriptString;
         try {
             scriptString = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(options.script()))), StandardCharsets.UTF_8);
         } catch (IOException e) {
             printer.error("Failed to open file '" + options.script() + "'");
-            return;
+            return false;
         }
         boolean[] cancelled = new boolean[] { false };
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
@@ -110,13 +110,13 @@ public class GraknConsole {
                 if (command != null) {
                     if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(client);
-                        if (!success) return;
+                        if (!success) return false;
                     } else if (command.isDatabaseCreate()) {
                         boolean success = runDatabaseCreate(client, command.asDatabaseCreate().database());
-                        if (!success) return;
+                        if (!success) return false;
                     } else if (command.isDatabaseDelete()) {
                         boolean success = runDatabaseDelete(client, command.asDatabaseDelete().database());
-                        if (!success) return;
+                        if (!success) return false;
                     } else if (command.isTransaction()) {
                         String database = command.asTransaction().database();
                         GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
@@ -137,31 +137,33 @@ public class GraknConsole {
                                     break;
                                 } else if (txCommand.isSource()) {
                                     boolean success = runSource(tx, txCommand.asSource().file());
-                                    if (!success) return;
+                                    if (!success) return false;
                                 } else if (txCommand.isQuery()) {
                                     boolean success = runQuery(tx, txCommand.asQuery().query());
-                                    if (!success) return;
+                                    if (!success) return false;
                                 } else {
                                     printer.error("Command is not available while running console script.");
                                 }
                             }
                         } catch (GraknClientException e) {
                             printer.error(e.getMessage());
-                            return;
+                            return false;
                         }
                     } else {
                         printer.error("Command is not available while running console script.");
                     }
                 } else {
                     printer.error("Unrecognised command, exit console script.");
-                    return;
+                    return false;
                 }
             }
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
+            return false;
         } finally {
             executorService.shutdownNow();
         }
+        return true;
     }
 
     public void runInteractive(CommandLineOptions options) {
@@ -383,7 +385,8 @@ public class GraknConsole {
         if (options.script() == null) {
             console.runInteractive(options);
         } else {
-            console.runScript(options);
+            boolean success = console.runScript(options);
+            if (!success) System.exit(1);
         }
     }
 

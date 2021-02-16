@@ -34,7 +34,7 @@ public interface ReplCommand {
     }
 
     default Exit asExit() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isHelp() {
@@ -42,7 +42,7 @@ public interface ReplCommand {
     }
 
     default Help asHelp() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClear() {
@@ -50,7 +50,7 @@ public interface ReplCommand {
     }
 
     default Clear asClear() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseList() {
@@ -58,7 +58,7 @@ public interface ReplCommand {
     }
 
     default Database.List asDatabaseList() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseCreate() {
@@ -66,7 +66,7 @@ public interface ReplCommand {
     }
 
     default Database.Create asDatabaseCreate() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseDelete() {
@@ -74,7 +74,15 @@ public interface ReplCommand {
     }
 
     default Database.Delete asDatabaseDelete() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isDatabaseReplicas() {
+        return false;
+    }
+
+    default Database.Replicas asDatabaseReplicas() {
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isTransaction() {
@@ -82,7 +90,7 @@ public interface ReplCommand {
     }
 
     default Transaction asTransaction() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     class Exit implements ReplCommand {
@@ -210,6 +218,33 @@ public interface ReplCommand {
                 return this;
             }
         }
+
+        public static class Replicas extends ReplCommand.Database {
+
+            private static String token = "replicas";
+            private static String helpCommand = Database.token + " " + token + " " + "<db>";
+            private static String description = "List replicas of a database with name <db>";
+
+            private final String database;
+
+            public Replicas(String database) {
+                this.database = database;
+            }
+
+            public String database() {
+                return database;
+            }
+
+            @Override
+            public boolean isDatabaseReplicas() {
+                return true;
+            }
+
+            @Override
+            public Database.Replicas asDatabaseReplicas() {
+                return this;
+            }
+        }
     }
 
     class Transaction implements ReplCommand {
@@ -256,6 +291,7 @@ public interface ReplCommand {
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
                 pair(Database.Delete.helpCommand, Database.Delete.description),
+                pair(Database.Replicas.helpCommand, Database.Replicas.description),
                 pair(Transaction.helpCommand, Transaction.description),
                 pair(Help.helpCommand, Help.description),
                 pair(Clear.helpCommand, Clear.description),
@@ -294,6 +330,9 @@ public interface ReplCommand {
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Delete.token)) {
             String database = tokens[2];
             command = new Database.Delete(database);
+        } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Replicas.token)) {
+            String database = tokens[2];
+            command = new Database.Replicas(database);
         } else if (tokens.length == 4 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("schema") || tokens[2].equals("data") && (tokens[3].equals("read") || tokens[3].equals("write")))) {
             String database = tokens[1];

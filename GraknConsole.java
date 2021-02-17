@@ -83,7 +83,7 @@ public class GraknConsole {
         if (options.server() != null) {
             client = GraknClient.core(options.server());
         } else if (options.cluster() != null) {
-            client = GraknClient.cluster(options.cluster());
+            client = GraknClient.cluster(options.cluster().split(","));
         } else {
             client = GraknClient.core();
         }
@@ -116,6 +116,9 @@ public class GraknConsole {
                         if (!success) return false;
                     } else if (command.isDatabaseDelete()) {
                         boolean success = runDatabaseDelete(client, command.asDatabaseDelete().database());
+                        if (!success) return false;
+                    } else if (command.isDatabaseReplicas()) {
+                        boolean success = runDatabaseReplicas(client, command.asDatabaseReplicas().database());
                         if (!success) return false;
                     } else if (command.isTransaction()) {
                         String database = command.asTransaction().database();
@@ -201,6 +204,8 @@ public class GraknConsole {
                 runDatabaseCreate(client, command.asDatabaseCreate().database());
             } else if (command.isDatabaseDelete()) {
                 runDatabaseDelete(client, command.asDatabaseDelete().database());
+            } else if (command.isDatabaseReplicas()) {
+                runDatabaseReplicas(client, command.asDatabaseReplicas().database());
             } else if (command.isTransaction()) {
                 String database = command.asTransaction().database();
                 GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
@@ -254,7 +259,7 @@ public class GraknConsole {
 
     private boolean runDatabaseList(GraknClient client) {
         try {
-            if (client.databases().all().size() > 0) client.databases().all().forEach(database -> printer.info(database));
+            if (client.databases().all().size() > 0) client.databases().all().forEach(database -> printer.info(database.name()));
             else printer.info("No databases are present on the server.");
             return true;
         } catch (GraknClientException e) {
@@ -276,8 +281,24 @@ public class GraknConsole {
 
     private boolean runDatabaseDelete(GraknClient client, String database) {
         try {
-            client.databases().delete(database);
+            client.databases().get(database).delete();
             printer.info("Database '" + database + "' deleted");
+            return true;
+        } catch (GraknClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runDatabaseReplicas(GraknClient client, String database) {
+        try {
+            if (!client.isCluster()) {
+                printer.error("The command 'database replicas' is only available in Grakn Cluster.");
+                return false;
+            }
+            for (GraknClient.Database.Replica replica : client.asCluster().databases().get(database).replicas()) {
+                printer.databaseReplica(replica);
+            }
             return true;
         } catch (GraknClientException e) {
             printer.error(e.getMessage());

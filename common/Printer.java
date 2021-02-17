@@ -73,6 +73,15 @@ public class Printer {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
     }
 
+    public void databaseReplica(GraknClient.Database.Replica replica) {
+        String s = "{ " +
+                colorJsonKey("address: ") + replica.address().client() + ";" +
+                colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
+                colorJsonKey(" term: ") + replica.term() +
+                " }";
+        out.println(s);
+    }
+
     private String conceptMapDisplayString(ConceptMap conceptMap, GraknClient.Transaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
@@ -170,5 +179,9 @@ public class Printer {
 
     private String colorError(String s) {
         return new AttributedString(s, AttributedStyle.DEFAULT.foreground(AttributedStyle.RED)).toAnsi();
+    }
+
+    private String colorJsonKey(String s) {
+        return new AttributedString(s, AttributedStyle.DEFAULT.foreground(AttributedStyle.BLUE)).toAnsi();
     }
 }

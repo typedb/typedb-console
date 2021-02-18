@@ -66,12 +66,14 @@ public class GraknConsole {
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
+    private GraknClient client;
 
-    public GraknConsole(Printer printer) {
+    public GraknConsole(Printer printer, CommandLineOptions options) {
         this.printer = printer;
         try {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
             terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
+            client = createGraknClient(options);
         } catch (IOException e) {
             System.err.println("Failed to initialise terminal: " + e.getMessage());
             System.exit(1);
@@ -79,13 +81,18 @@ public class GraknConsole {
     }
 
     private GraknClient createGraknClient(CommandLineOptions options) {
-        GraknClient client;
-        if (options.server() != null) {
-            client = GraknClient.core(options.server());
-        } else if (options.cluster() != null) {
-            client = GraknClient.cluster(options.cluster().split(","));
-        } else {
-            client = GraknClient.core();
+        GraknClient client = null;
+        try {
+            if (options.server() != null) {
+                client = GraknClient.core(options.server());
+            } else if (options.cluster() != null) {
+                client = GraknClient.cluster(options.cluster().split(","));
+            } else {
+                client = GraknClient.core();
+            }
+        } catch (GraknClientException e) {
+            printer.error(e.getMessage());
+            System.exit(1);
         }
         return client;
     }
@@ -100,7 +107,7 @@ public class GraknConsole {
         }
         boolean[] cancelled = new boolean[] { false };
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
-        try (GraknClient client = createGraknClient(options)) {
+        try {
             List<String> commandStrings = Arrays.stream(scriptString.trim().split("\n")).map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(Collectors.toList());
             int i = 0;
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
@@ -164,18 +171,20 @@ public class GraknConsole {
             printer.error(e.getMessage());
             return false;
         } finally {
+            client.close();
             executorService.shutdownNow();
         }
         return true;
     }
 
-    public void runInteractive(CommandLineOptions options) {
+    public void runInteractive() {
         printer.info(COPYRIGHT);
-        try (GraknClient client = createGraknClient(options)) {
+        try {
             runRepl(client);
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         } finally {
+            client.close();
             executorService.shutdownNow();
         }
     }
@@ -401,10 +410,10 @@ public class GraknConsole {
     }
 
     public static void main(String[] args) {
-        GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
         CommandLineOptions options = parseCommandLine(args);
+        GraknConsole console = new GraknConsole(new Printer(System.out, System.err), options);
         if (options.script() == null) {
-            console.runInteractive(options);
+            console.runInteractive();
         } else {
             boolean success = console.runScript(options);
             if (!success) System.exit(1);

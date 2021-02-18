@@ -315,11 +315,11 @@ public interface ReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt, GraknClient client) throws InterruptedException {
+    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
         ReplCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = getCommand(line, client);
+            command = getCommand(line, isCluster);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -328,7 +328,7 @@ public interface ReplCommand {
         return command;
     }
 
-    static ReplCommand getCommand(String line, GraknClient client) {
+    static ReplCommand getCommand(String line, boolean isCluster) {
         ReplCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
@@ -355,7 +355,7 @@ public interface ReplCommand {
             GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
             GraknOptions options;
             if (tokens.length > 4 && tokens[4].equals("--any-replica")) options = GraknOptions.cluster().readAnyReplica(true);
-            else options = client.isCluster() ? GraknOptions.cluster() : GraknOptions.core();
+            else options = isCluster ? GraknOptions.cluster() : GraknOptions.core();
             command = new Transaction(database, sessionType, transactionType, options);
         }
         return command;

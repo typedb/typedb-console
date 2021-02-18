@@ -112,7 +112,7 @@ public class GraknConsole {
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
                 String commandString = commandStrings.get(i);
                 printer.info("+ " + commandString);
-                ReplCommand command = ReplCommand.getCommand(commandString, client);
+                ReplCommand command = ReplCommand.getCommand(commandString, client.isCluster());
                 if (command != null) {
                     if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(client);
@@ -199,7 +199,7 @@ public class GraknConsole {
         while (true) {
             ReplCommand command;
             try {
-                command = ReplCommand.getCommand(reader, printer, "> ", client);
+                command = ReplCommand.getCommand(reader, printer, "> ", client.isCluster());
             } catch (InterruptedException e) {
                 break;
             }

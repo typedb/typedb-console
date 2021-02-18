@@ -18,9 +18,11 @@
 package grakn.console;
 
 import grakn.client.GraknClient;
+import grakn.client.GraknOptions;
 import grakn.common.collection.Pair;
 import org.jline.reader.LineReader;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -251,16 +253,20 @@ public interface ReplCommand {
 
         private static String token = "transaction";
         private static String helpCommand = token + " <db> schema|data read|write";
+        private static String helpCommandCluster = helpCommand + " [--any-replica]";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
+        private static String descriptionCluster = description + ", to the primary replica or to any replica";
 
         private final String database;
         private final GraknClient.Session.Type sessionType;
         private final GraknClient.Transaction.Type transactionType;
+        private final GraknOptions options;
 
-        public Transaction(String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType) {
+        public Transaction(String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType, GraknOptions options) {
             this.database = database;
             this.sessionType = sessionType;
             this.transactionType = transactionType;
+            this.options = options;
         }
 
         public String database() {
@@ -275,6 +281,10 @@ public interface ReplCommand {
             return transactionType;
         }
 
+        public GraknOptions options() {
+            return options;
+        }
+
         @Override
         public boolean isTransaction() {
             return true;
@@ -286,25 +296,30 @@ public interface ReplCommand {
         }
     }
 
-    static String getHelpMenu() {
-        List<Pair<String, String>> menu = Arrays.asList(
+    static String getHelpMenu(GraknClient client) {
+        List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
-                pair(Database.Delete.helpCommand, Database.Delete.description),
-                pair(Database.Replicas.helpCommand, Database.Replicas.description),
-                pair(Transaction.helpCommand, Transaction.description),
+                pair(Database.Delete.helpCommand, Database.Delete.description)));
+
+        if (client.isCluster()) menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
+
+        if (client.isCluster()) menu.add(pair(Transaction.helpCommandCluster, Transaction.descriptionCluster));
+        else menu.add(pair(Transaction.helpCommand, Transaction.description));
+
+        menu.addAll(Arrays.asList(
                 pair(Help.helpCommand, Help.description),
                 pair(Clear.helpCommand, Clear.description),
                 pair(Exit.helpCommand, Exit.description)
-        );
+        ));
         return Utils.buildHelpMenu(menu);
     }
 
-    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt) throws InterruptedException {
+    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt, GraknClient client) throws InterruptedException {
         ReplCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = getCommand(line);
+            command = getCommand(line, client);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -313,7 +328,7 @@ public interface ReplCommand {
         return command;
     }
 
-    static ReplCommand getCommand(String line) {
+    static ReplCommand getCommand(String line, GraknClient client) {
         ReplCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
@@ -333,12 +348,15 @@ public interface ReplCommand {
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Replicas.token)) {
             String database = tokens[2];
             command = new Database.Replicas(database);
-        } else if (tokens.length == 4 && tokens[0].equals(Transaction.token) &&
+        } else if (tokens.length >= 4 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("schema") || tokens[2].equals("data")) && (tokens[3].equals("read") || tokens[3].equals("write"))) {
             String database = tokens[1];
             GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
             GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
-            command = new Transaction(database, sessionType, transactionType);
+            GraknOptions options;
+            if (tokens.length > 4 && tokens[4].equals("--any-replica")) options = GraknOptions.cluster().readAnyReplica(true);
+            else options = client.isCluster() ? GraknOptions.cluster() : GraknOptions.core();
+            command = new Transaction(database, sessionType, transactionType, options);
         }
         return command;
     }

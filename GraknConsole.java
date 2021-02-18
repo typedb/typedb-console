@@ -67,14 +67,12 @@ public class GraknConsole {
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
-    private GraknClient client;
 
-    public GraknConsole(Printer printer, CommandLineOptions options) {
+    public GraknConsole(Printer printer) {
         this.printer = printer;
         try {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
             terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
-            client = createGraknClient(options);
         } catch (IOException e) {
             System.err.println("Failed to initialise terminal: " + e.getMessage());
             System.exit(1);
@@ -108,7 +106,7 @@ public class GraknConsole {
         }
         boolean[] cancelled = new boolean[] { false };
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
-        try {
+        try (GraknClient client = createGraknClient(options)) {
             List<String> commandStrings = Arrays.stream(scriptString.trim().split("\n")).map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(Collectors.toList());
             int i = 0;
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
@@ -177,20 +175,18 @@ public class GraknConsole {
             printer.error(e.getMessage());
             return false;
         } finally {
-            client.close();
             executorService.shutdownNow();
         }
         return true;
     }
 
-    public void runInteractive() {
+    public void runInteractive(CommandLineOptions options) {
         printer.info(COPYRIGHT);
-        try {
+        try (GraknClient client = createGraknClient(options)) {
             runRepl(client);
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         } finally {
-            client.close();
             executorService.shutdownNow();
         }
     }
@@ -225,12 +221,12 @@ public class GraknConsole {
                 String database = command.asTransaction().database();
                 GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
                 GraknClient.Transaction.Type transactionType = command.asTransaction().transactionType();
-                GraknOptions options = command.asTransaction().options();
-                if (options.isCluster() && !client.isCluster()) {
+                GraknOptions graknOptions = command.asTransaction().options();
+                if (graknOptions.isCluster() && !client.isCluster()) {
                     printer.error("The option '--any-replica' is only available in Grakn Cluster.");
                     continue;
                 }
-                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, options);
+                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, graknOptions);
                 if (shouldExit) break;
             }
         }
@@ -424,9 +420,9 @@ public class GraknConsole {
 
     public static void main(String[] args) {
         CommandLineOptions options = parseCommandLine(args);
-        GraknConsole console = new GraknConsole(new Printer(System.out, System.err), options);
+        GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
         if (options.script() == null) {
-            console.runInteractive();
+            console.runInteractive(options);
         } else {
             boolean success = console.runScript(options);
             if (!success) System.exit(1);

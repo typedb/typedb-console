@@ -18,6 +18,7 @@
 package grakn.console;
 
 import grakn.client.GraknClient;
+import grakn.client.GraknOptions;
 import grakn.client.common.exception.GraknClientException;
 import grakn.client.concept.answer.ConceptMap;
 import grakn.client.concept.answer.ConceptMapGroup;
@@ -79,13 +80,18 @@ public class GraknConsole {
     }
 
     private GraknClient createGraknClient(CommandLineOptions options) {
-        GraknClient client;
-        if (options.server() != null) {
-            client = GraknClient.core(options.server());
-        } else if (options.cluster() != null) {
-            client = GraknClient.cluster(options.cluster().split(","));
-        } else {
-            client = GraknClient.core();
+        GraknClient client = null;
+        try {
+            if (options.server() != null) {
+                client = GraknClient.core(options.server());
+            } else if (options.cluster() != null) {
+                client = GraknClient.cluster(options.cluster().split(","));
+            } else {
+                client = GraknClient.core();
+            }
+        } catch (GraknClientException e) {
+            printer.error(e.getMessage());
+            System.exit(1);
         }
         return client;
     }
@@ -106,7 +112,7 @@ public class GraknConsole {
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
                 String commandString = commandStrings.get(i);
                 printer.info("+ " + commandString);
-                ReplCommand command = ReplCommand.getCommand(commandString);
+                ReplCommand command = ReplCommand.getCommand(commandString, client.isCluster());
                 if (command != null) {
                     if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(client);
@@ -124,7 +130,12 @@ public class GraknConsole {
                         String database = command.asTransaction().database();
                         GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
                         GraknClient.Transaction.Type transactionType = command.asTransaction().transactionType();
-                        try (GraknClient.Session session = client.session(database, sessionType);
+                        GraknOptions sessionOptions = command.asTransaction().options();
+                        if (sessionOptions.isCluster() && !client.isCluster()) {
+                            printer.error("The option '--any-replica' is only available in Grakn Cluster.");
+                            return false;
+                        }
+                        try (GraknClient.Session session = client.session(database, sessionType, sessionOptions);
                              GraknClient.Transaction tx = session.transaction(transactionType)) {
                             for (i += 1; i < commandStrings.size() && !cancelled[0]; i++) {
                                 String txCommandString = commandStrings.get(i);
@@ -188,14 +199,14 @@ public class GraknConsole {
         while (true) {
             ReplCommand command;
             try {
-                command = ReplCommand.getCommand(reader, printer, "> ");
+                command = ReplCommand.getCommand(reader, printer, "> ", client.isCluster());
             } catch (InterruptedException e) {
                 break;
             }
             if (command.isExit()) {
                 break;
             } else if (command.isHelp()) {
-                printer.info(ReplCommand.getHelpMenu());
+                printer.info(ReplCommand.getHelpMenu(client));
             } else if (command.isClear()) {
                 reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
             } else if (command.isDatabaseList()) {
@@ -210,24 +221,31 @@ public class GraknConsole {
                 String database = command.asTransaction().database();
                 GraknClient.Session.Type sessionType = command.asTransaction().sessionType();
                 GraknClient.Transaction.Type transactionType = command.asTransaction().transactionType();
-                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType);
+                GraknOptions graknOptions = command.asTransaction().options();
+                if (graknOptions.isCluster() && !client.isCluster()) {
+                    printer.error("The option '--any-replica' is only available in Grakn Cluster.");
+                    continue;
+                }
+                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, graknOptions);
                 if (shouldExit) break;
             }
         }
     }
 
-    private boolean runTransactionRepl(GraknClient client, String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType) {
+    private boolean runTransactionRepl(GraknClient client, String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType, GraknOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-transaction-history").toAbsolutePath())
                 .build();
-        String prompt = database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase() + "> ";
-        try (GraknClient.Session session = client.session(database, sessionType);
+        StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
+        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) prompt.append("[any-replica]");
+        prompt.append("> ");
+        try (GraknClient.Session session = client.session(database, sessionType, options);
              GraknClient.Transaction tx = session.transaction(transactionType)) {
             while (true) {
                 TransactionReplCommand command;
                 try {
-                    command = TransactionReplCommand.getCommand(reader, prompt);
+                    command = TransactionReplCommand.getCommand(reader, prompt.toString());
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -401,8 +419,8 @@ public class GraknConsole {
     }
 
     public static void main(String[] args) {
-        GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
         CommandLineOptions options = parseCommandLine(args);
+        GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
         if (options.script() == null) {
             console.runInteractive(options);
         } else {

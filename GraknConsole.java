@@ -96,18 +96,22 @@ public class GraknConsole {
         return client;
     }
 
-    public boolean runScript(CommandLineOptions options) {
-        String scriptString;
+    public boolean runScript(CommandLineOptions options, String script) {
+        String scriptLines;
         try {
-            scriptString = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(options.script()))), StandardCharsets.UTF_8);
+            scriptLines = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(script))), StandardCharsets.UTF_8);
         } catch (IOException e) {
             printer.error("Failed to open file '" + options.script() + "'");
             return false;
         }
+        return runCommands(options, Arrays.stream(scriptLines.split("\n")).collect(Collectors.toList()));
+    }
+
+    public boolean runCommands(CommandLineOptions options, List<String> commandStrings) {
+        commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(Collectors.toList());
         boolean[] cancelled = new boolean[] { false };
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
         try (GraknClient client = createGraknClient(options)) {
-            List<String> commandStrings = Arrays.stream(scriptString.trim().split("\n")).map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(Collectors.toList());
             int i = 0;
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
                 String commandString = commandStrings.get(i);
@@ -421,10 +425,13 @@ public class GraknConsole {
     public static void main(String[] args) {
         CommandLineOptions options = parseCommandLine(args);
         GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
-        if (options.script() == null) {
+        if (options.script() == null && options.commands() == null) {
             console.runInteractive(options);
-        } else {
-            boolean success = console.runScript(options);
+        } else if (options.script() != null) {
+            boolean success = console.runScript(options, options.script());
+            if (!success) System.exit(1);
+        } else if (options.commands() != null) {
+            boolean success = console.runCommands(options, options.commands());
             if (!success) System.exit(1);
         }
     }
@@ -484,6 +491,16 @@ public class GraknConsole {
         @Nullable
         public String script() {
             return script;
+        }
+
+        @CommandLine.Option(names = {"--command"},
+                description = "Commands to run in the Console, without interactive mode")
+        private @Nullable
+        List<String> commands;
+
+        @Nullable
+        public List<String> commands() {
+            return commands;
         }
     }
 }

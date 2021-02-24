@@ -22,7 +22,7 @@ You can provide several command arguments when running console in the terminal.
 - `--server=<address>` : Grakn Core server address to which the console will connect to.
 - `--cluster=<address>` : Grakn Cluster server address to which the console will connect to.
 - `--script=<script>` : Run commands in the script file in non-interactive mode.
-- `--command=<command1> --command=<command2>` : Run commands in non-interactive mode.
+- `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
 

@@ -22,6 +22,7 @@ You can provide several command arguments when running console in the terminal.
 - `--server=<address>` : Grakn Core server address to which the console will connect to.
 - `--cluster=<address>` : Grakn Cluster server address to which the console will connect to.
 - `--script=<script>` : Run commands in the script file in non-interactive mode.
+- `--command=<command1> --command=<command2>` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
 
@@ -90,9 +91,9 @@ Grakn Console provides two levels of interaction: database-level commands and tr
 - `clear` : Clear console screen
 - `exit` : Exit console
 
-### Scripting
+### Non-interactive mode
 
-To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./grakn console --script=<script>`.
+To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./grakn console --script=<script>`. We can also specify the commands to run directly from the command line using `./grakn console --command=<command1> --command=<command2> ...`.
 
 For example given the following command script file:
 

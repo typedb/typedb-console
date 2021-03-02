@@ -311,7 +311,7 @@ public interface ReplCommand {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<GraknOptions.Cluster> option = Options.Cluster.from(token.substring(2));
+                Option<GraknOptions.Cluster> option = Options.Cluster.clusterOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -326,7 +326,7 @@ public interface ReplCommand {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<GraknOptions> option = Options.Core.from(token.substring(2));
+                Option<GraknOptions> option = Options.Core.coreOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -349,18 +349,26 @@ public interface ReplCommand {
                     Option.core("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
             );
 
-            static Option<GraknOptions> from(String token) throws IllegalArgumentException {
-                for (Option<GraknOptions> option : options) {
+            public static Option<GraknOptions> coreOption(String token) throws IllegalArgumentException {
+                return from(token, options);
+            }
+
+            public static List<Pair<String, String>> helpMenu() {
+                return helpMenu(options);
+            }
+
+            static <OPT extends GraknOptions> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
+                for (Option<OPT> option : options) {
                     if (option.name().equals(token)) return option;
                 }
                 // TODO create custom error message
                 throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
             }
 
-            static List<Pair<String, String>> helpMenu() {
+            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends GraknOptions>> options) {
                 List<Pair<String, String>> optionsMenu = new ArrayList<>();
-                optionsMenu.add(pair("transaction-options", "Transaction options for core"));
-                for (Option<GraknOptions> option : options) {
+                optionsMenu.add(pair("transaction-options", "Transaction options"));
+                for (Option<? extends GraknOptions> option : options) {
                     optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString(), option.description()));
                 }
                 return optionsMenu;
@@ -368,9 +376,9 @@ public interface ReplCommand {
 
         }
 
-        // TODO would be great if this can build off Core options to avoid having to make changes in 2 places
-        static class Cluster {
+        static class Cluster extends Core {
 
+            // TODO try and figure out how not to duplicate the options, to avoid having to make changes in two places
             static List<Option<GraknOptions.Cluster>> options = list(
                     Option.cluster("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg).asCluster()),
                     Option.cluster("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg).asCluster()),
@@ -383,25 +391,16 @@ public interface ReplCommand {
                     Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
-            static Option<GraknOptions.Cluster> from(String token) throws IllegalArgumentException {
-                for (Option<GraknOptions.Cluster> option : options) {
-                    if (option.name().equals(token)) return option;
-                }
-                // TODO create custom error message
-                throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
+            public static Option<GraknOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
+                return from(token, options);
             }
 
-            static List<Pair<String, String>> helpMenu() {
-                List<Pair<String, String>> optionsMenu = new ArrayList<>();
-                optionsMenu.add(pair("transaction-options", "Transaction options for cluster"));
-                for (Option<GraknOptions.Cluster> option : options) {
-                    optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString() , option.description()));
-                }
-                return optionsMenu;
+            public static List<Pair<String, String>> helpMenu() {
+                return helpMenu(options);
             }
         }
 
-        static class Option<OPTIONS> {
+        static class Option<OPTIONS extends GraknOptions> {
 
             private final String name;
             private final Arg arg;
@@ -422,7 +421,6 @@ public interface ReplCommand {
             static Option<GraknOptions.Cluster> cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
                 return new Option<>(name, arg, description, builder);
             }
-
 
             public String name() { return name; }
 

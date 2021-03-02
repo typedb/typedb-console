@@ -245,7 +245,7 @@ public class GraknConsole {
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) prompt.append("[any-replica]");
         prompt.append("> ");
         try (GraknClient.Session session = client.session(database, sessionType, options);
-             GraknClient.Transaction tx = session.transaction(transactionType)) {
+             GraknClient.Transaction tx = session.transaction(transactionType, options)) {
             while (true) {
                 TransactionReplCommand command;
                 try {

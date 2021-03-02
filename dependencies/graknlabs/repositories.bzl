@@ -35,5 +35,5 @@ def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/flyingsilverfin/client-java",
-        commit = "632a107231d4c0db043ec87766ef78ac8c6f0422",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+        commit = "05bc213929fa88dd22e2e6a6e0e3571dd5df804b",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
     )

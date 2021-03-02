@@ -254,7 +254,7 @@ public interface ReplCommand {
     class Transaction implements ReplCommand {
 
         private static String token = "transaction";
-        private static String helpCommand = token + " <db> schema|data read|write [options]";
+        private static String helpCommand = token + " <db> schema|data read|writes [" + Options.token + "]";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
@@ -299,6 +299,8 @@ public interface ReplCommand {
 
     class Options {
 
+        public static String token = "transaction-options";
+
         static GraknOptions from(String[] optionTokens, boolean isCluster) {
             if (isCluster) return parseClusterOptions(optionTokens, GraknOptions.cluster());
             else return parseCoreOptions(optionTokens, GraknOptions.core());
@@ -308,7 +310,8 @@ public interface ReplCommand {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
-                Option<GraknOptions.Cluster> option = Options.Cluster.from(token);
+                assert token.charAt(0) == '-' && token.charAt(1) == '-';
+                Option<GraknOptions.Cluster> option = Options.Cluster.from(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -322,7 +325,8 @@ public interface ReplCommand {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
-                Option<GraknOptions> option = Options.Core.from(token);
+                assert token.charAt(0) == '-' && token.charAt(1) == '-';
+                Option<GraknOptions> option = Options.Core.from(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -335,14 +339,14 @@ public interface ReplCommand {
         static class Core {
 
             static List<Option<GraknOptions>> options = list(
-                    Option.of("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
-                    Option.of("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
-                    Option.of("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
-                    Option.of("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
-                    Option.of("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
-                    Option.of("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
-                    Option.of("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
-                    Option.of("schemaLockAcquireTimeout", Option.Arg.INTEGER, "", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
+                    Option.core("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
+                    Option.core("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
+                    Option.core("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
+                    Option.core("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
+                    Option.core("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
+                    Option.core("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
+                    Option.core("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
+                    Option.core("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
             );
 
             static Option<GraknOptions> from(String token) throws IllegalArgumentException {
@@ -355,27 +359,28 @@ public interface ReplCommand {
 
             static List<Pair<String, String>> helpMenu() {
                 List<Pair<String, String>> optionsMenu = new ArrayList<>();
-                optionsMenu.add(pair("Option", "Transaction-level options"));
+                optionsMenu.add(pair("transaction-options", "Transaction options for core"));
                 for (Option<GraknOptions> option : options) {
-                    optionsMenu.add(pair("--" + option.name(), "[" + option.arg().readableString() + "] " + option.description()));
+                    optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString(), option.description()));
                 }
                 return optionsMenu;
             }
 
         }
 
+        // TODO would be great if this can build off Core options to avoid having to make changes in 2 places
         static class Cluster {
 
             static List<Option<GraknOptions.Cluster>> options = list(
-                    Option.of("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
-                    Option.of("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
-                    Option.of("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
-                    Option.of("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
-                    Option.of("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
-                    Option.of("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
-                    Option.of("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
-                    Option.of("schemaLockAcquireTimeout", Option.Arg.INTEGER, "", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg)),
-                    Option.of("anyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+                    Option.cluster("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg).asCluster()),
+                    Option.cluster("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg).asCluster()),
+                    Option.cluster("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg).asCluster()),
+                    Option.cluster("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg).asCluster()),
+                    Option.cluster("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg).asCluster()),
+                    Option.cluster("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg).asCluster()),
+                    Option.cluster("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (seconds)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg).asCluster()),
+                    Option.cluster("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg).asCluster()),
+                    Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
             static Option<GraknOptions.Cluster> from(String token) throws IllegalArgumentException {
@@ -388,9 +393,9 @@ public interface ReplCommand {
 
             static List<Pair<String, String>> helpMenu() {
                 List<Pair<String, String>> optionsMenu = new ArrayList<>();
-                optionsMenu.add(pair("Option", "Transaction-level options for cluster"));
+                optionsMenu.add(pair("transaction-options", "Transaction options for cluster"));
                 for (Option<GraknOptions.Cluster> option : options) {
-                    optionsMenu.add(pair("--" + option.name(), "[" + option.arg().readableString() + "] " + option.description()));
+                    optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString() , option.description()));
                 }
                 return optionsMenu;
             }
@@ -410,9 +415,14 @@ public interface ReplCommand {
                 this.builder = builder;
             }
 
-            static <OPT extends GraknOptions> Option<OPT> of(String name, Arg arg, String description, BiFunction<OPT, Object, OPT> builder) {
+            static Option<GraknOptions> core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
                 return new Option<>(name, arg, description, builder);
             }
+
+            static Option<GraknOptions.Cluster> cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                return new Option<>(name, arg, description, builder);
+            }
+
 
             public String name() { return name; }
 
@@ -426,8 +436,8 @@ public interface ReplCommand {
 
             enum Arg {
 
-                BOOLEAN("true/false"),
-                INTEGER("> 0");
+                BOOLEAN("true|false"),
+                INTEGER("1..[max int]");
 
                 private final String readableString;
 

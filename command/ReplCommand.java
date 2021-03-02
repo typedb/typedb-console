@@ -386,10 +386,24 @@ public interface ReplCommand {
                     Option.cluster("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg).asCluster()),
                     Option.cluster("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg).asCluster()),
                     Option.cluster("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg).asCluster()),
-                    Option.cluster("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (seconds)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg).asCluster()),
+                    Option.cluster("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg).asCluster()),
                     Option.cluster("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg).asCluster()),
                     Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
+
+            private static List<Option<GraknOptions.Cluster>> optionsSimple = withCoreOptions(
+                    Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+            );
+
+            private static List<Option<GraknOptions.Cluster>> withCoreOptions(Option<GraknOptions.Cluster> clusterOption) {
+                List<Option<GraknOptions.Cluster>> extendedOptions = new ArrayList<>();
+
+                Core.options.forEach(opt -> extendedOptions.add(Option.cluster(opt.name(), opt.arg(), (optionsCluster, arg) -> opt.builder.apply(opt, arg).asCluster())));
+
+                Core.options.forEach(opt -> extendedOptions.add(opt.asClusterOption()));
+                extendedOptions.add(clusterOption);
+                return extendedOptions;
+            }
 
             public static Option<GraknOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
                 return from(token, options);
@@ -400,6 +414,7 @@ public interface ReplCommand {
             }
         }
 
+        // TODO remove generics, put two constructors
         static class Option<OPTIONS extends GraknOptions> {
 
             private final String name;
@@ -420,6 +435,16 @@ public interface ReplCommand {
 
             static Option<GraknOptions.Cluster> cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
                 return new Option<>(name, arg, description, builder);
+            }
+
+            Option<GraknOptions.Cluster> asClusterOption() {
+                GraknOptions c = null;
+                GraknOptions.Cluster ccluster = null;
+
+                final OPTIONS d = null;
+                builder.apply(d, arg);
+
+                return new Option<GraknOptions.Cluster>(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg).asCluster());
             }
 
             public String name() { return name; }
@@ -447,15 +472,8 @@ public interface ReplCommand {
 
                 Object parse(String arg) throws IllegalArgumentException {
                     if (this == BOOLEAN) return Boolean.parseBoolean(arg);
-                    else if (this == INTEGER) {
-                        int value = Integer.parseInt(arg);
-                        // TODO this should be a custom error message class in Console
-                        if (value <= 0) throw new IllegalArgumentException("Integer argument must be greater than 0");
-                        else return value;
-                    } else {
-                        // TODO this should be a custom error message class in Console
-                        throw new IllegalArgumentException("Unrecognized option argument type: " + this.name());
-                    }
+                    else if (this == INTEGER) return Integer.parseInt(arg);
+                    else throw new IllegalArgumentException("Unrecognized option argument type: " + this.name());
                 }
             }
 

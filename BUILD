@@ -22,7 +22,6 @@ load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
@@ -184,29 +183,6 @@ deploy_apt(
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release'],
 )
-
-# assemble_rpm(
-#     name = "assemble-linux-rpm",
-#     package_name = "grakn-console",
-#     installation_dir = "/opt/grakn/core/",
-#     spec_file = "//conf/rpm:grakn-console.spec",
-#     workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
-#     archives = [":console-deps"],
-#     files = {
-#         "//conf/logback:logback.xml": "console/conf/logback.xml"
-#     },
-#     empty_dirs = [
-#          "opt/grakn/core/console/services/lib/",
-#     ],
-# )
-
-# deploy_rpm(
-#     name = "deploy-rpm",
-#     target = ":assemble-linux-rpm",
-#     snapshot = deployment['rpm.snapshot'],
-#     release = deployment['rpm.release'],
-# )
-
 
 release_validate_deps(
     name = "release-validate-deps",

@@ -25,7 +25,9 @@ import org.jline.reader.LineReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.console.ErrorMessage.Internal.ILLEGAL_CAST;
 
@@ -252,10 +254,8 @@ public interface ReplCommand {
     class Transaction implements ReplCommand {
 
         private static String token = "transaction";
-        private static String helpCommand = token + " <db> schema|data read|write";
-        private static String helpCommandCluster = helpCommand + " [--any-replica]";
+        private static String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
-        private static String descriptionCluster = description + ", to the primary replica or to any replica";
 
         private final String database;
         private final GraknClient.Session.Type sessionType;
@@ -294,6 +294,177 @@ public interface ReplCommand {
         public Transaction asTransaction() {
             return this;
         }
+
+    }
+
+    class Options {
+
+        public static String token = "transaction-options";
+
+        static GraknOptions from(String[] optionTokens, boolean isCluster) {
+            if (isCluster) return parseClusterOptions(optionTokens, GraknOptions.cluster());
+            else return parseCoreOptions(optionTokens, GraknOptions.core());
+        }
+
+        private static GraknOptions.Cluster parseClusterOptions(String[] optionTokens, GraknOptions.Cluster options) {
+            for (int i = 0; i < optionTokens.length; i += 2) {
+                String token = optionTokens[i];
+                String arg = optionTokens[i + 1];
+                assert token.charAt(0) == '-' && token.charAt(1) == '-';
+                Option<GraknOptions.Cluster> option = Options.Cluster.clusterOption(token.substring(2));
+                try {
+                    options = option.build(options, arg);
+                } catch (IllegalArgumentException e) {
+                    throw new GraknConsoleException(e);
+                }
+            }
+            return options;
+        }
+
+        private static GraknOptions parseCoreOptions(String[] optionTokens, GraknOptions options) {
+            for (int i = 0; i < optionTokens.length; i += 2) {
+                String token = optionTokens[i];
+                String arg = optionTokens[i + 1];
+                assert token.charAt(0) == '-' && token.charAt(1) == '-';
+                Option<GraknOptions> option = Options.Core.coreOption(token.substring(2));
+                try {
+                    options = option.build(options, arg);
+                } catch (IllegalArgumentException e) {
+                    throw new GraknConsoleException(e);
+                }
+            }
+            return options;
+        }
+
+        static class Core {
+
+            static List<Option.Core> options = list(
+                    Option.core("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
+                    Option.core("trace-inference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
+                    Option.core("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
+                    Option.core("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
+                    Option.core("batch-size", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
+                    Option.core("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
+                    Option.core("session-idle-timeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
+                    Option.core("schema-lock-acquire-timeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
+            );
+
+            public static Option<GraknOptions> coreOption(String token) throws IllegalArgumentException {
+                return from(token, options);
+            }
+
+            public static List<Pair<String, String>> helpMenu() {
+                return helpMenu(options);
+            }
+
+            static <OPT extends GraknOptions> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
+                for (Option<OPT> option : options) {
+                    if (option.name().equals(token)) return option;
+                }
+                throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
+            }
+
+            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends GraknOptions>> options) {
+                List<Pair<String, String>> optionsMenu = new ArrayList<>();
+                optionsMenu.add(pair("transaction-options", "Transaction options"));
+                for (Option<? extends GraknOptions> option : options) {
+                    optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString(), option.description()));
+                }
+                return optionsMenu;
+            }
+        }
+
+        static class Cluster extends Core {
+
+            private static List<Option.Cluster> options = withCoreOptions(
+                    Option.cluster("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+            );
+
+            private static List<Option.Cluster> withCoreOptions(Option.Cluster... clusterOptions) {
+                List<Option.Cluster> extendedOptions = new ArrayList<>();
+                Core.options.forEach(opt -> extendedOptions.add(opt.asClusterOption()));
+                extendedOptions.addAll(Arrays.asList(clusterOptions));
+                return extendedOptions;
+            }
+
+            public static Option<GraknOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
+                return from(token, options);
+            }
+
+            public static List<Pair<String, String>> helpMenu() {
+                return helpMenu(options);
+            }
+        }
+
+        static abstract class Option<OPTIONS extends GraknOptions> {
+
+            final String name;
+            final Arg arg;
+            final String description;
+            BiFunction<OPTIONS, Object, OPTIONS> builder;
+
+            private Option(String name, Arg arg, String description, BiFunction<OPTIONS, Object, OPTIONS> builder) {
+                this.name = name;
+                this.arg = arg;
+                this.description = description;
+            }
+
+            static Option.Core core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+                return new Option.Core(name, arg, description, builder);
+            }
+
+            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                return new Option.Cluster(name, arg, description, builder);
+            }
+
+            OPTIONS build(OPTIONS options, String arg) {
+                return builder.apply(options, this.arg.parse(arg));
+            }
+
+            public String name() { return name; }
+
+            public Arg arg() { return arg; }
+
+            public String description() { return description; }
+
+            static class Core extends Option<GraknOptions> {
+
+                private Core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+                    super(name, arg, description, builder);
+                }
+
+                Option.Cluster asClusterOption() {
+                    return new Option.Cluster(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg).asCluster());
+                }
+            }
+
+            static class Cluster extends Option<GraknOptions.Cluster> {
+
+                private Cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                    super(name, arg, description, builder);
+                }
+            }
+
+            enum Arg {
+
+                BOOLEAN("true|false"),
+                INTEGER("1..[max int]");
+
+                private final String readableString;
+
+                Arg(String readableString) {
+                    this.readableString = readableString;
+                }
+
+                public String readableString() { return readableString; }
+
+                Object parse(String arg) throws IllegalArgumentException {
+                    if (this == BOOLEAN) return Boolean.parseBoolean(arg);
+                    else if (this == INTEGER) return Integer.parseInt(arg);
+                    else throw new IllegalArgumentException("Unrecognized option argument type: " + this.name());
+                }
+            }
+        }
     }
 
     static String getHelpMenu(GraknClient client) {
@@ -302,10 +473,14 @@ public interface ReplCommand {
                 pair(Database.Create.helpCommand, Database.Create.description),
                 pair(Database.Delete.helpCommand, Database.Delete.description)));
 
-        if (client.isCluster()) menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
 
-        if (client.isCluster()) menu.add(pair(Transaction.helpCommandCluster, Transaction.descriptionCluster));
-        else menu.add(pair(Transaction.helpCommand, Transaction.description));
+        if (client.isCluster()) {
+            menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
+        }
+
+        menu.add(pair(Transaction.helpCommand, Transaction.description));
+        if (client.isCluster()) menu.addAll(Options.Cluster.helpMenu());
+        else menu.addAll(Options.Core.helpMenu());
 
         menu.addAll(Arrays.asList(
                 pair(Help.helpCommand, Help.description),
@@ -354,10 +529,11 @@ public interface ReplCommand {
             GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
             GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
             GraknOptions options;
-            if (tokens.length > 4 && tokens[4].equals("--any-replica")) options = GraknOptions.cluster().readAnyReplica(true);
+            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCluster);
             else options = isCluster ? GraknOptions.cluster() : GraknOptions.core();
             command = new Transaction(database, sessionType, transactionType, options);
         }
         return command;
     }
+
 }

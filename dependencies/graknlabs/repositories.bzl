@@ -1,4 +1,4 @@
-#
+
 # Copyright (C) 2021 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
@@ -35,5 +35,5 @@ def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/graknlabs/client-java",
-        commit = "c3e2744b3f610228531ccde7a9d1271fc98df700",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+        commit = "5d51459c78ab35965da028d6de2d0e3d140ccad8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
     )

@@ -254,7 +254,7 @@ public interface ReplCommand {
     class Transaction implements ReplCommand {
 
         private static String token = "transaction";
-        private static String helpCommand = token + " <db> schema|data read|writes [" + Options.token + "]";
+        private static String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;

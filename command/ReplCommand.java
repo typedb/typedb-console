@@ -372,7 +372,6 @@ public interface ReplCommand {
                 }
                 return optionsMenu;
             }
-
         }
 
         static class Cluster extends Core {

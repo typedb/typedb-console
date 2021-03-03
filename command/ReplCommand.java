@@ -338,7 +338,7 @@ public interface ReplCommand {
 
         static class Core {
 
-            static List<Option<GraknOptions>> options = list(
+            static List<Option.Core> options = list(
                     Option.core("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
                     Option.core("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
                     Option.core("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
@@ -361,7 +361,6 @@ public interface ReplCommand {
                 for (Option<OPT> option : options) {
                     if (option.name().equals(token)) return option;
                 }
-                // TODO create custom error message
                 throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
             }
 
@@ -378,30 +377,14 @@ public interface ReplCommand {
 
         static class Cluster extends Core {
 
-            // TODO try and figure out how not to duplicate the options, to avoid having to make changes in two places
-            static List<Option<GraknOptions.Cluster>> options = list(
-                    Option.cluster("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg).asCluster()),
-                    Option.cluster("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg).asCluster()),
-                    Option.cluster("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg).asCluster()),
-                    Option.cluster("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg).asCluster()),
-                    Option.cluster("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg).asCluster()),
-                    Option.cluster("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg).asCluster()),
-                    Option.cluster("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg).asCluster()),
-                    Option.cluster("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg).asCluster()),
+            private static List<Option.Cluster> options = withCoreOptions(
                     Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
-            private static List<Option<GraknOptions.Cluster>> optionsSimple = withCoreOptions(
-                    Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
-            );
-
-            private static List<Option<GraknOptions.Cluster>> withCoreOptions(Option<GraknOptions.Cluster> clusterOption) {
-                List<Option<GraknOptions.Cluster>> extendedOptions = new ArrayList<>();
-
-                Core.options.forEach(opt -> extendedOptions.add(Option.cluster(opt.name(), opt.arg(), (optionsCluster, arg) -> opt.builder.apply(opt, arg).asCluster())));
-
+            private static List<Option.Cluster> withCoreOptions(Option.Cluster... clusterOptions) {
+                List<Option.Cluster> extendedOptions = new ArrayList<>();
                 Core.options.forEach(opt -> extendedOptions.add(opt.asClusterOption()));
-                extendedOptions.add(clusterOption);
+                extendedOptions.addAll(Arrays.asList(clusterOptions));
                 return extendedOptions;
             }
 
@@ -414,37 +397,29 @@ public interface ReplCommand {
             }
         }
 
-        // TODO remove generics, put two constructors
-        static class Option<OPTIONS extends GraknOptions> {
+        static abstract class Option<OPTIONS extends GraknOptions> {
 
-            private final String name;
-            private final Arg arg;
-            private final String description;
-            private BiFunction<OPTIONS, Object, OPTIONS> builder;
+            final String name;
+            final Arg arg;
+            final String description;
+            BiFunction<OPTIONS, Object, OPTIONS> builder;
 
             private Option(String name, Arg arg, String description, BiFunction<OPTIONS, Object, OPTIONS> builder) {
                 this.name = name;
                 this.arg = arg;
                 this.description = description;
-                this.builder = builder;
             }
 
-            static Option<GraknOptions> core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
-                return new Option<>(name, arg, description, builder);
+            static Option.Core core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+                return new Option.Core(name, arg, description, builder);
             }
 
-            static Option<GraknOptions.Cluster> cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
-                return new Option<>(name, arg, description, builder);
+            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                return new Option.Cluster(name, arg, description, builder);
             }
 
-            Option<GraknOptions.Cluster> asClusterOption() {
-                GraknOptions c = null;
-                GraknOptions.Cluster ccluster = null;
-
-                final OPTIONS d = null;
-                builder.apply(d, arg);
-
-                return new Option<GraknOptions.Cluster>(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg).asCluster());
+            OPTIONS build(OPTIONS options, String arg) {
+                return builder.apply(options, this.arg.parse(arg));
             }
 
             public String name() { return name; }
@@ -453,8 +428,22 @@ public interface ReplCommand {
 
             public String description() { return description; }
 
-            OPTIONS build(OPTIONS options, String arg) {
-                return builder.apply(options, this.arg.parse(arg));
+            static class Core extends Option<GraknOptions> {
+
+                private Core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+                    super(name, arg, description, builder);
+                }
+
+                Option.Cluster asClusterOption() {
+                    return new Option.Cluster(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg).asCluster());
+                }
+            }
+
+            static class Cluster extends Option<GraknOptions.Cluster> {
+
+                private Cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                    super(name, arg, description, builder);
+                }
             }
 
             enum Arg {
@@ -476,11 +465,8 @@ public interface ReplCommand {
                     else throw new IllegalArgumentException("Unrecognized option argument type: " + this.name());
                 }
             }
-
         }
-
     }
-
 
     static String getHelpMenu(GraknClient client) {
         List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(

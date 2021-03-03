@@ -340,13 +340,13 @@ public interface ReplCommand {
 
             static List<Option.Core> options = list(
                     Option.core("infer", Option.Arg.BOOLEAN, "Enable or disable inference", (opt, arg) -> opt.infer((Boolean) arg)),
-                    Option.core("traceInference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
+                    Option.core("trace-inference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
                     Option.core("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
                     Option.core("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
-                    Option.core("batchSize", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
+                    Option.core("batch-size", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
                     Option.core("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
-                    Option.core("sessionIdleTimeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
-                    Option.core("schemaLockAcquireTimeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
+                    Option.core("session-idle-timeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeout((Integer) arg)),
+                    Option.core("schema-lock-acquire-timeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeout((Integer) arg))
             );
 
             public static Option<GraknOptions> coreOption(String token) throws IllegalArgumentException {
@@ -377,7 +377,7 @@ public interface ReplCommand {
         static class Cluster extends Core {
 
             private static List<Option.Cluster> options = withCoreOptions(
-                    Option.cluster("readAnyReplica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+                    Option.cluster("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
             private static List<Option.Cluster> withCoreOptions(Option.Cluster... clusterOptions) {

@@ -75,7 +75,7 @@ public class Printer {
 
     public void databaseReplica(GraknClient.Database.Replica replica) {
         String s = "{ " +
-                colorJsonKey("address: ") + replica.address().client() + ";" +
+                colorJsonKey("address: ") + replica.address().external() + ";" +
                 colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
                 colorJsonKey(" term: ") + replica.term() +
                 " }";

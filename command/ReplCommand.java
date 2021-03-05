@@ -407,6 +407,7 @@ public interface ReplCommand {
                 this.name = name;
                 this.arg = arg;
                 this.description = description;
+                this.builder = builder;
             }
 
             static Option.Core core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {

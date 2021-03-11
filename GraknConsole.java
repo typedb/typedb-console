@@ -60,6 +60,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.set;
+
 public class GraknConsole {
     private static final String COPYRIGHT = "\n" +
                     "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
@@ -85,9 +87,9 @@ public class GraknConsole {
             if (options.server() != null) {
                 client = GraknClient.core(options.server());
             } else if (options.cluster() != null) {
-                client = GraknClient.cluster(options.cluster().split(","));
+                client = GraknClient.cluster(set(options.cluster().split(",")));
             } else {
-                client = GraknClient.core();
+                client = GraknClient.core(GraknClient.DEFAULT_ADDRESS);
             }
         } catch (GraknClientException e) {
             printer.error(e.getMessage());

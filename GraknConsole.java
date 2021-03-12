@@ -342,7 +342,8 @@ public class GraknConsole {
 
     private void runClose(GraknClient.Transaction tx) {
         tx.close();
-        printer.info("Transaction closed without committing changes");
+        if (tx.type().isWrite()) printer.info("Transaction closed without committing changes");
+        else printer.info("Transaction closed");
     }
 
     private boolean runSource(GraknClient.Transaction tx, String file) {

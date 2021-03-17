@@ -43,6 +43,8 @@ java_library(
     srcs = glob(["*.java", "command/*.java", "common/*.java", "common/exception/*.java"]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",
+        "@graknlabs_client_java//api",
+        "@graknlabs_client_java//common",
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/query",

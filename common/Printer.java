@@ -17,17 +17,18 @@
 
 package grakn.console;
 
-import grakn.client.GraknClient;
-import grakn.client.concept.Concept;
-import grakn.client.concept.answer.ConceptMap;
-import grakn.client.concept.answer.ConceptMapGroup;
-import grakn.client.concept.answer.Numeric;
-import grakn.client.concept.answer.NumericGroup;
-import grakn.client.concept.thing.Attribute;
-import grakn.client.concept.thing.Relation;
-import grakn.client.concept.thing.Thing;
-import grakn.client.concept.type.RoleType;
-import grakn.client.concept.type.Type;
+import grakn.client.api.GraknTransaction;
+import grakn.client.api.answer.ConceptMap;
+import grakn.client.api.answer.ConceptMapGroup;
+import grakn.client.api.answer.Numeric;
+import grakn.client.api.answer.NumericGroup;
+import grakn.client.api.concept.Concept;
+import grakn.client.api.concept.thing.Attribute;
+import grakn.client.api.concept.thing.Relation;
+import grakn.client.api.concept.thing.Thing;
+import grakn.client.api.concept.type.RoleType;
+import grakn.client.api.concept.type.Type;
+import grakn.client.api.database.Database;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 import org.jline.utils.AttributedString;
@@ -55,11 +56,11 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptMap(ConceptMap conceptMap, GraknClient.Transaction tx) {
+    public void conceptMap(ConceptMap conceptMap, GraknTransaction tx) {
         out.println(conceptMapDisplayString(conceptMap, tx));
     }
 
-    public void conceptMapGroup(ConceptMapGroup answer, GraknClient.Transaction tx) {
+    public void conceptMapGroup(ConceptMapGroup answer, GraknTransaction tx) {
         for (ConceptMap conceptMap : answer.conceptMaps()) {
             out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
         }
@@ -69,20 +70,20 @@ public class Printer {
         out.println(answer.asNumber());
     }
 
-    public void numericGroup(NumericGroup answer, GraknClient.Transaction tx) {
+    public void numericGroup(NumericGroup answer, GraknTransaction tx) {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
     }
 
-    public void databaseReplica(GraknClient.Database.Replica replica) {
+    public void databaseReplica(Database.Replica replica) {
         String s = "{ " +
-                colorJsonKey("address: ") + replica.address().external() + ";" +
+                colorJsonKey("address: ") + replica.address() + ";" +
                 colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
                 colorJsonKey(" term: ") + replica.term() +
                 " }";
         out.println(s);
     }
 
-    private String conceptMapDisplayString(ConceptMap conceptMap, GraknClient.Transaction tx) {
+    private String conceptMapDisplayString(ConceptMap conceptMap, GraknTransaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
@@ -97,7 +98,7 @@ public class Printer {
         return sb.toString();
     }
 
-    private String conceptDisplayString(Concept concept, GraknClient.Transaction tx) {
+    private String conceptDisplayString(Concept concept, GraknTransaction tx) {
         StringBuilder sb = new StringBuilder();
         if (concept instanceof Attribute<?>) {
             sb.append(attributeDisplayString(concept.asThing().asAttribute()));
@@ -115,14 +116,14 @@ public class Printer {
         return sb.toString();
     }
 
-    private String isaDisplayString(Thing thing, GraknClient.Transaction tx) {
+    private String isaDisplayString(Thing thing, GraknTransaction tx) {
         StringBuilder sb = new StringBuilder();
         Type type = thing.asRemote(tx).getType();
-        sb.append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel()));
+        sb.append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel().scopedName()));
         return sb.toString();
     }
 
-    private String relationDisplayString(Relation relation, GraknClient.Transaction tx) {
+    private String relationDisplayString(Relation relation, GraknTransaction tx) {
         StringBuilder sb = new StringBuilder();
         List<String> rolePlayerStrings = new ArrayList<>();
         Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.asRemote(tx).getPlayersByRoleType();
@@ -130,7 +131,7 @@ public class Printer {
             RoleType role = rolePlayer.getKey();
             List<? extends Thing> things = rolePlayer.getValue();
             for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel()) + ": " + colorKeyword(GraqlToken.Constraint.IID.toString()) + " " + thing.getIID();
+                String rolePlayerString = colorType(role.getLabel().scopedName()) + ": " + colorKeyword(GraqlToken.Constraint.IID.toString()) + " " + thing.getIID();
                 rolePlayerStrings.add(rolePlayerString);
             }
         }
@@ -146,21 +147,19 @@ public class Printer {
         return sb.toString();
     }
 
-    private String typeDisplayString(Type type, GraknClient.Transaction tx) {
+    private String typeDisplayString(Type type, GraknTransaction tx) {
         StringBuilder sb = new StringBuilder();
-
-        String label = type.isRoleType() ? type.asRoleType().getScopedLabel() : type.asThingType().getLabel();
 
         sb.append(colorKeyword(GraqlToken.Constraint.TYPE.toString()))
                 .append(" ")
-                .append(colorType(label));
+                .append(colorType(type.getLabel().toString()));
 
         Type superType = type.asRemote(tx).getSupertype();
         if (superType != null) {
             sb.append(" ")
                     .append(colorKeyword(GraqlToken.Constraint.SUB.toString()))
                     .append(" ")
-                    .append(colorType(superType.getLabel()));
+                    .append(colorType(superType.getLabel().scopedName()));
         }
         return sb.toString();
     }

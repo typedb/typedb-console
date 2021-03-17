@@ -17,8 +17,10 @@
 
 package grakn.console;
 
-import grakn.client.GraknClient;
-import grakn.client.GraknOptions;
+import grakn.client.api.GraknClient;
+import grakn.client.api.GraknOptions;
+import grakn.client.api.GraknSession;
+import grakn.client.api.GraknTransaction;
 import grakn.common.collection.Pair;
 import org.jline.reader.LineReader;
 
@@ -258,11 +260,11 @@ public interface ReplCommand {
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
-        private final GraknClient.Session.Type sessionType;
-        private final GraknClient.Transaction.Type transactionType;
+        private final GraknSession.Type sessionType;
+        private final GraknTransaction.Type transactionType;
         private final GraknOptions options;
 
-        public Transaction(String database, GraknClient.Session.Type sessionType, GraknClient.Transaction.Type transactionType, GraknOptions options) {
+        public Transaction(String database, GraknSession.Type sessionType, GraknTransaction.Type transactionType, GraknOptions options) {
             this.database = database;
             this.sessionType = sessionType;
             this.transactionType = transactionType;
@@ -273,11 +275,11 @@ public interface ReplCommand {
             return database;
         }
 
-        public GraknClient.Session.Type sessionType() {
+        public GraknSession.Type sessionType() {
             return sessionType;
         }
 
-        public GraknClient.Transaction.Type transactionType() {
+        public GraknTransaction.Type transactionType() {
             return transactionType;
         }
 
@@ -527,8 +529,8 @@ public interface ReplCommand {
         } else if (tokens.length >= 4 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("schema") || tokens[2].equals("data")) && (tokens[3].equals("read") || tokens[3].equals("write"))) {
             String database = tokens[1];
-            GraknClient.Session.Type sessionType = tokens[2].equals("schema") ? GraknClient.Session.Type.SCHEMA : GraknClient.Session.Type.DATA;
-            GraknClient.Transaction.Type transactionType = tokens[3].equals("read") ? GraknClient.Transaction.Type.READ : GraknClient.Transaction.Type.WRITE;
+            GraknSession.Type sessionType = tokens[2].equals("schema") ? GraknSession.Type.SCHEMA : GraknSession.Type.DATA;
+            GraknTransaction.Type transactionType = tokens[3].equals("read") ? GraknTransaction.Type.READ : GraknTransaction.Type.WRITE;
             GraknOptions options;
             if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCluster);
             else options = isCluster ? GraknOptions.cluster() : GraknOptions.core();

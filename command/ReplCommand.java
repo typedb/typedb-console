@@ -22,9 +22,9 @@ import grakn.client.api.GraknOptions;
 import grakn.client.api.GraknSession;
 import grakn.client.api.GraknTransaction;
 import grakn.common.collection.Pair;
-import grakn.console.common.exception.GraknConsoleException;
 import grakn.console.common.Printer;
 import grakn.console.common.Utils;
+import grakn.console.common.exception.GraknConsoleException;
 import org.jline.reader.LineReader;
 
 import java.util.ArrayList;

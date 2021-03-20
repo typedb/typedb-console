@@ -27,6 +27,7 @@ import grakn.client.api.answer.ConceptMapGroup;
 import grakn.client.api.answer.Numeric;
 import grakn.client.api.answer.NumericGroup;
 import grakn.client.api.database.Database;
+import grakn.client.common.exception.GraknClientException;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
@@ -60,16 +61,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import grakn.client.common.GraknClientException;
 
 import static grakn.common.collection.Collections.set;
+import static java.util.stream.Collectors.toList;
 
 public class GraknConsole {
     private static final String COPYRIGHT = "\n" +
-                    "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-                    "Copyright (C) 2021 Grakn Labs\n";
+            "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
+            "Copyright (C) 2021 Grakn Labs\n";
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
@@ -110,12 +110,12 @@ public class GraknConsole {
             printer.error("Failed to open file '" + options.script() + "'");
             return false;
         }
-        return runCommands(options, Arrays.stream(scriptLines.split("\n")).collect(Collectors.toList()));
+        return runCommands(options, Arrays.stream(scriptLines.split("\n")).collect(toList()));
     }
 
     public boolean runCommands(CommandLineOptions options, List<String> commandStrings) {
-        commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(Collectors.toList());
-        boolean[] cancelled = new boolean[] { false };
+        commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
+        boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
         try (GraknClient client = createGraknClient(options)) {
             int i = 0;
@@ -248,7 +248,8 @@ public class GraknConsole {
                 .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-transaction-history").toAbsolutePath())
                 .build();
         StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
-        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) prompt.append("[any-replica]");
+        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
+            prompt.append("[any-replica]");
         prompt.append("> ");
         try (GraknSession session = client.session(database, sessionType, options);
              GraknTransaction tx = session.transaction(transactionType, options)) {
@@ -287,7 +288,8 @@ public class GraknConsole {
 
     private boolean runDatabaseList(GraknClient client) {
         try {
-            if (client.databases().all().size() > 0) client.databases().all().forEach(database -> printer.info(database.name()));
+            if (client.databases().all().size() > 0)
+                client.databases().all().forEach(database -> printer.info(database.name()));
             else printer.info("No databases are present on the server.");
             return true;
         } catch (GraknClientException e) {
@@ -363,7 +365,7 @@ public class GraknConsole {
     private boolean runQuery(GraknTransaction tx, String queryString) {
         List<GraqlQuery> queries;
         try {
-            queries = Graql.parseQueries(queryString).collect(Collectors.toList());
+            queries = Graql.parseQueries(queryString).collect(toList());
         } catch (GraqlException e) {
             printer.error(e.getMessage());
             return false;
@@ -394,14 +396,14 @@ public class GraknConsole {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
                 printCancellableResult(result, x -> printer.numericGroup(x, tx));
             } else if (query instanceof GraqlCompute) {
-                throw new GraknClientException("Compute query is not yet supported");
+                throw new GraknConsoleException("Compute query is not yet supported");
             }
         }
         return true;
     }
 
     private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
-        long[] counter = new long[] {0};
+        long[] counter = new long[]{0};
         Instant start = Instant.now();
         Terminal.SignalHandler prevHandler = null;
         try {
@@ -419,7 +421,7 @@ public class GraknConsole {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            throw (GraknClientException)e.getCause();
+            throw (GraknClientException) e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter[0] + ", duration: " + Duration.between(start, end).toMillis() + " ms");

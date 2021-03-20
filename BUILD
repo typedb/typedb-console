@@ -40,7 +40,7 @@ genrule(
 
 java_library(
     name = "console",
-    srcs = glob(["*.java", "command/*.java", "common/*.java", "common/exception/*.java"]) + [":version"],
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
         "@graknlabs_client_java//:client-java",
         "@graknlabs_client_java//api",

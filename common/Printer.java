@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console;
+package grakn.console.common;
 
 import grakn.client.api.GraknTransaction;
 import grakn.client.api.answer.ConceptMap;

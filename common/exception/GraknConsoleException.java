@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console;
+package grakn.console.common.exception;
 
 import grakn.common.exception.ErrorMessage;
 

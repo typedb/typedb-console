@@ -15,13 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console;
+package grakn.console.command;
 
 import grakn.client.api.GraknClient;
 import grakn.client.api.GraknOptions;
 import grakn.client.api.GraknSession;
 import grakn.client.api.GraknTransaction;
 import grakn.common.collection.Pair;
+import grakn.console.common.exception.GraknConsoleException;
+import grakn.console.common.Printer;
+import grakn.console.common.Utils;
 import org.jline.reader.LineReader;
 
 import java.util.ArrayList;
@@ -31,7 +34,7 @@ import java.util.function.BiFunction;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
-import static grakn.console.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface ReplCommand {
 

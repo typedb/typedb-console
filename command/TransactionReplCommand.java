@@ -15,9 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console;
+package grakn.console.command;
 
 import grakn.common.collection.Pair;
+import grakn.console.common.Utils;
+import grakn.console.common.exception.GraknConsoleException;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
@@ -27,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static grakn.common.collection.Collections.pair;
-import static grakn.console.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface TransactionReplCommand {
 
@@ -36,7 +38,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Exit asExit() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isHelp() {
@@ -44,7 +46,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Help asHelp() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClear() {
@@ -52,7 +54,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Clear asClear() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isCommit() {
@@ -60,7 +62,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Commit asCommit() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isRollback() {
@@ -68,7 +70,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Rollback asRollback() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClose() {
@@ -76,7 +78,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Close asClose() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isSource() {
@@ -84,7 +86,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Source asSource() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isQuery() {
@@ -92,7 +94,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Query asQuery() {
-        throw new grakn.console.GraknConsoleException(ILLEGAL_CAST);
+        throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
     class Exit implements TransactionReplCommand {

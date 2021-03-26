@@ -76,7 +76,7 @@ java_binary(
 java_deps(
     name = "console-deps",
     target = ":console-binary",
-    java_deps_root = "console/services/lib/",
+    java_deps_root = "console/lib/",
     visibility = ["//visibility:public"],
 )
 
@@ -177,7 +177,7 @@ assemble_apt(
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
     empty_dirs = [
-         "opt/grakn/core/console/services/lib/",
+         "opt/grakn/core/console/lib/",
     ],
 )
 

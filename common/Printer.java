@@ -30,7 +30,6 @@ import grakn.client.api.concept.type.RoleType;
 import grakn.client.api.concept.type.Type;
 import grakn.client.api.database.Database;
 import graql.lang.common.GraqlToken;
-import graql.lang.pattern.variable.Reference;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -87,9 +86,8 @@ public class Printer {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
-            Reference.Name variable = Reference.name(entry.getKey());
             Concept concept = entry.getValue();
-            sb.append(variable.syntax());
+            sb.append(GraqlToken.Char.$).append(entry.getKey());
             sb.append(" ");
             sb.append(conceptDisplayString(concept, tx));
             sb.append("; ");

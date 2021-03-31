@@ -78,6 +78,14 @@ public interface ReplCommand {
         throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
+    default boolean isDatabaseSchema() {
+        return false;
+    }
+
+    default Database.Schema asDatabaseSchema() {
+        throw new GraknConsoleException(ILLEGAL_CAST);
+    }
+
     default boolean isDatabaseDelete() {
         return false;
     }
@@ -224,6 +232,33 @@ public interface ReplCommand {
 
             @Override
             public Database.Delete asDatabaseDelete() {
+                return this;
+            }
+        }
+
+        public static class Schema extends ReplCommand.Database {
+
+            private static String token = "schema";
+            private static String helpCommand = Database.token + " " + token + " " + "<db>";
+            private static String description = "Print the schema of the database with name <db>";
+
+            private final String database;
+
+            public Schema(String database) {
+                this.database = database;
+            }
+
+            public String database() {
+                return database;
+            }
+
+            @Override
+            public boolean isDatabaseSchema() {
+                return true;
+            }
+
+            @Override
+            public Database.Schema asDatabaseSchema() {
                 return this;
             }
         }

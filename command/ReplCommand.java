@@ -78,6 +78,14 @@ public interface ReplCommand {
         throw new GraknConsoleException(ILLEGAL_CAST);
     }
 
+    default boolean isDatabaseSchema() {
+        return false;
+    }
+
+    default Database.Schema asDatabaseSchema() {
+        throw new GraknConsoleException(ILLEGAL_CAST);
+    }
+
     default boolean isDatabaseDelete() {
         return false;
     }
@@ -224,6 +232,33 @@ public interface ReplCommand {
 
             @Override
             public Database.Delete asDatabaseDelete() {
+                return this;
+            }
+        }
+
+        public static class Schema extends ReplCommand.Database {
+
+            private static String token = "schema";
+            private static String helpCommand = Database.token + " " + token + " " + "<db>";
+            private static String description = "Print the schema of the database with name <db>";
+
+            private final String database;
+
+            public Schema(String database) {
+                this.database = database;
+            }
+
+            public String database() {
+                return database;
+            }
+
+            @Override
+            public boolean isDatabaseSchema() {
+                return true;
+            }
+
+            @Override
+            public Database.Schema asDatabaseSchema() {
                 return this;
             }
         }
@@ -526,6 +561,9 @@ public interface ReplCommand {
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Delete.token)) {
             String database = tokens[2];
             command = new Database.Delete(database);
+        } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Schema.token)) {
+            String database = tokens[2];
+            command = new Database.Schema(database);
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Replicas.token)) {
             String database = tokens[2];
             command = new Database.Replicas(database);

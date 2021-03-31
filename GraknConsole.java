@@ -134,6 +134,9 @@ public class GraknConsole {
                     } else if (command.isDatabaseCreate()) {
                         boolean success = runDatabaseCreate(client, command.asDatabaseCreate().database());
                         if (!success) return false;
+                    } else if (command.isDatabaseSchema()) {
+                        boolean success = runDatabaseSchema(client, command.asDatabaseSchema().database());
+                        if (!success) return false;
                     } else if (command.isDatabaseDelete()) {
                         boolean success = runDatabaseDelete(client, command.asDatabaseDelete().database());
                         if (!success) return false;
@@ -229,6 +232,8 @@ public class GraknConsole {
                 runDatabaseCreate(client, command.asDatabaseCreate().database());
             } else if (command.isDatabaseDelete()) {
                 runDatabaseDelete(client, command.asDatabaseDelete().database());
+            } else if (command.isDatabaseSchema()) {
+                runDatabaseSchema(client, command.asDatabaseSchema().database());
             } else if (command.isDatabaseReplicas()) {
                 runDatabaseReplicas(client, command.asDatabaseReplicas().database());
             } else if (command.isTransaction()) {
@@ -306,6 +311,17 @@ public class GraknConsole {
         try {
             client.databases().create(database);
             printer.info("Database '" + database + "' created");
+            return true;
+        } catch (GraknClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runDatabaseSchema(GraknClient client, String database) {
+        try {
+            String schema = client.databases().get(database).schema();
+            printer.info(schema);
             return true;
         } catch (GraknClientException e) {
             printer.error(e.getMessage());

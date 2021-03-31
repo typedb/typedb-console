@@ -561,6 +561,9 @@ public interface ReplCommand {
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Delete.token)) {
             String database = tokens[2];
             command = new Database.Delete(database);
+        } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Schema.token)) {
+            String database = tokens[2];
+            command = new Database.Schema(database);
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Replicas.token)) {
             String database = tokens[2];
             command = new Database.Replicas(database);

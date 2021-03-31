@@ -69,8 +69,9 @@ java_binary(
     main_class = "grakn.console.GraknConsole",
     runtime_deps = [":console"],
     visibility = ["//:__pkg__"],
-    resource_strip_prefix = "conf/logback",
-    resources = ["//conf/logback:logback.xml"]
+    # If running the console binary directly, include the following logback to reduce noise
+#    resource_strip_prefix = "conf/logback",
+#    resources = ["//conf/logback:logback.xml"]
 )
 
 java_deps(

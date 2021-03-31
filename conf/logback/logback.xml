@@ -16,6 +16,4 @@
   -->
 <configuration debug="false">
     <root level="OFF"/>
-    <!-- suppress logback initialisation messages -->
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 </configuration>

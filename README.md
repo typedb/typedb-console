@@ -47,6 +47,12 @@ Grakn Console provides two levels of interaction: database-level commands and tr
   > database delete my-grakn-database
   Database 'my-grakn-database' deleted
   ```
+- `database schema <db>` : Print the schema of a database with name `<db>` on the server. For example:
+  ```
+  > database schema my-grakn-database
+  define
+  person sub entity;
+  ```
 - `transaction <db> schema|data read|write` : Start a transaction to database `<db>` with session type `schema` or `data`, and transaction type `write` or `read`. For example:
   ```
   > transaction my-grakn-database schema write

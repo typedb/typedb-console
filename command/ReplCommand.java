@@ -512,7 +512,8 @@ public interface ReplCommand {
         List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
-                pair(Database.Delete.helpCommand, Database.Delete.description)));
+                pair(Database.Delete.helpCommand, Database.Delete.description),
+                pair(Database.Schema.helpCommand, Database.Schema.description)));
 
 
         if (client.isCluster()) {

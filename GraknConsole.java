@@ -28,6 +28,7 @@ import grakn.client.api.answer.Numeric;
 import grakn.client.api.answer.NumericGroup;
 import grakn.client.api.database.Database;
 import grakn.client.common.exception.GraknClientException;
+import grakn.common.util.Java;
 import grakn.console.command.ReplCommand;
 import grakn.console.command.TransactionReplCommand;
 import grakn.console.common.Printer;
@@ -46,6 +47,8 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.InfoCmp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import javax.annotation.Nullable;
@@ -68,9 +71,12 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
 
 public class GraknConsole {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknConsole.class);
+
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
             "Copyright (C) 2021 Grakn Labs\n";
@@ -452,6 +458,7 @@ public class GraknConsole {
     }
 
     public static void main(String[] args) {
+        configureAndVerifyJavaVersion();
         CommandLineOptions options = parseCommandLine(args);
         GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
         if (options.script() == null && options.commands() == null) {
@@ -462,6 +469,15 @@ public class GraknConsole {
         } else if (options.commands() != null) {
             boolean success = console.runCommands(options, options.commands());
             if (!success) System.exit(1);
+        }
+    }
+
+    private static void configureAndVerifyJavaVersion() {
+        int majorVersion = Java.getMajorVersion();
+        if (majorVersion == Java.UNKNOWN_VERSION) {
+            LOG.warn("Could not detect Java version from version string '{}'. Will start Grakn Core Server anyway.", System.getProperty("java.version"));
+        } else if (majorVersion < 11) {
+            throw GraknConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
     }
 

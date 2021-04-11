@@ -34,4 +34,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
             super(codePrefix, number, messagePrefix, message);
         }
     }
+
+    public static class Console extends ErrorMessage {
+        public static final Console INCOMPATIBLE_JAVA_RUNTIME =
+                new Console(1, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+
+        private static final String codePrefix = "CON";
+        private static final String messagePrefix = "Invalid Console Operation";
+
+        Console(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
 }

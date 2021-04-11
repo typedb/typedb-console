@@ -118,6 +118,8 @@
 @maven//:org_apiguardian_apiguardian_api_1_1_0
 @maven//:org_codehaus_mojo_animal_sniffer_annotations
 @maven//:org_codehaus_mojo_animal_sniffer_annotations_1_18
+@maven//:org_fusesource_jansi_jansi
+@maven//:org_fusesource_jansi_jansi_2_0_1
 @maven//:org_hamcrest_hamcrest
 @maven//:org_hamcrest_hamcrest_2_2
 @maven//:org_hamcrest_hamcrest_all
@@ -128,6 +130,10 @@
 @maven//:org_hamcrest_hamcrest_library_1_3
 @maven//:org_jline_jline
 @maven//:org_jline_jline_3_17_1
+@maven//:org_jline_jline_terminal
+@maven//:org_jline_jline_terminal_3_17_1
+@maven//:org_jline_jline_terminal_jansi
+@maven//:org_jline_jline_terminal_jansi_3_17_1
 @maven//:org_mockito_mockito_core
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis

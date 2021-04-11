@@ -21,6 +21,7 @@ artifacts = [
   "io.grpc:grpc-core",
   "io.grpc:grpc-api",
   "org.jline:jline",
+  "org.jline:jline-terminal-jansi",
   "org.hamcrest:hamcrest-library",
   "org.slf4j:slf4j-api"
 ]

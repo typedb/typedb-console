@@ -56,6 +56,7 @@ java_library(
         "@maven//:io_grpc_grpc_core",
         "@maven//:io_grpc_grpc_api",
         "@maven//:org_jline_jline",
+        "@maven//:org_jline_jline_terminal_jansi",
         "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
     ],

@@ -26,11 +26,20 @@ public class GraknConsoleException extends RuntimeException {
         assert !getMessage().contains("%s");
     }
 
+    private GraknConsoleException(ErrorMessage error, Object... parameters) {
+        super(error.message(parameters));
+        assert !getMessage().contains("%s");
+    }
+
     public GraknConsoleException(String errorMessage) {
         super(errorMessage);
     }
 
     public GraknConsoleException(IllegalArgumentException e) {
         super(e);
+    }
+
+    public static GraknConsoleException of(ErrorMessage errorMessage, Object... parameters) {
+        return new GraknConsoleException(errorMessage, parameters);
     }
 }

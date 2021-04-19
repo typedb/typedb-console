@@ -23,6 +23,32 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
+    public static class TransactionRepl extends ErrorMessage {
+
+        public static final TransactionRepl INVALID_EXIT_ARGS =
+                new TransactionRepl(1, "'exit' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_HELP_ARGS =
+                new TransactionRepl(2, "'help' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_CLEAR_ARGS =
+                new TransactionRepl(3, "'clear' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_COMMIT_ARGS =
+                new TransactionRepl(4, "'commit' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_ROLLBACK_ARGS =
+                new TransactionRepl(5, "'rollback' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_CLOSE_ARGS =
+                new TransactionRepl(6, "'close' expects %s space-separated arguments, received %s.");
+        public static final TransactionRepl INVALID_SOURCE_ARGS =
+                new TransactionRepl(7, "'source' expects %s space-separated arguments, received %s.");
+
+        private static final String codePrefix = "TXN";
+        private static final String messagePrefix = "Invalid Transaction command";
+
+        TransactionRepl(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+
+    }
+
     public static class Internal extends ErrorMessage {
         public static final Internal ILLEGAL_CAST =
                 new Internal(2, "Illegal casting operation from '%s' to '%s'.");
@@ -46,4 +72,5 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
             super(codePrefix, number, messagePrefix, message);
         }
     }
+
 }

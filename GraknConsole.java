@@ -28,6 +28,7 @@ import grakn.client.api.answer.Numeric;
 import grakn.client.api.answer.NumericGroup;
 import grakn.client.api.database.Database;
 import grakn.client.common.exception.GraknClientException;
+import grakn.common.collection.Either;
 import grakn.common.util.Java;
 import grakn.console.command.ReplCommand;
 import grakn.console.command.TransactionReplCommand;
@@ -163,20 +164,23 @@ public class GraknConsole {
                             for (i += 1; i < commandStrings.size() && !cancelled[0]; i++) {
                                 String txCommandString = commandStrings.get(i);
                                 printer.info("++ " + txCommandString);
-                                TransactionReplCommand txCommand = Objects.requireNonNull(TransactionReplCommand.getCommand(txCommandString));
-                                if (txCommand.isCommit()) {
+                                Either<TransactionReplCommand, String> txCommand = TransactionReplCommand.getCommand(txCommandString);
+                                if (txCommand.isSecond()) {
+                                    printer.error(txCommand.second());
+                                    return false;
+                                } else if (txCommand.first().isCommit()) {
                                     runCommit(tx);
                                     break;
-                                } else if (txCommand.isRollback()) {
+                                } else if (txCommand.first().isRollback()) {
                                     runRollback(tx);
-                                } else if (txCommand.isClose()) {
+                                } else if (txCommand.first().isClose()) {
                                     runClose(tx);
                                     break;
-                                } else if (txCommand.isSource()) {
-                                    boolean success = runSource(tx, txCommand.asSource().file());
+                                } else if (txCommand.first().isSource()) {
+                                    boolean success = runSource(tx, txCommand.first().asSource().file());
                                     if (!success) return false;
-                                } else if (txCommand.isQuery()) {
-                                    boolean success = runQuery(tx, txCommand.asQuery().query());
+                                } else if (txCommand.first().isQuery()) {
+                                    boolean success = runQuery(tx, txCommand.first().asQuery().query());
                                     if (!success) return false;
                                 } else {
                                     printer.error("Command is not available while running console script.");
@@ -269,30 +273,32 @@ public class GraknConsole {
         try (GraknSession session = client.session(database, sessionType, options);
              GraknTransaction tx = session.transaction(transactionType, options)) {
             while (true) {
-                TransactionReplCommand command;
+                Either<TransactionReplCommand, String> command;
                 try {
                     command = TransactionReplCommand.getCommand(reader, prompt.toString());
                 } catch (InterruptedException e) {
                     break;
                 }
-                if (command.isExit()) {
+                if (command.isSecond()) {
+                    printer.error(command.second());
+                } else if (command.first().isExit()) {
                     return true;
-                } else if (command.isClear()) {
+                } else if (command.first().isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-                } else if (command.isHelp()) {
+                } else if (command.first().isHelp()) {
                     printer.info(TransactionReplCommand.getHelpMenu());
-                } else if (command.isCommit()) {
+                } else if (command.first().isCommit()) {
                     runCommit(tx);
                     break;
-                } else if (command.isRollback()) {
+                } else if (command.first().isRollback()) {
                     runRollback(tx);
-                } else if (command.isClose()) {
+                } else if (command.first().isClose()) {
                     runClose(tx);
                     break;
-                } else if (command.isSource()) {
-                    runSource(tx, command.asSource().file());
-                } else if (command.isQuery()) {
-                    runQuery(tx, command.asQuery().query());
+                } else if (command.first().isSource()) {
+                    runSource(tx, command.first().asSource().file());
+                } else if (command.first().isQuery()) {
+                    runQuery(tx, command.first().asQuery().query());
                 }
             }
         } catch (GraknClientException e) {

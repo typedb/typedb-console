@@ -17,8 +17,10 @@
 
 package grakn.console.command;
 
+import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.console.common.Utils;
+import grakn.console.common.exception.ErrorMessage;
 import grakn.console.common.exception.GraknConsoleException;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
@@ -280,47 +282,48 @@ public interface TransactionReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    static TransactionReplCommand getCommand(LineReader reader, String prompt) throws InterruptedException {
+    static Either<TransactionReplCommand, String> getCommand(LineReader reader, String prompt) throws InterruptedException {
         String line = Utils.readNonEmptyLine(reader, prompt);
-        TransactionReplCommand command = getCommand(line);
-        if (command.isQuery()) {
-            String query = readMultilineQuery(reader, prompt, command.asQuery().query());
-            command = new Query(query);
-        }
-        if (command.isQuery()) reader.getHistory().add(command.asQuery().query().trim());
-        else reader.getHistory().add(line.trim());
+        Either<TransactionReplCommand, String> command = getCommand(line);
+        if (command.isSecond()) return command;
+        else if (command.first().isQuery()) {
+            String query = readMultilineQuery(reader, prompt, command.first().asQuery().query());
+            Query multiLine = new Query(query);
+            reader.getHistory().add(multiLine.query().trim());
+            command = Either.first(multiLine);
+        } else reader.getHistory().add(line.trim());
         return command;
     }
 
-    static TransactionReplCommand getCommand(String line) {
+    static Either<TransactionReplCommand, String> getCommand(String line) {
         TransactionReplCommand command;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens[0].equals(Exit.token)) {
-            if (tokens.length - 1 != Exit.args) throw new GraknConsoleException(INVALID_EXIT_ARGS.message(Exit.args, tokens.length - 1));
+            if (tokens.length - 1 != Exit.args) return Either.second(INVALID_EXIT_ARGS.message(Exit.args, tokens.length - 1));
             command = new Exit();
         } else if (tokens[0].equals(Help.token)) {
-            if (tokens.length - 1 != Help.args) throw new GraknConsoleException(INVALID_HELP_ARGS.message(Help.args, tokens.length - 1));
+            if (tokens.length - 1 != Help.args) return Either.second(INVALID_HELP_ARGS.message(Help.args, tokens.length - 1));
             command = new Help();
         } else if (tokens[0].equals(Clear.token)) {
-            if (tokens.length - 1 != Clear.args) throw new GraknConsoleException(INVALID_CLEAR_ARGS.message(Clear.args, tokens.length - 1));
+            if (tokens.length - 1 != Clear.args) return Either.second(INVALID_CLEAR_ARGS.message(Clear.args, tokens.length - 1));
             command = new Clear();
         } else if (tokens[0].equals(Commit.token)) {
-            if (tokens.length - 1 != Commit.args) throw new GraknConsoleException(INVALID_COMMIT_ARGS.message(Commit.args, tokens.length - 1));
+            if (tokens.length - 1 != Commit.args) return Either.second(INVALID_COMMIT_ARGS.message(Commit.args, tokens.length - 1));
             command = new Commit();
         } else if (tokens[0].equals(Rollback.token)) {
-            if (tokens.length - 1 != Rollback.args) throw new GraknConsoleException(INVALID_ROLLBACK_ARGS.message(Rollback.args, tokens.length - 1));
+            if (tokens.length - 1 != Rollback.args) return Either.second(INVALID_ROLLBACK_ARGS.message(Rollback.args, tokens.length - 1));
             command = new Rollback();
         } else if (tokens[0].equals(Close.token)) {
-            if (tokens.length - 1 != Close.args) throw new GraknConsoleException(INVALID_CLOSE_ARGS.message(Close.args, tokens.length - 1));
+            if (tokens.length - 1 != Close.args) return Either.second(INVALID_CLOSE_ARGS.message(Close.args, tokens.length - 1));
             command = new Close();
         } else if (tokens[0].equals(Source.token)) {
-            if (tokens.length - 1 != Source.args) throw new GraknConsoleException(INVALID_SOURCE_ARGS.message(Source.args, tokens.length - 1));
+            if (tokens.length - 1 != Source.args) return Either.second(INVALID_SOURCE_ARGS.message(Source.args, tokens.length - 1));
             String file = tokens[1];
             command = new Source(file);
         } else {
             command = new Query(line);
         }
-        return command;
+        return Either.first(command);
     }
 
     static String readMultilineQuery(LineReader reader, String prompt, String firstQueryLine) {

@@ -311,10 +311,6 @@ public class GraknConsole {
         return false;
     }
 
-    private executeTransactionReplCommand(TransactionReplCommand command) {
-
-    }
-
     private boolean runDatabaseList(GraknClient client) {
         try {
             if (client.databases().all().size() > 0)

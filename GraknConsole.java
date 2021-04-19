@@ -281,30 +281,38 @@ public class GraknConsole {
                 }
                 if (command.isSecond()) {
                     printer.error(command.second());
-                } else if (command.first().isExit()) {
-                    return true;
-                } else if (command.first().isClear()) {
-                    reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-                } else if (command.first().isHelp()) {
-                    printer.info(TransactionReplCommand.getHelpMenu());
-                } else if (command.first().isCommit()) {
-                    runCommit(tx);
-                    break;
-                } else if (command.first().isRollback()) {
-                    runRollback(tx);
-                } else if (command.first().isClose()) {
-                    runClose(tx);
-                    break;
-                } else if (command.first().isSource()) {
-                    runSource(tx, command.first().asSource().file());
-                } else if (command.first().isQuery()) {
-                    runQuery(tx, command.first().asQuery().query());
+                    continue;
+                } else {
+                    TransactionReplCommand replCommand = command.first();
+                    if (replCommand.isExit()) {
+                        return true;
+                    } else if (replCommand.isClear()) {
+                        reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
+                    } else if (replCommand.isHelp()) {
+                        printer.info(TransactionReplCommand.getHelpMenu());
+                    } else if (replCommand.isCommit()) {
+                        runCommit(tx);
+                        break;
+                    } else if (replCommand.isRollback()) {
+                        runRollback(tx);
+                    } else if (replCommand.isClose()) {
+                        runClose(tx);
+                        break;
+                    } else if (replCommand.isSource()) {
+                        runSource(tx, replCommand.asSource().file());
+                    } else if (replCommand.isQuery()) {
+                        runQuery(tx, replCommand.asQuery().query());
+                    }
                 }
             }
         } catch (GraknClientException e) {
             printer.error(e.getMessage());
         }
         return false;
+    }
+
+    private executeTransactionReplCommand(TransactionReplCommand command) {
+
     }
 
     private boolean runDatabaseList(GraknClient client) {

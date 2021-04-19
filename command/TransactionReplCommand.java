@@ -30,6 +30,13 @@ import java.util.List;
 
 import static grakn.common.collection.Collections.pair;
 import static grakn.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
+import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
 
 public interface TransactionReplCommand {
 
@@ -102,6 +109,7 @@ public interface TransactionReplCommand {
         private static String token = "exit";
         private static String helpCommand = token;
         private static String description = "Exit console";
+        private static int args = 0;
 
         @Override
         public boolean isExit() {
@@ -119,6 +127,7 @@ public interface TransactionReplCommand {
         private static String token = "help";
         private static String helpCommand = token;
         private static String description = "Print this help menu";
+        private static int args = 0;
 
         @Override
         public boolean isHelp() {
@@ -136,6 +145,7 @@ public interface TransactionReplCommand {
         private static String token = "clear";
         private static String helpCommand = token;
         private static String description = "Clear console screen";
+        private static int args = 0;
 
         @Override
         public boolean isClear() {
@@ -153,6 +163,7 @@ public interface TransactionReplCommand {
         private static String token = "commit";
         private static String helpCommand = token;
         private static String description = "Commit the transaction changes and close transaction";
+        private static int args = 0;
 
         @Override
         public boolean isCommit() {
@@ -170,6 +181,7 @@ public interface TransactionReplCommand {
         private static String token = "rollback";
         private static String helpCommand = token;
         private static String description = "Rollback the transaction to the beginning state";
+        private static int args = 0;
 
         @Override
         public boolean isRollback() {
@@ -187,6 +199,7 @@ public interface TransactionReplCommand {
         private static String token = "close";
         private static String helpCommand = token;
         private static String description = "Close the transaction without committing changes";
+        private static int args = 0;
 
         @Override
         public boolean isClose() {
@@ -204,6 +217,7 @@ public interface TransactionReplCommand {
         private static String token = "source";
         private static String helpCommand = token + " <file>";
         private static String description = "Run Graql queries in file";
+        private static int args = 1;
 
         private final String file;
 
@@ -281,19 +295,26 @@ public interface TransactionReplCommand {
     static TransactionReplCommand getCommand(String line) {
         TransactionReplCommand command;
         String[] tokens = Utils.splitLineByWhitespace(line);
-        if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
+        if (tokens[0].equals(Exit.token)) {
+            if (tokens.length - 1 != Exit.args) throw new GraknConsoleException(INVALID_EXIT_ARGS.message(Exit.args, tokens.length - 1));
             command = new Exit();
-        } else if (tokens.length == 1 && tokens[0].equals(Help.token)) {
+        } else if (tokens[0].equals(Help.token)) {
+            if (tokens.length - 1 != Help.args) throw new GraknConsoleException(INVALID_HELP_ARGS.message(Help.args, tokens.length - 1));
             command = new Help();
-        } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
+        } else if (tokens[0].equals(Clear.token)) {
+            if (tokens.length - 1 != Clear.args) throw new GraknConsoleException(INVALID_CLEAR_ARGS.message(Clear.args, tokens.length - 1));
             command = new Clear();
-        } else if (tokens.length == 1 && tokens[0].equals(Commit.token)) {
+        } else if (tokens[0].equals(Commit.token)) {
+            if (tokens.length - 1 != Commit.args) throw new GraknConsoleException(INVALID_COMMIT_ARGS.message(Commit.args, tokens.length - 1));
             command = new Commit();
-        } else if (tokens.length == 1 && tokens[0].equals(Rollback.token)) {
+        } else if (tokens[0].equals(Rollback.token)) {
+            if (tokens.length - 1 != Rollback.args) throw new GraknConsoleException(INVALID_ROLLBACK_ARGS.message(Rollback.args, tokens.length - 1));
             command = new Rollback();
-        } else if (tokens.length == 1 && tokens[0].equals(Close.token)) {
+        } else if (tokens[0].equals(Close.token)) {
+            if (tokens.length - 1 != Close.args) throw new GraknConsoleException(INVALID_CLOSE_ARGS.message(Close.args, tokens.length - 1));
             command = new Close();
-        } else if (tokens.length == 2 && tokens[0].equals(Source.token)) {
+        } else if (tokens[0].equals(Source.token)) {
+            if (tokens.length - 1 != Source.args) throw new GraknConsoleException(INVALID_SOURCE_ARGS.message(Source.args, tokens.length - 1));
             String file = tokens[1];
             command = new Source(file);
         } else {

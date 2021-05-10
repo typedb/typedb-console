@@ -71,6 +71,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static grakn.client.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.common.collection.Collections.set;
 import static grakn.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
@@ -102,11 +103,20 @@ public class GraknConsole {
             if (options.server() != null) {
                 client = Grakn.coreClient(options.server());
             } else if (options.cluster() != null) {
-                client = Grakn.clusterClient(set(options.cluster().split(",")));
+                if (options.tlsEnabled()) {
+                    if (options.tlsRootCA() != null) {
+                        client = Grakn.clusterClient(set(options.cluster().split(",")), true, options.tlsRootCA());
+                    } else {
+                        client = Grakn.clusterClient(set(options.cluster().split(",")), true);
+                    }
+                } else {
+                    client = Grakn.clusterClient(set(options.cluster().split(",")), false);
+                }
             } else {
-                client = Grakn.coreClient(Grakn.DEFAULT_ADDRESS);
+                throw new GraknClientException(ILLEGAL_STATE);
             }
         } catch (GraknClientException e) {
+            e.printStackTrace();
             printer.error(e.getMessage());
             System.exit(1);
         }
@@ -495,15 +505,19 @@ public class GraknConsole {
         CommandLineOptions options = new CommandLineOptions();
         CommandLine command = new CommandLine(options);
         try {
-            command.parseArgs(args);
-            if (command.isUsageHelpRequested()) {
-                command.usage(command.getOut());
-                System.exit(0);
-            } else if (command.isVersionHelpRequested()) {
-                command.printVersionHelp(command.getOut());
-                System.exit(0);
+            int exitCode = command.execute(args);
+            if (exitCode == 0) {
+                if (command.isUsageHelpRequested()) {
+                    command.usage(command.getOut());
+                    System.exit(0);
+                } else if (command.isVersionHelpRequested()) {
+                    command.printVersionHelp(command.getOut());
+                    System.exit(0);
+                } else {
+                    return options;
+                }
             } else {
-                return options;
+                System.exit(1);
             }
         } catch (CommandLine.ParameterException ex) {
             command.getErr().println(ex.getMessage());
@@ -516,42 +530,91 @@ public class GraknConsole {
     }
 
     @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
-    public static class CommandLineOptions {
+    public static class CommandLineOptions implements Runnable {
 
         @CommandLine.Option(names = {"--server"},
                 description = "Grakn Core address to which Console will connect to")
         private @Nullable
         String server;
 
-        @Nullable
-        public String server() {
-            return server;
-        }
-
         @CommandLine.Option(names = {"--cluster"},
                 description = "Grakn Cluster address to which Console will connect to")
         private @Nullable
         String cluster;
 
-        @Nullable
-        public String cluster() {
-            return cluster;
-        }
+        @CommandLine.Option(names = {"--tls-enabled"},
+                description = "Whether to connect to Grakn Cluster with TLS encryption")
+        private boolean tlsEnabled;
+
+        @CommandLine.Option(names = {"--tls-root-ca"},
+                description = "Path to the TLS root CA file")
+        private @Nullable
+        String tlsRootCA;
 
         @CommandLine.Option(names = {"--script"},
                 description = "Script with commands to run in the Console, without interactive mode")
         private @Nullable
         String script;
 
-        @Nullable
-        public String script() {
-            return script;
-        }
-
         @CommandLine.Option(names = {"--command"},
                 description = "Commands to run in the Console, without interactive mode")
         private @Nullable
         List<String> commands;
+
+        @CommandLine.Spec
+        CommandLine.Model.CommandSpec spec;
+
+        @Override
+        public void run() {
+            validateAddress();
+            validateTLS();
+        }
+
+        private void validateAddress() {
+            if (server == null && cluster == null) {
+                server = Grakn.DEFAULT_ADDRESS;
+            }
+            if (server != null && cluster != null) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--cluster' must be provided, but not both.");
+            }
+        }
+
+        private void validateTLS() {
+            if (server != null) {
+                if (tlsEnabled)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
+                if (tlsRootCA != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
+
+            } else {
+                if (!tlsEnabled && tlsRootCA != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid when '--tls-enabled' is set to 'true'");
+            }
+        }
+
+        @Nullable
+        public String server() {
+            return server;
+        }
+
+        @Nullable
+        public String cluster() {
+            return cluster;
+        }
+
+        public boolean tlsEnabled() {
+            return tlsEnabled;
+        }
+
+        @Nullable
+        public String tlsRootCA() {
+            return tlsRootCA;
+        }
+
+        @Nullable
+        public String script() {
+            return script;
+        }
 
         @Nullable
         public List<String> commands() {

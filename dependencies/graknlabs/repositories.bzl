@@ -32,8 +32,12 @@ def graknlabs_common():
     )
 
 def graknlabs_client_java():
-    git_repository(
+#    git_repository(
+#        name = "graknlabs_client_java",
+#        remote = "https://github.com/lolski/client-java",
+#        commit = "d82aaf88133c6f4035db32e13822efe802181afb",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+#    )
+    native.local_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/lolski/client-java",
-        commit = "d82aaf88133c6f4035db32e13822efe802181afb",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_client_java
+        path = "../typedb-client-java",
     )

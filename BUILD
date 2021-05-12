@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,13 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
-load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
-load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
+load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
+load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("//:deployment.bzl", deployment_console = "deployment")
 
 genrule(
@@ -42,14 +42,14 @@ java_library(
     name = "console",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
-        "@graknlabs_client_java//:client-java",
-        "@graknlabs_client_java//api",
-        "@graknlabs_client_java//common",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/query",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_common//:common",
+        "@vaticle_typedb_client_java//:client-java",
+        "@vaticle_typedb_client_java//api",
+        "@vaticle_typedb_client_java//common",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//common:common",
+        "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//pattern",
+        "@vaticle_typedb_common//:common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -62,12 +62,12 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
-    tags = ["maven_coordinates=io.grakn.console:grakn-console:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-console:{pom_version}"],
 )
 
 java_binary(
     name = "console-binary",
-    main_class = "grakn.console.GraknConsole",
+    main_class = "com.vaticle.typedb.console.TypeDBConsole",
     runtime_deps = [":console"],
     visibility = ["//:__pkg__"],
     # If running the console binary directly, include the following logback to reduce noise
@@ -94,30 +94,30 @@ pkg_tar(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-console-linux",
-    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
+    output_filename = "typedb-console-linux",
+    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
-    output_filename = "grakn-console-mac",
-    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bash-targz"],
+    output_filename = "typedb-console-mac",
+    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
-    output_filename = "grakn-console-windows",
-    targets = [":console-artifact", "@graknlabs_common//binary:assemble-bat-targz"],
+    output_filename = "typedb-console-windows",
+    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"]
 )
 
 deploy_artifact(
     name = "deploy-linux-targz",
     target = ":assemble-linux-targz",
-    artifact_group = "graknlabs_console",
-    artifact_name = "grakn-console-linux-{version}.tar.gz",
+    artifact_group = "vaticle_typedb_console",
+    artifact_name = "typedb-console-linux-{version}.tar.gz",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
@@ -126,8 +126,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-mac-zip",
     target = ":assemble-mac-zip",
-    artifact_group = "graknlabs_console",
-    artifact_name = "grakn-console-mac-{version}.zip",
+    artifact_group = "vaticle_typedb_console",
+    artifact_name = "typedb-console-mac-{version}.zip",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
@@ -136,8 +136,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-windows-zip",
     target = ":assemble-windows-zip",
-    artifact_group = "graknlabs_console",
-    artifact_name = "grakn-console-windows-{version}.zip",
+    artifact_group = "vaticle_typedb_console",
+    artifact_name = "typedb-console-windows-{version}.zip",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
@@ -156,7 +156,7 @@ deploy_github(
     name = "deploy-github",
     organisation = deployment_console["github.organisation"],
     repository = deployment_console["github.repository"],
-    title = "Grakn Console",
+    title = "TypeDB Console",
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
@@ -165,21 +165,21 @@ deploy_github(
 
 assemble_apt(
     name = "assemble-linux-apt",
-    package_name = "grakn-console",
-    maintainer = "Grakn Labs <community@grakn.ai>",
-    description = "Grakn Core (console)",
+    package_name = "typedb-console",
+    maintainer = "Vaticle <community@vaticle.com>",
+    description = "TypeDB (console)",
     depends = [
       "openjdk-8-jre",
-      "grakn-bin (>=%{@graknlabs_common})"
+      "typedb-bin (>=%{@vaticle_typedb_common})"
     ],
-    workspace_refs = "@graknlabs_console_workspace_refs//:refs.json",
+    workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     files = {
         "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
-    installation_dir = "/opt/grakn/core/",
+    installation_dir = "/opt/typedb/core/",
     empty_dirs = [
-         "opt/grakn/core/console/lib/",
+         "opt/typedb/core/console/lib/",
     ],
 )
 
@@ -192,11 +192,11 @@ deploy_apt(
 
 release_validate_deps(
     name = "release-validate-deps",
-    refs = "@graknlabs_console_workspace_refs//:refs.json",
+    refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
-        "@graknlabs_common",
-        "@graknlabs_graql",
-        "@graknlabs_client_java",
+        "@vaticle_typedb_common",
+        "@vaticle_typeql_lang_java",
+        "@vaticle_typedb_client_java",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
@@ -211,13 +211,11 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
-        "@graknlabs_dependencies//library/maven:update",
-        "@graknlabs_dependencies//tool/bazelrun:rbe",
-        "@graknlabs_dependencies//distribution/artifact:create-netrc",
-        "@graknlabs_dependencies//tool/checkstyle:test-coverage",
-        "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
-        "@graknlabs_dependencies//tool/release:approval",
-        "@graknlabs_dependencies//tool/release:create-notes",
-        "@graknlabs_dependencies//tool/sync:dependencies",
+        "@vaticle_dependencies//library/maven:update",
+        "@vaticle_dependencies//tool/bazelrun:rbe",
+        "@vaticle_dependencies//distribution/artifact:create-netrc",
+        "@vaticle_dependencies//tool/checkstyle:test-coverage",
+        "@vaticle_dependencies//tool/sonarcloud:code-analysis",
+        "@vaticle_dependencies//tool/release:create-notes",
     ],
 )

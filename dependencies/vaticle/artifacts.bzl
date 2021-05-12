@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_bazel_distribution//artifact:rules.bzl", "artifact_file")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_bazel_distribution//artifact:rules.bzl", "artifact_file")
+load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 
-def graknlabs_grakn_core_artifact():
+def vaticle_typedb_artifact():
     artifact_file(
-        name = "graknlabs_grakn_core_artifact",
-        group_name = "graknlabs_grakn_core",
-        artifact_name = "grakn-core-server-linux-{version}.tar.gz",
+        name = "vaticle_typedb_artifact",
+        group_name = "vaticle_typedb",
+        artifact_name = "typedb-server-linux-{version}.tar.gz",
         tag_source = deployment["artifact.release"],
         commit_source = deployment["artifact.snapshot"],
-        commit = "922f9e50d05fd24187c5f020a8fc720722d49a60",
+        commit = "f43e6f82c0006084ccdb08ba9edfbdbaca433d31",
     )

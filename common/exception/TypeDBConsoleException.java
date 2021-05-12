@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,31 +15,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.common.exception;
+package com.vaticle.typedb.console.common.exception;
 
-import grakn.common.exception.ErrorMessage;
+import com.vaticle.typedb.common.exception.ErrorMessage;
 
-public class GraknConsoleException extends RuntimeException {
+public class TypeDBConsoleException extends RuntimeException {
 
-    public GraknConsoleException(ErrorMessage error) {
+    public TypeDBConsoleException(ErrorMessage error) {
         super(error.toString());
         assert !getMessage().contains("%s");
     }
 
-    private GraknConsoleException(ErrorMessage error, Object... parameters) {
+    private TypeDBConsoleException(ErrorMessage error, Object... parameters) {
         super(error.message(parameters));
         assert !getMessage().contains("%s");
     }
 
-    public GraknConsoleException(String errorMessage) {
+    public TypeDBConsoleException(String errorMessage) {
         super(errorMessage);
     }
 
-    public GraknConsoleException(IllegalArgumentException e) {
+    public TypeDBConsoleException(IllegalArgumentException e) {
         super(e);
     }
 
-    public static GraknConsoleException of(ErrorMessage errorMessage, Object... parameters) {
-        return new GraknConsoleException(errorMessage, parameters);
+    public static TypeDBConsoleException of(ErrorMessage errorMessage, Object... parameters) {
+        return new TypeDBConsoleException(errorMessage, parameters);
     }
 }

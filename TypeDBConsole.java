@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,34 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console;
+package com.vaticle.typedb.console;
 
-import grakn.client.Grakn;
-import grakn.client.api.GraknClient;
-import grakn.client.api.GraknOptions;
-import grakn.client.api.GraknSession;
-import grakn.client.api.GraknTransaction;
-import grakn.client.api.answer.ConceptMap;
-import grakn.client.api.answer.ConceptMapGroup;
-import grakn.client.api.answer.Numeric;
-import grakn.client.api.answer.NumericGroup;
-import grakn.client.api.database.Database;
-import grakn.client.common.exception.GraknClientException;
-import grakn.common.collection.Either;
-import grakn.common.util.Java;
-import grakn.console.command.ReplCommand;
-import grakn.console.command.TransactionReplCommand;
-import grakn.console.common.Printer;
-import grakn.console.common.exception.GraknConsoleException;
-import graql.lang.Graql;
-import graql.lang.common.exception.GraqlException;
-import graql.lang.query.GraqlCompute;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlQuery;
-import graql.lang.query.GraqlUndefine;
+import com.vaticle.typedb.client.TypeDB;
+import com.vaticle.typedb.client.api.TypeDBClient;
+import com.vaticle.typedb.client.api.TypeDBOptions;
+import com.vaticle.typedb.client.api.TypeDBSession;
+import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.client.api.answer.ConceptMap;
+import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
+import com.vaticle.typedb.client.api.answer.Numeric;
+import com.vaticle.typedb.client.api.answer.NumericGroup;
+import com.vaticle.typedb.client.api.database.Database;
+import com.vaticle.typedb.client.common.exception.TypeDBClientException;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.util.Java;
+import com.vaticle.typedb.console.command.ReplCommand;
+import com.vaticle.typedb.console.command.TransactionReplCommand;
+import com.vaticle.typedb.console.common.Printer;
+import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.exception.TypeQLException;
+import com.vaticle.typeql.lang.query.TypeQLCompute;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
+import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
+import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
@@ -71,21 +71,21 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
 
-public class GraknConsole {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknConsole.class);
+public class TypeDBConsole {
+    private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private static final String COPYRIGHT = "\n" +
-            "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2021 Grakn Labs\n";
+            "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
+            "Copyright (C) 2021 Vaticle\n";
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
 
-    public GraknConsole(Printer printer) {
+    public TypeDBConsole(Printer printer) {
         this.printer = printer;
         try {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -96,17 +96,17 @@ public class GraknConsole {
         }
     }
 
-    private GraknClient createGraknClient(CommandLineOptions options) {
-        GraknClient client = null;
+    private TypeDBClient createTypeDBClient(CommandLineOptions options) {
+        TypeDBClient client = null;
         try {
             if (options.server() != null) {
-                client = Grakn.coreClient(options.server());
+                client = TypeDB.coreClient(options.server());
             } else if (options.cluster() != null) {
-                client = Grakn.clusterClient(set(options.cluster().split(",")));
+                client = TypeDB.clusterClient(set(options.cluster().split(",")));
             } else {
-                client = Grakn.coreClient(Grakn.DEFAULT_ADDRESS);
+                client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
             }
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             System.exit(1);
         }
@@ -128,7 +128,7 @@ public class GraknConsole {
         commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
-        try (GraknClient client = createGraknClient(options)) {
+        try (TypeDBClient client = createTypeDBClient(options)) {
             int i = 0;
             for (; i < commandStrings.size() && !cancelled[0]; i++) {
                 String commandString = commandStrings.get(i);
@@ -152,15 +152,15 @@ public class GraknConsole {
                         if (!success) return false;
                     } else if (command.isTransaction()) {
                         String database = command.asTransaction().database();
-                        GraknSession.Type sessionType = command.asTransaction().sessionType();
-                        GraknTransaction.Type transactionType = command.asTransaction().transactionType();
-                        GraknOptions sessionOptions = command.asTransaction().options();
+                        TypeDBSession.Type sessionType = command.asTransaction().sessionType();
+                        TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
+                        TypeDBOptions sessionOptions = command.asTransaction().options();
                         if (sessionOptions.isCluster() && !client.isCluster()) {
-                            printer.error("The option '--any-replica' is only available in Grakn Cluster.");
+                            printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
                             return false;
                         }
-                        try (GraknSession session = client.session(database, sessionType, sessionOptions);
-                             GraknTransaction tx = session.transaction(transactionType)) {
+                        try (TypeDBSession session = client.session(database, sessionType, sessionOptions);
+                             TypeDBTransaction tx = session.transaction(transactionType)) {
                             for (i += 1; i < commandStrings.size() && !cancelled[0]; i++) {
                                 String txCommandString = commandStrings.get(i);
                                 printer.info("++ " + txCommandString);
@@ -186,7 +186,7 @@ public class GraknConsole {
                                     printer.error("Command is not available while running console script.");
                                 }
                             }
-                        } catch (GraknClientException e) {
+                        } catch (TypeDBClientException e) {
                             printer.error(e.getMessage());
                             return false;
                         }
@@ -198,7 +198,7 @@ public class GraknConsole {
                     return false;
                 }
             }
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         } finally {
@@ -209,19 +209,19 @@ public class GraknConsole {
 
     public void runInteractive(CommandLineOptions options) {
         printer.info(COPYRIGHT);
-        try (GraknClient client = createGraknClient(options)) {
+        try (TypeDBClient client = createTypeDBClient(options)) {
             runRepl(client);
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
         } finally {
             executorService.shutdownNow();
         }
     }
 
-    private void runRepl(GraknClient client) {
+    private void runRepl(TypeDBClient client) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-command-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".typedb-console-command-history").toAbsolutePath())
                 .build();
         while (true) {
             ReplCommand command;
@@ -248,30 +248,30 @@ public class GraknConsole {
                 runDatabaseReplicas(client, command.asDatabaseReplicas().database());
             } else if (command.isTransaction()) {
                 String database = command.asTransaction().database();
-                GraknSession.Type sessionType = command.asTransaction().sessionType();
-                GraknTransaction.Type transactionType = command.asTransaction().transactionType();
-                GraknOptions graknOptions = command.asTransaction().options();
-                if (graknOptions.isCluster() && !client.isCluster()) {
-                    printer.error("The option '--any-replica' is only available in Grakn Cluster.");
+                TypeDBSession.Type sessionType = command.asTransaction().sessionType();
+                TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
+                TypeDBOptions typedbOptions = command.asTransaction().options();
+                if (typedbOptions.isCluster() && !client.isCluster()) {
+                    printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
                     continue;
                 }
-                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, graknOptions);
+                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, typedbOptions);
                 if (shouldExit) break;
             }
         }
     }
 
-    private boolean runTransactionRepl(GraknClient client, String database, GraknSession.Type sessionType, GraknTransaction.Type transactionType, GraknOptions options) {
+    private boolean runTransactionRepl(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".grakn-console-transaction-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-history").toAbsolutePath())
                 .build();
         StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
             prompt.append("[any-replica]");
         prompt.append("> ");
-        try (GraknSession session = client.session(database, sessionType, options);
-             GraknTransaction tx = session.transaction(transactionType, options)) {
+        try (TypeDBSession session = client.session(database, sessionType, options);
+             TypeDBTransaction tx = session.transaction(transactionType, options)) {
             while (true) {
                 Either<TransactionReplCommand, String> command;
                 try {
@@ -305,90 +305,90 @@ public class GraknConsole {
                     }
                 }
             }
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
         }
         return false;
     }
 
-    private boolean runDatabaseList(GraknClient client) {
+    private boolean runDatabaseList(TypeDBClient client) {
         try {
             if (client.databases().all().size() > 0)
                 client.databases().all().forEach(database -> printer.info(database.name()));
             else printer.info("No databases are present on the server.");
             return true;
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseCreate(GraknClient client, String database) {
+    private boolean runDatabaseCreate(TypeDBClient client, String database) {
         try {
             client.databases().create(database);
             printer.info("Database '" + database + "' created");
             return true;
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseSchema(GraknClient client, String database) {
+    private boolean runDatabaseSchema(TypeDBClient client, String database) {
         try {
             String schema = client.databases().get(database).schema();
             printer.info(schema);
             return true;
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseDelete(GraknClient client, String database) {
+    private boolean runDatabaseDelete(TypeDBClient client, String database) {
         try {
             client.databases().get(database).delete();
             printer.info("Database '" + database + "' deleted");
             return true;
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseReplicas(GraknClient client, String database) {
+    private boolean runDatabaseReplicas(TypeDBClient client, String database) {
         try {
             if (!client.isCluster()) {
-                printer.error("The command 'database replicas' is only available in Grakn Cluster.");
+                printer.error("The command 'database replicas' is only available in TypeDB Cluster.");
                 return false;
             }
             for (Database.Replica replica : client.asCluster().databases().get(database).replicas()) {
                 printer.databaseReplica(replica);
             }
             return true;
-        } catch (GraknClientException e) {
+        } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private void runCommit(GraknTransaction tx) {
+    private void runCommit(TypeDBTransaction tx) {
         tx.commit();
         printer.info("Transaction changes committed");
     }
 
-    private void runRollback(GraknTransaction tx) {
+    private void runRollback(TypeDBTransaction tx) {
         tx.rollback();
         printer.info("Transaction changes committed");
     }
 
-    private void runClose(GraknTransaction tx) {
+    private void runClose(TypeDBTransaction tx) {
         tx.close();
         if (tx.type().isWrite()) printer.info("Transaction closed without committing changes");
         else printer.info("Transaction closed");
     }
 
-    private boolean runSource(GraknTransaction tx, String file) {
+    private boolean runSource(TypeDBTransaction tx, String file) {
         try {
             String queryString = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
             return runQuery(tx, queryString);
@@ -398,41 +398,41 @@ public class GraknConsole {
         }
     }
 
-    private boolean runQuery(GraknTransaction tx, String queryString) {
-        List<GraqlQuery> queries;
+    private boolean runQuery(TypeDBTransaction tx, String queryString) {
+        List<TypeQLQuery> queries;
         try {
-            queries = Graql.parseQueries(queryString).collect(toList());
-        } catch (GraqlException e) {
+            queries = TypeQL.parseQueries(queryString).collect(toList());
+        } catch (TypeQLException e) {
             printer.error(e.getMessage());
             return false;
         }
-        for (GraqlQuery query : queries) {
-            if (query instanceof GraqlDefine) {
+        for (TypeQLQuery query : queries) {
+            if (query instanceof TypeQLDefine) {
                 tx.query().define(query.asDefine()).get();
                 printer.info("Concepts have been defined");
-            } else if (query instanceof GraqlUndefine) {
+            } else if (query instanceof TypeQLUndefine) {
                 tx.query().undefine(query.asUndefine()).get();
                 printer.info("Concepts have been undefined");
-            } else if (query instanceof GraqlInsert) {
+            } else if (query instanceof TypeQLInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 printCancellableResult(result, x -> printer.conceptMap(x, tx));
-            } else if (query instanceof GraqlDelete) {
+            } else if (query instanceof TypeQLDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
-            } else if (query instanceof GraqlMatch) {
+            } else if (query instanceof TypeQLMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
                 printCancellableResult(result, x -> printer.conceptMap(x, tx));
-            } else if (query instanceof GraqlMatch.Aggregate) {
+            } else if (query instanceof TypeQLMatch.Aggregate) {
                 Numeric answer = tx.query().match(query.asMatchAggregate()).get();
                 printer.numeric(answer);
-            } else if (query instanceof GraqlMatch.Group) {
+            } else if (query instanceof TypeQLMatch.Group) {
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
                 printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
-            } else if (query instanceof GraqlMatch.Group.Aggregate) {
+            } else if (query instanceof TypeQLMatch.Group.Aggregate) {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
                 printCancellableResult(result, x -> printer.numericGroup(x, tx));
-            } else if (query instanceof GraqlCompute) {
-                throw new GraknConsoleException("Compute query is not yet supported");
+            } else if (query instanceof TypeQLCompute) {
+                throw new TypeDBConsoleException("Compute query is not yet supported");
             }
         }
         return true;
@@ -457,7 +457,7 @@ public class GraknConsole {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            throw (GraknClientException) e.getCause();
+            throw (TypeDBClientException) e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter[0] + ", duration: " + Duration.between(start, end).toMillis() + " ms");
@@ -470,7 +470,7 @@ public class GraknConsole {
     public static void main(String[] args) {
         configureAndVerifyJavaVersion();
         CommandLineOptions options = parseCommandLine(args);
-        GraknConsole console = new GraknConsole(new Printer(System.out, System.err));
+        TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
         if (options.script() == null && options.commands() == null) {
             console.runInteractive(options);
         } else if (options.script() != null) {
@@ -485,9 +485,9 @@ public class GraknConsole {
     private static void configureAndVerifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
-            LOG.warn("Could not detect Java version from version string '{}'. Will start Grakn Core Server anyway.", System.getProperty("java.version"));
+            LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
         } else if (majorVersion < 11) {
-            throw GraknConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+            throw TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
     }
 
@@ -515,11 +515,11 @@ public class GraknConsole {
         return null;
     }
 
-    @CommandLine.Command(name = "grakn console", mixinStandardHelpOptions = true, version = {grakn.console.Version.VERSION})
+    @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})
     public static class CommandLineOptions {
 
         @CommandLine.Option(names = {"--server"},
-                description = "Grakn Core address to which Console will connect to")
+                description = "TypeDB address to which Console will connect to")
         private @Nullable
         String server;
 
@@ -529,7 +529,7 @@ public class GraknConsole {
         }
 
         @CommandLine.Option(names = {"--cluster"},
-                description = "Grakn Cluster address to which Console will connect to")
+                description = "TypeDB Cluster address to which Console will connect to")
         private @Nullable
         String cluster;
 

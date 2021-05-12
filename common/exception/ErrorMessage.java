@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.common.exception;
+package com.vaticle.typedb.console.common.exception;
 
-public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
+public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.ErrorMessage {
 
     private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
         super(codePrefix, codeNumber, messagePrefix, messageBody);

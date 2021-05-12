@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -60,12 +60,12 @@ logs/
 *.log
 
 # Analytics files #
-grakn-test/db/
-grakn-test/output/
-grakn-test/*.txt
+typedb-test/db/
+typedb-test/output/
+typedb-test/*.txt
 
 # Sample Date Files #
-grakn-test/test-biomed/data/*
+typedb-test/test-biomed/data/*
 
 # VIM swap files #
 *.swp

@@ -116,7 +116,6 @@ public class GraknConsole {
                 throw new GraknClientException(ILLEGAL_STATE);
             }
         } catch (GraknClientException e) {
-            e.printStackTrace();
             printer.error(e.getMessage());
             System.exit(1);
         }

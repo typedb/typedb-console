@@ -102,7 +102,15 @@ public class TypeDBConsole {
             if (options.server() != null) {
                 client = TypeDB.coreClient(options.server());
             } else if (options.cluster() != null) {
-                client = TypeDB.clusterClient(set(options.cluster().split(",")));
+                if (options.tlsEnabled()) {
+                    if (options.tlsRootCA() != null) {
+                        client = TypeDB.clusterClient(set(options.cluster().split(",")), true, options.tlsRootCA());
+                    } else {
+                        client = TypeDB.clusterClient(set(options.cluster().split(",")), true);
+                    }
+                } else {
+                    client = TypeDB.clusterClient(set(options.cluster().split(",")), false);
+                }
             } else {
                 client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
             }
@@ -495,15 +503,19 @@ public class TypeDBConsole {
         CommandLineOptions options = new CommandLineOptions();
         CommandLine command = new CommandLine(options);
         try {
-            command.parseArgs(args);
-            if (command.isUsageHelpRequested()) {
-                command.usage(command.getOut());
-                System.exit(0);
-            } else if (command.isVersionHelpRequested()) {
-                command.printVersionHelp(command.getOut());
-                System.exit(0);
+            int exitCode = command.execute(args);
+            if (exitCode == 0) {
+                if (command.isUsageHelpRequested()) {
+                    command.usage(command.getOut());
+                    System.exit(0);
+                } else if (command.isVersionHelpRequested()) {
+                    command.printVersionHelp(command.getOut());
+                    System.exit(0);
+                } else {
+                    return options;
+                }
             } else {
-                return options;
+                System.exit(1);
             }
         } catch (CommandLine.ParameterException ex) {
             command.getErr().println(ex.getMessage());
@@ -516,42 +528,88 @@ public class TypeDBConsole {
     }
 
     @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})
-    public static class CommandLineOptions {
+    public static class CommandLineOptions implements Runnable {
 
         @CommandLine.Option(names = {"--server"},
                 description = "TypeDB address to which Console will connect to")
         private @Nullable
         String server;
 
-        @Nullable
-        public String server() {
-            return server;
-        }
-
         @CommandLine.Option(names = {"--cluster"},
                 description = "TypeDB Cluster address to which Console will connect to")
         private @Nullable
         String cluster;
 
-        @Nullable
-        public String cluster() {
-            return cluster;
-        }
+        @CommandLine.Option(names = {"--tls-enabled"},
+                description = "Whether to connect to Grakn Cluster with TLS encryption")
+        private boolean tlsEnabled;
+
+        @CommandLine.Option(names = {"--tls-root-ca"},
+                description = "Path to the TLS root CA file")
+        private @Nullable
+        String tlsRootCA;
 
         @CommandLine.Option(names = {"--script"},
                 description = "Script with commands to run in the Console, without interactive mode")
         private @Nullable
         String script;
 
-        @Nullable
-        public String script() {
-            return script;
-        }
-
         @CommandLine.Option(names = {"--command"},
                 description = "Commands to run in the Console, without interactive mode")
         private @Nullable
         List<String> commands;
+
+        @CommandLine.Spec
+        CommandLine.Model.CommandSpec spec;
+
+        @Override
+        public void run() {
+            validateAddress();
+            validateTLS();
+        }
+
+        private void validateAddress() {
+            if (server != null && cluster != null) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--cluster' must be provided, but not both.");
+            }
+        }
+
+        private void validateTLS() {
+            if (server != null) {
+                if (tlsEnabled)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
+                if (tlsRootCA != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
+
+            } else {
+                if (!tlsEnabled && tlsRootCA != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid when '--tls-enabled' is set to 'true'");
+            }
+        }
+
+        @Nullable
+        public String server() {
+            return server;
+        }
+
+        @Nullable
+        public String cluster() {
+            return cluster;
+        }
+
+        public boolean tlsEnabled() {
+            return tlsEnabled;
+        }
+
+        @Nullable
+        public String tlsRootCA() {
+            return tlsRootCA;
+        }
+
+        @Nullable
+        public String script() {
+            return script;
+        }
 
         @Nullable
         public List<String> commands() {

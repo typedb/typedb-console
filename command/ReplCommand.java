@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,16 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.command;
+package com.vaticle.typedb.console.command;
 
-import grakn.client.api.GraknClient;
-import grakn.client.api.GraknOptions;
-import grakn.client.api.GraknSession;
-import grakn.client.api.GraknTransaction;
-import grakn.common.collection.Pair;
-import grakn.console.common.Printer;
-import grakn.console.common.Utils;
-import grakn.console.common.exception.GraknConsoleException;
+import com.vaticle.typedb.client.api.TypeDBClient;
+import com.vaticle.typedb.client.api.TypeDBOptions;
+import com.vaticle.typedb.client.api.TypeDBSession;
+import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.console.common.Printer;
+import com.vaticle.typedb.console.common.Utils;
+import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.LineReader;
 
 import java.util.ArrayList;
@@ -32,9 +32,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.pair;
-import static grakn.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface ReplCommand {
 
@@ -43,7 +43,7 @@ public interface ReplCommand {
     }
 
     default Exit asExit() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isHelp() {
@@ -51,7 +51,7 @@ public interface ReplCommand {
     }
 
     default Help asHelp() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClear() {
@@ -59,7 +59,7 @@ public interface ReplCommand {
     }
 
     default Clear asClear() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseList() {
@@ -67,7 +67,7 @@ public interface ReplCommand {
     }
 
     default Database.List asDatabaseList() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseCreate() {
@@ -75,7 +75,7 @@ public interface ReplCommand {
     }
 
     default Database.Create asDatabaseCreate() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseSchema() {
@@ -83,7 +83,7 @@ public interface ReplCommand {
     }
 
     default Database.Schema asDatabaseSchema() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseDelete() {
@@ -91,7 +91,7 @@ public interface ReplCommand {
     }
 
     default Database.Delete asDatabaseDelete() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isDatabaseReplicas() {
@@ -99,7 +99,7 @@ public interface ReplCommand {
     }
 
     default Database.Replicas asDatabaseReplicas() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isTransaction() {
@@ -107,7 +107,7 @@ public interface ReplCommand {
     }
 
     default Transaction asTransaction() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     class Exit implements ReplCommand {
@@ -298,11 +298,11 @@ public interface ReplCommand {
         private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
-        private final GraknSession.Type sessionType;
-        private final GraknTransaction.Type transactionType;
-        private final GraknOptions options;
+        private final TypeDBSession.Type sessionType;
+        private final TypeDBTransaction.Type transactionType;
+        private final TypeDBOptions options;
 
-        public Transaction(String database, GraknSession.Type sessionType, GraknTransaction.Type transactionType, GraknOptions options) {
+        public Transaction(String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
             this.database = database;
             this.sessionType = sessionType;
             this.transactionType = transactionType;
@@ -313,15 +313,15 @@ public interface ReplCommand {
             return database;
         }
 
-        public GraknSession.Type sessionType() {
+        public TypeDBSession.Type sessionType() {
             return sessionType;
         }
 
-        public GraknTransaction.Type transactionType() {
+        public TypeDBTransaction.Type transactionType() {
             return transactionType;
         }
 
-        public GraknOptions options() {
+        public TypeDBOptions options() {
             return options;
         }
 
@@ -341,36 +341,36 @@ public interface ReplCommand {
 
         public static String token = "transaction-options";
 
-        static GraknOptions from(String[] optionTokens, boolean isCluster) {
-            if (isCluster) return parseClusterOptions(optionTokens, GraknOptions.cluster());
-            else return parseCoreOptions(optionTokens, GraknOptions.core());
+        static TypeDBOptions from(String[] optionTokens, boolean isCluster) {
+            if (isCluster) return parseClusterOptions(optionTokens, TypeDBOptions.cluster());
+            else return parseCoreOptions(optionTokens, TypeDBOptions.core());
         }
 
-        private static GraknOptions.Cluster parseClusterOptions(String[] optionTokens, GraknOptions.Cluster options) {
+        private static TypeDBOptions.Cluster parseClusterOptions(String[] optionTokens, TypeDBOptions.Cluster options) {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<GraknOptions.Cluster> option = Options.Cluster.clusterOption(token.substring(2));
+                Option<TypeDBOptions.Cluster> option = Options.Cluster.clusterOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
-                    throw new GraknConsoleException(e);
+                    throw new TypeDBConsoleException(e);
                 }
             }
             return options;
         }
 
-        private static GraknOptions parseCoreOptions(String[] optionTokens, GraknOptions options) {
+        private static TypeDBOptions parseCoreOptions(String[] optionTokens, TypeDBOptions options) {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<GraknOptions> option = Options.Core.coreOption(token.substring(2));
+                Option<TypeDBOptions> option = Options.Core.coreOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
-                    throw new GraknConsoleException(e);
+                    throw new TypeDBConsoleException(e);
                 }
             }
             return options;
@@ -383,13 +383,13 @@ public interface ReplCommand {
                     Option.core("trace-inference", Option.Arg.BOOLEAN, "Enable or disable inference tracing", (opt, arg) -> opt.traceInference((Boolean) arg)),
                     Option.core("explain", Option.Arg.BOOLEAN, "Enable or disable inference explanations", (opt, arg) -> opt.explain((Boolean) arg)),
                     Option.core("parallel", Option.Arg.BOOLEAN, "Enable or disable parallel query execution", (opt, arg) -> opt.parallel((Boolean) arg)),
-                    Option.core("batch-size", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.batchSize((Integer) arg)),
+                    Option.core("batch-size", Option.Arg.INTEGER, "Set RPC answer batch size", (opt, arg) -> opt.prefetchSize((Integer) arg)),
                     Option.core("prefetch", Option.Arg.BOOLEAN, "Enable or disable RPC answer prefetch ", (opt, arg) -> opt.prefetch((Boolean) arg)),
                     Option.core("session-idle-timeout", Option.Arg.INTEGER, "Kill idle session timeout (ms)", (opt, arg) -> opt.sessionIdleTimeoutMillis((Integer) arg)),
                     Option.core("schema-lock-acquire-timeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeoutMillis((Integer) arg))
             );
 
-            public static Option<GraknOptions> coreOption(String token) throws IllegalArgumentException {
+            public static Option<TypeDBOptions> coreOption(String token) throws IllegalArgumentException {
                 return from(token, options);
             }
 
@@ -397,17 +397,17 @@ public interface ReplCommand {
                 return helpMenu(options);
             }
 
-            static <OPT extends GraknOptions> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
+            static <OPT extends TypeDBOptions> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
                 for (Option<OPT> option : options) {
                     if (option.name().equals(token)) return option;
                 }
                 throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
             }
 
-            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends GraknOptions>> options) {
+            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends TypeDBOptions>> options) {
                 List<Pair<String, String>> optionsMenu = new ArrayList<>();
                 optionsMenu.add(pair("transaction-options", "Transaction options"));
-                for (Option<? extends GraknOptions> option : options) {
+                for (Option<? extends TypeDBOptions> option : options) {
                     optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString(), option.description()));
                 }
                 return optionsMenu;
@@ -427,7 +427,7 @@ public interface ReplCommand {
                 return extendedOptions;
             }
 
-            public static Option<GraknOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
+            public static Option<TypeDBOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
                 return from(token, options);
             }
 
@@ -436,7 +436,7 @@ public interface ReplCommand {
             }
         }
 
-        static abstract class Option<OPTIONS extends GraknOptions> {
+        static abstract class Option<OPTIONS extends TypeDBOptions> {
 
             final String name;
             final Arg arg;
@@ -450,11 +450,11 @@ public interface ReplCommand {
                 this.builder = builder;
             }
 
-            static Option.Core core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+            static Option.Core core(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                 return new Option.Core(name, arg, description, builder);
             }
 
-            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions.Cluster, Object, TypeDBOptions.Cluster> builder) {
                 return new Option.Cluster(name, arg, description, builder);
             }
 
@@ -468,9 +468,9 @@ public interface ReplCommand {
 
             public String description() { return description; }
 
-            static class Core extends Option<GraknOptions> {
+            static class Core extends Option<TypeDBOptions> {
 
-                private Core(String name, Arg arg, String description, BiFunction<GraknOptions, Object, GraknOptions> builder) {
+                private Core(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                     super(name, arg, description, builder);
                 }
 
@@ -479,9 +479,9 @@ public interface ReplCommand {
                 }
             }
 
-            static class Cluster extends Option<GraknOptions.Cluster> {
+            static class Cluster extends Option<TypeDBOptions.Cluster> {
 
-                private Cluster(String name, Arg arg, String description, BiFunction<GraknOptions.Cluster, Object, GraknOptions.Cluster> builder) {
+                private Cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions.Cluster, Object, TypeDBOptions.Cluster> builder) {
                     super(name, arg, description, builder);
                 }
             }
@@ -508,7 +508,7 @@ public interface ReplCommand {
         }
     }
 
-    static String getHelpMenu(GraknClient client) {
+    static String getHelpMenu(TypeDBClient client) {
         List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
@@ -571,11 +571,11 @@ public interface ReplCommand {
         } else if (tokens.length >= 4 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("schema") || tokens[2].equals("data")) && (tokens[3].equals("read") || tokens[3].equals("write"))) {
             String database = tokens[1];
-            GraknSession.Type sessionType = tokens[2].equals("schema") ? GraknSession.Type.SCHEMA : GraknSession.Type.DATA;
-            GraknTransaction.Type transactionType = tokens[3].equals("read") ? GraknTransaction.Type.READ : GraknTransaction.Type.WRITE;
-            GraknOptions options;
+            TypeDBSession.Type sessionType = tokens[2].equals("schema") ? TypeDBSession.Type.SCHEMA : TypeDBSession.Type.DATA;
+            TypeDBTransaction.Type transactionType = tokens[3].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.WRITE;
+            TypeDBOptions options;
             if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCluster);
-            else options = isCluster ? GraknOptions.cluster() : GraknOptions.core();
+            else options = isCluster ? TypeDBOptions.cluster() : TypeDBOptions.core();
             command = new Transaction(database, sessionType, transactionType, options);
         }
         return command;

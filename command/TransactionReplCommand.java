@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,13 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.command;
+package com.vaticle.typedb.console.command;
 
-import grakn.common.collection.Either;
-import grakn.common.collection.Pair;
-import grakn.console.common.Utils;
-import grakn.console.common.exception.ErrorMessage;
-import grakn.console.common.exception.GraknConsoleException;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.console.common.Utils;
+import com.vaticle.typedb.console.common.exception.ErrorMessage;
+import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
@@ -30,15 +30,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static grakn.common.collection.Collections.pair;
-import static grakn.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
-import static grakn.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
 
 public interface TransactionReplCommand {
 
@@ -47,7 +47,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Exit asExit() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isHelp() {
@@ -55,7 +55,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Help asHelp() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClear() {
@@ -63,7 +63,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Clear asClear() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isCommit() {
@@ -71,7 +71,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Commit asCommit() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isRollback() {
@@ -79,7 +79,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Rollback asRollback() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isClose() {
@@ -87,7 +87,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Close asClose() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isSource() {
@@ -95,7 +95,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Source asSource() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     default boolean isQuery() {
@@ -103,7 +103,7 @@ public interface TransactionReplCommand {
     }
 
     default TransactionReplCommand.Query asQuery() {
-        throw new GraknConsoleException(ILLEGAL_CAST);
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
     class Exit implements TransactionReplCommand {
@@ -218,7 +218,7 @@ public interface TransactionReplCommand {
 
         private static String token = "source";
         private static String helpCommand = token + " <file>";
-        private static String description = "Run Graql queries in file";
+        private static String description = "Run TypeQL queries in file";
         private static int args = 1;
 
         private final String file;
@@ -245,7 +245,7 @@ public interface TransactionReplCommand {
     class Query implements TransactionReplCommand {
 
         private static String helpCommand = "<query>";
-        private static String description = "Run Graql query";
+        private static String description = "Run TypeQL query";
 
         private final String query;
 

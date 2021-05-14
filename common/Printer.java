@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,21 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.console.common;
+package com.vaticle.typedb.console.common;
 
-import grakn.client.api.GraknTransaction;
-import grakn.client.api.answer.ConceptMap;
-import grakn.client.api.answer.ConceptMapGroup;
-import grakn.client.api.answer.Numeric;
-import grakn.client.api.answer.NumericGroup;
-import grakn.client.api.concept.Concept;
-import grakn.client.api.concept.thing.Attribute;
-import grakn.client.api.concept.thing.Relation;
-import grakn.client.api.concept.thing.Thing;
-import grakn.client.api.concept.type.RoleType;
-import grakn.client.api.concept.type.Type;
-import grakn.client.api.database.Database;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.client.api.answer.ConceptMap;
+import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
+import com.vaticle.typedb.client.api.answer.Numeric;
+import com.vaticle.typedb.client.api.answer.NumericGroup;
+import com.vaticle.typedb.client.api.concept.Concept;
+import com.vaticle.typedb.client.api.concept.thing.Attribute;
+import com.vaticle.typedb.client.api.concept.thing.Relation;
+import com.vaticle.typedb.client.api.concept.thing.Thing;
+import com.vaticle.typedb.client.api.concept.type.RoleType;
+import com.vaticle.typedb.client.api.concept.type.Type;
+import com.vaticle.typedb.client.api.database.Database;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -55,11 +55,11 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptMap(ConceptMap conceptMap, GraknTransaction tx) {
+    public void conceptMap(ConceptMap conceptMap, TypeDBTransaction tx) {
         out.println(conceptMapDisplayString(conceptMap, tx));
     }
 
-    public void conceptMapGroup(ConceptMapGroup answer, GraknTransaction tx) {
+    public void conceptMapGroup(ConceptMapGroup answer, TypeDBTransaction tx) {
         for (ConceptMap conceptMap : answer.conceptMaps()) {
             out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
         }
@@ -69,7 +69,7 @@ public class Printer {
         out.println(answer.asNumber());
     }
 
-    public void numericGroup(NumericGroup answer, GraknTransaction tx) {
+    public void numericGroup(NumericGroup answer, TypeDBTransaction tx) {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
     }
 
@@ -82,12 +82,12 @@ public class Printer {
         out.println(s);
     }
 
-    private String conceptMapDisplayString(ConceptMap conceptMap, GraknTransaction tx) {
+    private String conceptMapDisplayString(ConceptMap conceptMap, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
             Concept concept = entry.getValue();
-            sb.append(GraqlToken.Char.$).append(entry.getKey());
+            sb.append(TypeQLToken.Char.$).append(entry.getKey());
             sb.append(" ");
             sb.append(conceptDisplayString(concept, tx));
             sb.append("; ");
@@ -96,7 +96,7 @@ public class Printer {
         return sb.toString();
     }
 
-    private String conceptDisplayString(Concept concept, GraknTransaction tx) {
+    private String conceptDisplayString(Concept concept, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
         if (concept instanceof Attribute<?>) {
             sb.append(attributeDisplayString(concept.asThing().asAttribute()));
@@ -114,14 +114,14 @@ public class Printer {
         return sb.toString();
     }
 
-    private String isaDisplayString(Thing thing, GraknTransaction tx) {
+    private String isaDisplayString(Thing thing, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
         Type type = thing.asRemote(tx).getType();
-        sb.append(colorKeyword(GraqlToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel().scopedName()));
+        sb.append(colorKeyword(TypeQLToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel().scopedName()));
         return sb.toString();
     }
 
-    private String relationDisplayString(Relation relation, GraknTransaction tx) {
+    private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
         List<String> rolePlayerStrings = new ArrayList<>();
         Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.asRemote(tx).getPlayersByRoleType();
@@ -129,7 +129,7 @@ public class Printer {
             RoleType role = rolePlayer.getKey();
             List<? extends Thing> things = rolePlayer.getValue();
             for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel().scopedName()) + ": " + colorKeyword(GraqlToken.Constraint.IID.toString()) + " " + thing.getIID();
+                String rolePlayerString = colorType(role.getLabel().scopedName()) + ": " + colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
                 rolePlayerStrings.add(rolePlayerString);
             }
         }
@@ -139,23 +139,23 @@ public class Printer {
 
     private String iidDisplayString(Thing thing) {
         StringBuilder sb = new StringBuilder();
-        sb.append(colorKeyword(GraqlToken.Constraint.IID.toString()))
+        sb.append(colorKeyword(TypeQLToken.Constraint.IID.toString()))
                 .append(" ")
                 .append(thing.getIID());
         return sb.toString();
     }
 
-    private String typeDisplayString(Type type, GraknTransaction tx) {
+    private String typeDisplayString(Type type, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(colorKeyword(GraqlToken.Constraint.TYPE.toString()))
+        sb.append(colorKeyword(TypeQLToken.Constraint.TYPE.toString()))
                 .append(" ")
                 .append(colorType(type.getLabel().toString()));
 
         Type superType = type.asRemote(tx).getSupertype();
         if (superType != null) {
             sb.append(" ")
-                    .append(colorKeyword(GraqlToken.Constraint.SUB.toString()))
+                    .append(colorKeyword(TypeQLToken.Constraint.SUB.toString()))
                     .append(" ")
                     .append(colorType(superType.getLabel().scopedName()));
         }
@@ -163,7 +163,7 @@ public class Printer {
     }
 
     private String attributeDisplayString(Attribute<?> attribute) {
-        return graql.lang.common.util.Strings.valueToString(attribute.getValue());
+        return com.vaticle.typeql.lang.common.util.Strings.valueToString(attribute.getValue());
     }
 
     private String colorKeyword(String s) {

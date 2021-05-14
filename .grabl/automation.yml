@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -19,117 +19,117 @@ config:
   version-candidate: VERSION
   dependencies:
     dependencies: [build]
-    common: [build, release]
-    client-java: [build, release]
+    typedb-common: [build, release]
+    typedb-client-java: [build, release]
 
 build:
   quality:
     filter:
-      owner: graknlabs
+      owner: vaticle
       branch: master
     build-analysis:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       command: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-           bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-           --project-key graknlabs_console --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
+           bazel run @vaticle_dependencies//tool/sonarcloud:code-analysis -- \
+           --project-key vaticle_typedb_console --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
+        bazel run @vaticle_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
-        bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
         bazel build //...
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
     deploy-artifact-snapshot:
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       dependencies: [build]
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       dependencies: [build]
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
-        export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
 release:
   filter:
-    owner: graknlabs
+    owner: vaticle
     branch: master
   validation:
     validate-dependencies:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
         bazel test //:release-validate-deps  --test_output=streamed
   deployment:
     deploy-github:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       type: foreground
       command: |
         pyenv install -s 3.6.10
         pyenv global 3.6.10 system
         pip install certifi
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @graknlabs_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @vaticle_dependencies//tool/release:create-notes -- console $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-apt-release:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       dependencies: [deploy-github]
       type: foreground
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
         cat VERSION
-        export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     deploy-artifact-release:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       dependencies: [deploy-github]
       type: foreground
       command: |
-        export ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run @graknlabs_dependencies//distribution/artifact:create-netrc
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(cat VERSION) //:deploy-linux-targz -- release
         bazel run --define version=$(cat VERSION) //:deploy-mac-zip -- release
         bazel run --define version=$(cat VERSION) //:deploy-windows-zip -- release

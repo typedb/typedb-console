@@ -20,7 +20,6 @@ package com.vaticle.typedb.console.command;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Utils;
-import com.vaticle.typedb.console.common.exception.ErrorMessage;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;

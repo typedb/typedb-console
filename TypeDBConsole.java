@@ -19,6 +19,7 @@ package com.vaticle.typedb.console;
 
 import com.vaticle.typedb.client.TypeDB;
 import com.vaticle.typedb.client.api.TypeDBClient;
+import com.vaticle.typedb.client.api.TypeDBCredential;
 import com.vaticle.typedb.client.api.TypeDBOptions;
 import com.vaticle.typedb.client.api.TypeDBSession;
 import com.vaticle.typedb.client.api.TypeDBTransaction;
@@ -101,24 +102,32 @@ public class TypeDBConsole {
         try {
             if (options.server() != null) {
                 client = TypeDB.coreClient(options.server());
-            } else if (options.cluster() != null) {
-                if (options.tlsEnabled()) {
-                    if (options.tlsRootCA() != null) {
-                        client = TypeDB.clusterClient(set(options.cluster().split(",")), true, options.tlsRootCA());
-                    } else {
-                        client = TypeDB.clusterClient(set(options.cluster().split(",")), true);
-                    }
-                } else {
-                    client = TypeDB.clusterClient(set(options.cluster().split(",")), false);
-                }
             } else {
-                client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
+                String optCluster = options.cluster();
+                if (optCluster != null) {
+                    client = TypeDB.clusterClient(set(optCluster.split(",")), createCredential(options));
+                } else {
+                    client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
+                }
             }
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             System.exit(1);
         }
         return client;
+    }
+
+    private TypeDBCredential createCredential(CommandLineOptions options) {
+        TypeDBCredential credential;
+        if (options.tlsEnabled()) {
+            String optRootCa = options.tlsRootCA();
+            if (optRootCa != null)
+                credential = TypeDBCredential.tls(Paths.get(optRootCa));
+            else
+                credential = TypeDBCredential.tls();
+        } else
+            credential = TypeDBCredential.plainText();
+        return credential;
     }
 
     public boolean runScript(CommandLineOptions options, String script) {

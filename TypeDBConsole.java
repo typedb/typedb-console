@@ -328,6 +328,40 @@ public class TypeDBConsole {
         return false;
     }
 
+    private boolean runUserList(TypeDBClient.Cluster client) {
+        try {
+            if (client.users().all().size() > 0)
+                client.users().all().forEach(user -> printer.info(user.name()));
+            else printer.info("No databases are present on the server.");
+            return true;
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserCreate(TypeDBClient.Cluster client, String user, String password) {
+        try {
+            client.users().create(user, password);
+            printer.info("User '" + user + "' created");
+            return true;
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserDelete(TypeDBClient.Cluster client, String user) {
+        try {
+            client.users().get(user).delete();
+            printer.info("User '" + user + "' deleted");
+            return true;
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
     private boolean runDatabaseList(TypeDBClient client) {
         try {
             if (client.databases().all().size() > 0)

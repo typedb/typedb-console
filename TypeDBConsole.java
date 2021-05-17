@@ -152,7 +152,16 @@ public class TypeDBConsole {
                 printer.info("+ " + commandString);
                 ReplCommand command = ReplCommand.getCommand(commandString, client.isCluster());
                 if (command != null) {
-                    if (command.isDatabaseList()) {
+                    if (command.isUserList()) {
+                        boolean success = runUserList(client);
+                        if (!success) return false;
+                    } else if (command.isUserCreate()) {
+                        boolean success = runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
+                        if (!success) return false;
+                    } else if (command.isUserDelete()) {
+                        boolean success = runUserDelete(client, command.asUserDelete().user());
+                        if (!success) return false;
+                    } else if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(client);
                         if (!success) return false;
                     } else if (command.isDatabaseCreate()) {
@@ -253,6 +262,13 @@ public class TypeDBConsole {
                 printer.info(ReplCommand.getHelpMenu(client));
             } else if (command.isClear()) {
                 reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
+            } else if (command.isUserList()) {
+                runUserList(client);
+            } else if (command.isUserCreate()) {
+                ReplCommand.User.Create userCommand = command.asUserCreate();
+                runUserCreate(client, userCommand.user(), userCommand.password());
+            } else if (command.isUserDelete()) {
+                runUserDelete(client, command.asUserDelete().user());
             } else if (command.isDatabaseList()) {
                 runDatabaseList(client);
             } else if (command.isDatabaseCreate()) {
@@ -328,10 +344,15 @@ public class TypeDBConsole {
         return false;
     }
 
-    private boolean runUserList(TypeDBClient.Cluster client) {
+    private boolean runUserList(TypeDBClient client) {
         try {
-            if (client.users().all().size() > 0)
-                client.users().all().forEach(user -> printer.info(user.name()));
+            if (!client.isCluster()) {
+                printer.error("The command 'user list' is only available in TypeDB Cluster.");
+                return false;
+            }
+            TypeDBClient.Cluster clientCluster = client.asCluster();
+            if (clientCluster.users().all().size() > 0)
+                clientCluster.users().all().forEach(user -> printer.info(user.name()));
             else printer.info("No databases are present on the server.");
             return true;
         } catch (TypeDBClientException e) {
@@ -340,9 +361,14 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserCreate(TypeDBClient.Cluster client, String user, String password) {
+    private boolean runUserCreate(TypeDBClient client, String user, String password) {
         try {
-            client.users().create(user, password);
+            if (!client.isCluster()) {
+                printer.error("The command 'user create' is only available in TypeDB Cluster.");
+                return false;
+            }
+            TypeDBClient.Cluster clientCluster = client.asCluster();
+            clientCluster.users().create(user, password);
             printer.info("User '" + user + "' created");
             return true;
         } catch (TypeDBClientException e) {
@@ -351,9 +377,14 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserDelete(TypeDBClient.Cluster client, String user) {
+    private boolean runUserDelete(TypeDBClient client, String user) {
         try {
-            client.users().get(user).delete();
+            if (!client.isCluster()) {
+                printer.error("The command 'user delete' is only available in TypeDB Cluster.");
+                return false;
+            }
+            TypeDBClient.Cluster clientCluster = client.asCluster();
+            clientCluster.users().get(user).delete();
             printer.info("User '" + user + "' deleted");
             return true;
         } catch (TypeDBClientException e) {

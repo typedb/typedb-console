@@ -353,7 +353,7 @@ public class TypeDBConsole {
             TypeDBClient.Cluster clientCluster = client.asCluster();
             if (clientCluster.users().all().size() > 0)
                 clientCluster.users().all().forEach(user -> printer.info(user.name()));
-            else printer.info("No databases are present on the server.");
+            else printer.info("No users are present on the server.");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());

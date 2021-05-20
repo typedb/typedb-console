@@ -17,5 +17,5 @@
 
 deployment = {
     "github.organisation": "vaticle",
-    "github.repository": "console"
+    "github.repository": "typedb-console"
 }

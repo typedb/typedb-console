@@ -122,11 +122,11 @@ public class TypeDBConsole {
         if (options.tlsEnabled()) {
             String optRootCa = options.tlsRootCA();
             if (optRootCa != null)
-                credential = TypeDBCredential.tls(Paths.get(optRootCa));
+                credential = new TypeDBCredential(options.username(), options.password(), true, Paths.get(optRootCa));
             else
-                credential = TypeDBCredential.tls();
+                credential = new TypeDBCredential(options.username(), options.password(), true);
         } else
-            credential = TypeDBCredential.plainText();
+            credential = new TypeDBCredential(options.username(), options.password(), false);
         return credential;
     }
 
@@ -614,8 +614,18 @@ public class TypeDBConsole {
         private @Nullable
         String cluster;
 
+        @CommandLine.Option(names = {"--username"},
+                description = "Username")
+        private @Nullable
+        String username;
+
+        @CommandLine.Option(names = {"--password"},
+                description = "Password")
+        private @Nullable
+        String password;
+
         @CommandLine.Option(names = {"--tls-enabled"},
-                description = "Whether to connect to Grakn Cluster with TLS encryption")
+                description = "Whether to connect to TypeDB Cluster with TLS encryption")
         private boolean tlsEnabled;
 
         @CommandLine.Option(names = {"--tls-root-ca"},
@@ -639,7 +649,7 @@ public class TypeDBConsole {
         @Override
         public void run() {
             validateAddress();
-            validateTLS();
+            validateCredential();
         }
 
         private void validateAddress() {
@@ -648,16 +658,23 @@ public class TypeDBConsole {
             }
         }
 
-        private void validateTLS() {
+        private void validateCredential() {
             if (server != null) {
+                if (username != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--cluster'");
+                if (password != null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--cluster'");
                 if (tlsEnabled)
                     throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
                 if (tlsRootCA != null)
                     throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
-
             } else {
+                if (username == null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cluster'");
+                if (password == null)
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cluster'");
                 if (!tlsEnabled && tlsRootCA != null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid when '--tls-enabled' is set to 'true'");
+                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
             }
         }
 
@@ -669,6 +686,14 @@ public class TypeDBConsole {
         @Nullable
         public String cluster() {
             return cluster;
+        }
+
+        public String username() {
+            return username;
+        }
+
+        public String password() {
+            return password;
         }
 
         public boolean tlsEnabled() {

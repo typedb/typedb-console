@@ -57,6 +57,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -78,10 +79,14 @@ import static java.util.stream.Collectors.toList;
 
 public class TypeDBConsole {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
             "Copyright (C) 2021 Vaticle\n";
+    private static final Path COMMAND_HISTORY_FILE =
+            Paths.get(System.getProperty("user.home"), ".typedb-console-command-history").toAbsolutePath();
+    private static final Path TRANSACTION_HISTORY_FILE =
+            Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-history").toAbsolutePath();
+    private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private final Printer printer;
     private ExecutorService executorService;
@@ -230,7 +235,7 @@ public class TypeDBConsole {
     private void runRepl(TypeDBClient client) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".typedb-console-command-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
                 .build();
         while (true) {
             ReplCommand command;
@@ -280,7 +285,7 @@ public class TypeDBConsole {
     private boolean runTransactionRepl(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-history").toAbsolutePath())
+                .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
                 .build();
         StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())

@@ -77,16 +77,17 @@ import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.I
 import static java.util.stream.Collectors.toList;
 
 public class TypeDBConsole {
-    private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
+    private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
             "Copyright (C) 2021 Vaticle\n";
+
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
 
-    public TypeDBConsole(Printer printer) {
+    private TypeDBConsole(Printer printer) {
         this.printer = printer;
         try {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -97,40 +98,33 @@ public class TypeDBConsole {
         }
     }
 
-    private TypeDBClient createTypeDBClient(CommandLineOptions options) {
-        TypeDBClient client = null;
-        try {
-            if (options.server() != null) {
-                client = TypeDB.coreClient(options.server());
-            } else {
-                String optCluster = options.cluster();
-                if (optCluster != null) {
-                    client = TypeDB.clusterClient(set(optCluster.split(",")), createCredential(options));
-                } else {
-                    client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
-                }
-            }
+    public static void main(String[] args) {
+        configureAndVerifyJavaVersion();
+        CommandLineOptions options = parseCommandLine(args);
+        TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
+        if (options.script() == null && options.commands() == null) {
+            console.runInteractive(options);
+        } else if (options.script() != null) {
+            boolean success = console.runScript(options, options.script());
+            if (!success) System.exit(1);
+        } else if (options.commands() != null) {
+            boolean success = console.runCommands(options, options.commands());
+            if (!success) System.exit(1);
+        }
+    }
+
+    private void runInteractive(CommandLineOptions options) {
+        printer.info(COPYRIGHT);
+        try (TypeDBClient client = createTypeDBClient(options)) {
+            runRepl(client);
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
-            System.exit(1);
+        } finally {
+            executorService.shutdownNow();
         }
-        return client;
     }
 
-    private TypeDBCredential createCredential(CommandLineOptions options) {
-        TypeDBCredential credential;
-        if (options.tlsEnabled()) {
-            String optRootCa = options.tlsRootCA();
-            if (optRootCa != null)
-                credential = new TypeDBCredential(options.username(), options.password(), true, Paths.get(optRootCa));
-            else
-                credential = new TypeDBCredential(options.username(), options.password(), true);
-        } else
-            credential = new TypeDBCredential(options.username(), options.password(), false);
-        return credential;
-    }
-
-    public boolean runScript(CommandLineOptions options, String script) {
+    private boolean runScript(CommandLineOptions options, String script) {
         String scriptLines;
         try {
             scriptLines = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(script))), StandardCharsets.UTF_8);
@@ -141,7 +135,7 @@ public class TypeDBConsole {
         return runCommands(options, Arrays.stream(scriptLines.split("\n")).collect(toList()));
     }
 
-    public boolean runCommands(CommandLineOptions options, List<String> commandStrings) {
+    private boolean runCommands(CommandLineOptions options, List<String> commandStrings) {
         commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
@@ -231,17 +225,6 @@ public class TypeDBConsole {
             executorService.shutdownNow();
         }
         return true;
-    }
-
-    public void runInteractive(CommandLineOptions options) {
-        printer.info(COPYRIGHT);
-        try (TypeDBClient client = createTypeDBClient(options)) {
-            runRepl(client);
-        } catch (TypeDBClientException e) {
-            printer.error(e.getMessage());
-        } finally {
-            executorService.shutdownNow();
-        }
     }
 
     private void runRepl(TypeDBClient client) {
@@ -342,6 +325,39 @@ public class TypeDBConsole {
             printer.error(e.getMessage());
         }
         return false;
+    }
+
+    private TypeDBClient createTypeDBClient(CommandLineOptions options) {
+        TypeDBClient client = null;
+        try {
+            if (options.server() != null) {
+                client = TypeDB.coreClient(options.server());
+            } else {
+                String optCluster = options.cluster();
+                if (optCluster != null) {
+                    client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
+                } else {
+                    client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
+                }
+            }
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            System.exit(1);
+        }
+        return client;
+    }
+
+    private TypeDBCredential createTypeDBCredential(CommandLineOptions options) {
+        TypeDBCredential credential;
+        if (options.tlsEnabled()) {
+            String optRootCa = options.tlsRootCA();
+            if (optRootCa != null)
+                credential = new TypeDBCredential(options.username(), options.password(), true, Paths.get(optRootCa));
+            else
+                credential = new TypeDBCredential(options.username(), options.password(), true);
+        } else
+            credential = new TypeDBCredential(options.username(), options.password(), false);
+        return credential;
     }
 
     private boolean runUserList(TypeDBClient client) {
@@ -546,21 +562,6 @@ public class TypeDBConsole {
             printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
         } finally {
             if (prevHandler != null) terminal.handle(Terminal.Signal.INT, prevHandler);
-        }
-    }
-
-    public static void main(String[] args) {
-        configureAndVerifyJavaVersion();
-        CommandLineOptions options = parseCommandLine(args);
-        TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
-        if (options.script() == null && options.commands() == null) {
-            console.runInteractive(options);
-        } else if (options.script() != null) {
-            boolean success = console.runScript(options, options.script());
-            if (!success) System.exit(1);
-        } else if (options.commands() != null) {
-            boolean success = console.runCommands(options, options.commands());
-            if (!success) System.exit(1);
         }
     }
 

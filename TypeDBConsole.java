@@ -603,7 +603,7 @@ public class TypeDBConsole {
     }
 
     @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})
-    public static class CommandLineOptions implements Runnable {
+    private static class CommandLineOptions implements Runnable {
 
         @CommandLine.Option(names = {"--server"},
                 description = "TypeDB address to which Console will connect to")
@@ -680,39 +680,39 @@ public class TypeDBConsole {
         }
 
         @Nullable
-        public String server() {
+        private String server() {
             return server;
         }
 
         @Nullable
-        public String cluster() {
+        private String cluster() {
             return cluster;
         }
 
-        public String username() {
+        private String username() {
             return username;
         }
 
-        public String password() {
+        private String password() {
             return password;
         }
 
-        public boolean tlsEnabled() {
+        private boolean tlsEnabled() {
             return tlsEnabled;
         }
 
         @Nullable
-        public String tlsRootCA() {
+        private String tlsRootCA() {
             return tlsRootCA;
         }
 
         @Nullable
-        public String script() {
+        private String script() {
             return script;
         }
 
         @Nullable
-        public List<String> commands() {
+        private List<String> commands() {
             return commands;
         }
     }

@@ -108,7 +108,7 @@ public class TypeDBConsole {
         CommandLineOptions options = parseCommandLine(args);
         TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
         if (options.script() == null && options.commands() == null) {
-            console.runInteractive(options);
+            console.runREPL(options);
         } else if (options.script() != null) {
             boolean success = console.runScript(options, options.script());
             if (!success) System.exit(1);
@@ -118,15 +118,148 @@ public class TypeDBConsole {
         }
     }
 
-    private void runInteractive(CommandLineOptions options) {
+    private static void configureAndVerifyJavaVersion() {
+        int majorVersion = Java.getMajorVersion();
+        if (majorVersion == Java.UNKNOWN_VERSION) {
+            LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
+        } else if (majorVersion < 11) {
+            throw TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+        }
+    }
+
+    private static CommandLineOptions parseCommandLine(String[] args) {
+        CommandLineOptions options = new CommandLineOptions();
+        CommandLine command = new CommandLine(options);
+        try {
+            int exitCode = command.execute(args);
+            if (exitCode == 0) {
+                if (command.isUsageHelpRequested()) {
+                    command.usage(command.getOut());
+                    System.exit(0);
+                } else if (command.isVersionHelpRequested()) {
+                    command.printVersionHelp(command.getOut());
+                    System.exit(0);
+                } else {
+                    return options;
+                }
+            } else {
+                System.exit(1);
+            }
+        } catch (CommandLine.ParameterException ex) {
+            command.getErr().println(ex.getMessage());
+            if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, command.getErr())) {
+                ex.getCommandLine().usage(command.getErr());
+            }
+            System.exit(1);
+        }
+        return null;
+    }
+
+    private void runREPL(CommandLineOptions options) {
         printer.info(COPYRIGHT);
         try (TypeDBClient client = createTypeDBClient(options)) {
-            runRepl(client);
+            LineReader reader = LineReaderBuilder.builder()
+                    .terminal(terminal)
+                    .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
+                    .build();
+            while (true) {
+                ReplCommand command;
+                try {
+                    command = ReplCommand.getCommand(reader, printer, "> ", client.isCluster());
+                } catch (InterruptedException e) {
+                    break;
+                }
+                if (command.isExit()) {
+                    break;
+                } else if (command.isHelp()) {
+                    printer.info(ReplCommand.getHelpMenu(client));
+                } else if (command.isClear()) {
+                    reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
+                } else if (command.isUserList()) {
+                    runUserList(client);
+                } else if (command.isUserCreate()) {
+                    ReplCommand.User.Create userCommand = command.asUserCreate();
+                    runUserCreate(client, userCommand.user(), userCommand.password());
+                } else if (command.isUserDelete()) {
+                    runUserDelete(client, command.asUserDelete().user());
+                } else if (command.isDatabaseList()) {
+                    runDatabaseList(client);
+                } else if (command.isDatabaseCreate()) {
+                    runDatabaseCreate(client, command.asDatabaseCreate().database());
+                } else if (command.isDatabaseDelete()) {
+                    runDatabaseDelete(client, command.asDatabaseDelete().database());
+                } else if (command.isDatabaseSchema()) {
+                    runDatabaseSchema(client, command.asDatabaseSchema().database());
+                } else if (command.isDatabaseReplicas()) {
+                    runDatabaseReplicas(client, command.asDatabaseReplicas().database());
+                } else if (command.isTransaction()) {
+                    String database = command.asTransaction().database();
+                    TypeDBSession.Type sessionType = command.asTransaction().sessionType();
+                    TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
+                    TypeDBOptions typedbOptions = command.asTransaction().options();
+                    if (typedbOptions.isCluster() && !client.isCluster()) {
+                        printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
+                        continue;
+                    }
+                    boolean shouldExit = runTransactionREPL(client, database, sessionType, transactionType, typedbOptions);
+                    if (shouldExit) break;
+                }
+            }
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
         } finally {
             executorService.shutdownNow();
         }
+    }
+
+    private boolean runTransactionREPL(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
+        LineReader reader = LineReaderBuilder.builder()
+                .terminal(terminal)
+                .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
+                .build();
+        StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
+        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
+            prompt.append("[any-replica]");
+        prompt.append("> ");
+        try (TypeDBSession session = client.session(database, sessionType, options);
+             TypeDBTransaction tx = session.transaction(transactionType, options)) {
+            while (true) {
+                Either<TransactionReplCommand, String> command;
+                try {
+                    command = TransactionReplCommand.getCommand(reader, prompt.toString());
+                } catch (InterruptedException e) {
+                    break;
+                }
+                if (command.isSecond()) {
+                    printer.error(command.second());
+                    continue;
+                } else {
+                    TransactionReplCommand replCommand = command.first();
+                    if (replCommand.isExit()) {
+                        return true;
+                    } else if (replCommand.isClear()) {
+                        reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
+                    } else if (replCommand.isHelp()) {
+                        printer.info(TransactionReplCommand.getHelpMenu());
+                    } else if (replCommand.isCommit()) {
+                        runCommit(tx);
+                        break;
+                    } else if (replCommand.isRollback()) {
+                        runRollback(tx);
+                    } else if (replCommand.isClose()) {
+                        runClose(tx);
+                        break;
+                    } else if (replCommand.isSource()) {
+                        runSource(tx, replCommand.asSource().file());
+                    } else if (replCommand.isQuery()) {
+                        runQuery(tx, replCommand.asQuery().query());
+                    }
+                }
+            }
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+        }
+        return false;
     }
 
     private boolean runScript(CommandLineOptions options, String script) {
@@ -230,106 +363,6 @@ public class TypeDBConsole {
             executorService.shutdownNow();
         }
         return true;
-    }
-
-    private void runRepl(TypeDBClient client) {
-        LineReader reader = LineReaderBuilder.builder()
-                .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
-                .build();
-        while (true) {
-            ReplCommand command;
-            try {
-                command = ReplCommand.getCommand(reader, printer, "> ", client.isCluster());
-            } catch (InterruptedException e) {
-                break;
-            }
-            if (command.isExit()) {
-                break;
-            } else if (command.isHelp()) {
-                printer.info(ReplCommand.getHelpMenu(client));
-            } else if (command.isClear()) {
-                reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-            } else if (command.isUserList()) {
-                runUserList(client);
-            } else if (command.isUserCreate()) {
-                ReplCommand.User.Create userCommand = command.asUserCreate();
-                runUserCreate(client, userCommand.user(), userCommand.password());
-            } else if (command.isUserDelete()) {
-                runUserDelete(client, command.asUserDelete().user());
-            } else if (command.isDatabaseList()) {
-                runDatabaseList(client);
-            } else if (command.isDatabaseCreate()) {
-                runDatabaseCreate(client, command.asDatabaseCreate().database());
-            } else if (command.isDatabaseDelete()) {
-                runDatabaseDelete(client, command.asDatabaseDelete().database());
-            } else if (command.isDatabaseSchema()) {
-                runDatabaseSchema(client, command.asDatabaseSchema().database());
-            } else if (command.isDatabaseReplicas()) {
-                runDatabaseReplicas(client, command.asDatabaseReplicas().database());
-            } else if (command.isTransaction()) {
-                String database = command.asTransaction().database();
-                TypeDBSession.Type sessionType = command.asTransaction().sessionType();
-                TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
-                TypeDBOptions typedbOptions = command.asTransaction().options();
-                if (typedbOptions.isCluster() && !client.isCluster()) {
-                    printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
-                    continue;
-                }
-                boolean shouldExit = runTransactionRepl(client, database, sessionType, transactionType, typedbOptions);
-                if (shouldExit) break;
-            }
-        }
-    }
-
-    private boolean runTransactionRepl(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
-        LineReader reader = LineReaderBuilder.builder()
-                .terminal(terminal)
-                .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
-                .build();
-        StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
-        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
-            prompt.append("[any-replica]");
-        prompt.append("> ");
-        try (TypeDBSession session = client.session(database, sessionType, options);
-             TypeDBTransaction tx = session.transaction(transactionType, options)) {
-            while (true) {
-                Either<TransactionReplCommand, String> command;
-                try {
-                    command = TransactionReplCommand.getCommand(reader, prompt.toString());
-                } catch (InterruptedException e) {
-                    break;
-                }
-                if (command.isSecond()) {
-                    printer.error(command.second());
-                    continue;
-                } else {
-                    TransactionReplCommand replCommand = command.first();
-                    if (replCommand.isExit()) {
-                        return true;
-                    } else if (replCommand.isClear()) {
-                        reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-                    } else if (replCommand.isHelp()) {
-                        printer.info(TransactionReplCommand.getHelpMenu());
-                    } else if (replCommand.isCommit()) {
-                        runCommit(tx);
-                        break;
-                    } else if (replCommand.isRollback()) {
-                        runRollback(tx);
-                    } else if (replCommand.isClose()) {
-                        runClose(tx);
-                        break;
-                    } else if (replCommand.isSource()) {
-                        runSource(tx, replCommand.asSource().file());
-                    } else if (replCommand.isQuery()) {
-                        runQuery(tx, replCommand.asQuery().query());
-                    }
-                }
-            }
-        } catch (TypeDBClientException e) {
-            printer.error(e.getMessage());
-        }
-        return false;
     }
 
     private TypeDBClient createTypeDBClient(CommandLineOptions options) {
@@ -568,43 +601,6 @@ public class TypeDBConsole {
         } finally {
             if (prevHandler != null) terminal.handle(Terminal.Signal.INT, prevHandler);
         }
-    }
-
-    private static void configureAndVerifyJavaVersion() {
-        int majorVersion = Java.getMajorVersion();
-        if (majorVersion == Java.UNKNOWN_VERSION) {
-            LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
-        } else if (majorVersion < 11) {
-            throw TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
-        }
-    }
-
-    private static CommandLineOptions parseCommandLine(String[] args) {
-        CommandLineOptions options = new CommandLineOptions();
-        CommandLine command = new CommandLine(options);
-        try {
-            int exitCode = command.execute(args);
-            if (exitCode == 0) {
-                if (command.isUsageHelpRequested()) {
-                    command.usage(command.getOut());
-                    System.exit(0);
-                } else if (command.isVersionHelpRequested()) {
-                    command.printVersionHelp(command.getOut());
-                    System.exit(0);
-                } else {
-                    return options;
-                }
-            } else {
-                System.exit(1);
-            }
-        } catch (CommandLine.ParameterException ex) {
-            command.getErr().println(ex.getMessage());
-            if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, command.getErr())) {
-                ex.getCommandLine().usage(command.getErr());
-            }
-            System.exit(1);
-        }
-        return null;
     }
 
     @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})

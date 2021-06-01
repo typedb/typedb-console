@@ -1,4 +1,4 @@
-
+#
 # Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,6 @@ def vaticle_typedb_common():
 def vaticle_typedb_client_java():
     git_repository(
         name = "vaticle_typedb_client_java",
-        remote = "https://github.com/vaticle/typedb-client-java",
-        tag = "2.1.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_client_java
+        remote = "https://github.com/vaticle/client-java",
+        commit = "94085b7d710ca9078056eec64f988279ce7201a8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_client_java
     )

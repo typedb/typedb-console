@@ -606,42 +606,52 @@ public class TypeDBConsole {
     @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})
     private static class CommandLineOptions implements Runnable {
 
-        @CommandLine.Option(names = {"--server"},
-                description = "TypeDB address to which Console will connect to")
+        @CommandLine.Option(
+                names = {"--server"},
+                description = "TypeDB address to which Console will connect to"
+        )
         private @Nullable
         String server;
 
-        @CommandLine.Option(names = {"--cluster"},
-                description = "TypeDB Cluster address to which Console will connect to")
+        @CommandLine.Option(
+                names = {"--cluster"},
+                description = "TypeDB Cluster address to which Console will connect to"
+        )
         private @Nullable
         String cluster;
 
-        @CommandLine.Option(names = {"--username"},
-                description = "Username")
+        @CommandLine.Option(names = {"--username"}, description = "Username")
         private @Nullable
         String username;
 
-        @CommandLine.Option(names = {"--password"},
-                description = "Password")
+        @CommandLine.Option(names = {"--password"}, description = "Password", interactive = true, arity = "0..1")
         private @Nullable
         String password;
 
-        @CommandLine.Option(names = {"--tls-enabled"},
-                description = "Whether to connect to TypeDB Cluster with TLS encryption")
+        @CommandLine.Option(
+                names = {"--tls-enabled"},
+                description = "Whether to connect to TypeDB Cluster with TLS encryption"
+        )
         private boolean tlsEnabled;
 
-        @CommandLine.Option(names = {"--tls-root-ca"},
-                description = "Path to the TLS root CA file")
+        @CommandLine.Option(
+                names = {"--tls-root-ca"},
+                description = "Path to the TLS root CA file"
+        )
         private @Nullable
         String tlsRootCA;
 
-        @CommandLine.Option(names = {"--script"},
-                description = "Script with commands to run in the Console, without interactive mode")
+        @CommandLine.Option(
+                names = {"--script"},
+                description = "Script with commands to run in the Console, without interactive mode"
+        )
         private @Nullable
         String script;
 
-        @CommandLine.Option(names = {"--command"},
-                description = "Commands to run in the Console, without interactive mode")
+        @CommandLine.Option(
+                names = {"--command"},
+                description = "Commands to run in the Console, without interactive mode"
+        )
         private @Nullable
         List<String> commands;
 

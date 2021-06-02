@@ -616,7 +616,7 @@ public interface REPLCommand {
         }
     }
 
-    static String getHelpMenu(TypeDBClient client) {
+    static String createHelpMenu(TypeDBClient client) {
         List<Pair<String, String>> menu = new ArrayList<>();
         if (client.isCluster()) {
             menu.addAll(Arrays.asList(
@@ -644,14 +644,14 @@ public interface REPLCommand {
                 pair(Clear.helpCommand, Clear.description),
                 pair(Exit.helpCommand, Exit.description)
         ));
-        return Utils.buildHelpMenu(menu);
+        return Utils.createHelpMenu(menu);
     }
 
-    static REPLCommand getCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
+    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
         REPLCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = getCommand(line, reader, isCluster);
+            command = readREPLCommand(line, reader, isCluster);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -660,7 +660,7 @@ public interface REPLCommand {
         return command;
     }
 
-    static REPLCommand getCommand(String line, @Nullable LineReader passwordReader, boolean isCluster) {
+    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isCluster) {
         REPLCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
@@ -677,7 +677,7 @@ public interface REPLCommand {
             String password;
             if (tokens.length == 3) {
                 if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-                password = passwordReader.readLine('0');
+                password = Utils.readPassword(passwordReader, "Enter password:");
             } else {
                 password = tokens[3];
             }

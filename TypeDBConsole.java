@@ -165,14 +165,14 @@ public class TypeDBConsole {
             while (true) {
                 REPLCommand command;
                 try {
-                    command = REPLCommand.getCommand(reader, printer, "> ", client.isCluster());
+                    command = REPLCommand.readREPLCommand(reader, printer, "> ", client.isCluster());
                 } catch (InterruptedException e) {
                     break;
                 }
                 if (command.isExit()) {
                     break;
                 } else if (command.isHelp()) {
-                    printer.info(REPLCommand.getHelpMenu(client));
+                    printer.info(REPLCommand.createHelpMenu(client));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command.isUserList()) {
@@ -226,7 +226,7 @@ public class TypeDBConsole {
             while (true) {
                 Either<TransactionREPLCommand, String> command;
                 try {
-                    command = TransactionREPLCommand.getCommand(reader, prompt.toString());
+                    command = TransactionREPLCommand.readCommand(reader, prompt.toString());
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -240,7 +240,7 @@ public class TypeDBConsole {
                     } else if (replCommand.isClear()) {
                         reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                     } else if (replCommand.isHelp()) {
-                        printer.info(TransactionREPLCommand.getHelpMenu());
+                        printer.info(TransactionREPLCommand.createHelpMenu());
                     } else if (replCommand.isCommit()) {
                         runCommit(tx);
                         break;
@@ -282,7 +282,7 @@ public class TypeDBConsole {
             for (; i < inlineCommands.size() && !cancelled[0]; i++) {
                 String commandString = inlineCommands.get(i);
                 printer.info("+ " + commandString);
-                REPLCommand command = REPLCommand.getCommand(commandString, null, client.isCluster());
+                REPLCommand command = REPLCommand.readREPLCommand(commandString, null, client.isCluster());
                 if (command != null) {
                     if (command.isUserList()) {
                         boolean success = runUserList(client);
@@ -322,7 +322,7 @@ public class TypeDBConsole {
                             for (i += 1; i < inlineCommands.size() && !cancelled[0]; i++) {
                                 String txCommandString = inlineCommands.get(i);
                                 printer.info("++ " + txCommandString);
-                                Either<TransactionREPLCommand, String> txCommand = TransactionREPLCommand.getCommand(txCommandString);
+                                Either<TransactionREPLCommand, String> txCommand = TransactionREPLCommand.readCommand(txCommandString);
                                 if (txCommand.isSecond()) {
                                     printer.error(txCommand.second());
                                     return false;

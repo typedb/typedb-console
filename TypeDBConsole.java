@@ -31,8 +31,8 @@ import com.vaticle.typedb.client.api.database.Database;
 import com.vaticle.typedb.client.common.exception.TypeDBClientException;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.console.command.ReplCommand;
-import com.vaticle.typedb.console.command.TransactionReplCommand;
+import com.vaticle.typedb.console.command.REPLCommand;
+import com.vaticle.typedb.console.command.TransactionREPLCommand;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
@@ -83,9 +83,9 @@ public class TypeDBConsole {
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
             "Copyright (C) 2021 Vaticle\n";
     private static final Path COMMAND_HISTORY_FILE =
-            Paths.get(System.getProperty("user.home"), ".typedb-console-command-history").toAbsolutePath();
+            Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =
-            Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-history").toAbsolutePath();
+            Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private final Printer printer;
@@ -105,15 +105,15 @@ public class TypeDBConsole {
 
     public static void main(String[] args) {
         configureAndVerifyJavaVersion();
-        CommandLineOptions options = parseCommandLine(args);
+        CLIOptions options = parseCLIOptions(args);
         TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
         if (options.script() == null && options.commands() == null) {
-            console.runREPL(options);
+            console.runREPLMode(options);
         } else if (options.script() != null) {
-            boolean success = console.runScript(options, options.script());
+            boolean success = console.runScriptMode(options, options.script());
             if (!success) System.exit(1);
         } else if (options.commands() != null) {
-            boolean success = console.runCommands(options, options.commands());
+            boolean success = console.runInlineCommandMode(options, options.commands());
             if (!success) System.exit(1);
         }
     }
@@ -127,17 +127,17 @@ public class TypeDBConsole {
         }
     }
 
-    private static CommandLineOptions parseCommandLine(String[] args) {
-        CommandLineOptions options = new CommandLineOptions();
-        CommandLine command = new CommandLine(options);
+    private static CLIOptions parseCLIOptions(String[] args) {
+        CLIOptions options = new CLIOptions();
+        CommandLine CLI = new CommandLine(options);
         try {
-            int exitCode = command.execute(args);
+            int exitCode = CLI.execute(args);
             if (exitCode == 0) {
-                if (command.isUsageHelpRequested()) {
-                    command.usage(command.getOut());
+                if (CLI.isUsageHelpRequested()) {
+                    CLI.usage(CLI.getOut());
                     System.exit(0);
-                } else if (command.isVersionHelpRequested()) {
-                    command.printVersionHelp(command.getOut());
+                } else if (CLI.isVersionHelpRequested()) {
+                    CLI.printVersionHelp(CLI.getOut());
                     System.exit(0);
                 } else {
                     return options;
@@ -146,16 +146,16 @@ public class TypeDBConsole {
                 System.exit(1);
             }
         } catch (CommandLine.ParameterException ex) {
-            command.getErr().println(ex.getMessage());
-            if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, command.getErr())) {
-                ex.getCommandLine().usage(command.getErr());
+            CLI.getErr().println(ex.getMessage());
+            if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, CLI.getErr())) {
+                ex.getCommandLine().usage(CLI.getErr());
             }
             System.exit(1);
         }
         return null;
     }
 
-    private void runREPL(CommandLineOptions options) {
+    private void runREPLMode(CLIOptions options) {
         printer.info(COPYRIGHT);
         try (TypeDBClient client = createTypeDBClient(options)) {
             LineReader reader = LineReaderBuilder.builder()
@@ -163,22 +163,22 @@ public class TypeDBConsole {
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
                     .build();
             while (true) {
-                ReplCommand command;
+                REPLCommand command;
                 try {
-                    command = ReplCommand.getCommand(reader, printer, "> ", client.isCluster());
+                    command = REPLCommand.getCommand(reader, printer, "> ", client.isCluster());
                 } catch (InterruptedException e) {
                     break;
                 }
                 if (command.isExit()) {
                     break;
                 } else if (command.isHelp()) {
-                    printer.info(ReplCommand.getHelpMenu(client));
+                    printer.info(REPLCommand.getHelpMenu(client));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command.isUserList()) {
                     runUserList(client);
                 } else if (command.isUserCreate()) {
-                    ReplCommand.User.Create userCommand = command.asUserCreate();
+                    REPLCommand.User.Create userCommand = command.asUserCreate();
                     runUserCreate(client, userCommand.user(), userCommand.password());
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
@@ -201,7 +201,7 @@ public class TypeDBConsole {
                         printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
                         continue;
                     }
-                    boolean shouldExit = runTransactionREPL(client, database, sessionType, transactionType, typedbOptions);
+                    boolean shouldExit = transactionREPL(client, database, sessionType, transactionType, typedbOptions);
                     if (shouldExit) break;
                 }
             }
@@ -212,7 +212,7 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runTransactionREPL(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
+    private boolean transactionREPL(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
@@ -224,9 +224,9 @@ public class TypeDBConsole {
         try (TypeDBSession session = client.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
             while (true) {
-                Either<TransactionReplCommand, String> command;
+                Either<TransactionREPLCommand, String> command;
                 try {
-                    command = TransactionReplCommand.getCommand(reader, prompt.toString());
+                    command = TransactionREPLCommand.getCommand(reader, prompt.toString());
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -234,13 +234,13 @@ public class TypeDBConsole {
                     printer.error(command.second());
                     continue;
                 } else {
-                    TransactionReplCommand replCommand = command.first();
+                    TransactionREPLCommand replCommand = command.first();
                     if (replCommand.isExit()) {
                         return true;
                     } else if (replCommand.isClear()) {
                         reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                     } else if (replCommand.isHelp()) {
-                        printer.info(TransactionReplCommand.getHelpMenu());
+                        printer.info(TransactionREPLCommand.getHelpMenu());
                     } else if (replCommand.isCommit()) {
                         runCommit(tx);
                         break;
@@ -262,7 +262,7 @@ public class TypeDBConsole {
         return false;
     }
 
-    private boolean runScript(CommandLineOptions options, String script) {
+    private boolean runScriptMode(CLIOptions options, String script) {
         String scriptLines;
         try {
             scriptLines = new String(Files.readAllBytes(Paths.get(Objects.requireNonNull(script))), StandardCharsets.UTF_8);
@@ -270,19 +270,19 @@ public class TypeDBConsole {
             printer.error("Failed to open file '" + options.script() + "'");
             return false;
         }
-        return runCommands(options, Arrays.stream(scriptLines.split("\n")).collect(toList()));
+        return runInlineCommandMode(options, Arrays.stream(scriptLines.split("\n")).collect(toList()));
     }
 
-    private boolean runCommands(CommandLineOptions options, List<String> commandStrings) {
-        commandStrings = commandStrings.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
+    private boolean runInlineCommandMode(CLIOptions options, List<String> inlineCommands) {
+        inlineCommands = inlineCommands.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
         try (TypeDBClient client = createTypeDBClient(options)) {
             int i = 0;
-            for (; i < commandStrings.size() && !cancelled[0]; i++) {
-                String commandString = commandStrings.get(i);
+            for (; i < inlineCommands.size() && !cancelled[0]; i++) {
+                String commandString = inlineCommands.get(i);
                 printer.info("+ " + commandString);
-                ReplCommand command = ReplCommand.getCommand(commandString, client.isCluster());
+                REPLCommand command = REPLCommand.getCommand(commandString, null, client.isCluster());
                 if (command != null) {
                     if (command.isUserList()) {
                         boolean success = runUserList(client);
@@ -319,10 +319,10 @@ public class TypeDBConsole {
                         }
                         try (TypeDBSession session = client.session(database, sessionType, sessionOptions);
                              TypeDBTransaction tx = session.transaction(transactionType)) {
-                            for (i += 1; i < commandStrings.size() && !cancelled[0]; i++) {
-                                String txCommandString = commandStrings.get(i);
+                            for (i += 1; i < inlineCommands.size() && !cancelled[0]; i++) {
+                                String txCommandString = inlineCommands.get(i);
                                 printer.info("++ " + txCommandString);
-                                Either<TransactionReplCommand, String> txCommand = TransactionReplCommand.getCommand(txCommandString);
+                                Either<TransactionREPLCommand, String> txCommand = TransactionREPLCommand.getCommand(txCommandString);
                                 if (txCommand.isSecond()) {
                                     printer.error(txCommand.second());
                                     return false;
@@ -365,7 +365,7 @@ public class TypeDBConsole {
         return true;
     }
 
-    private TypeDBClient createTypeDBClient(CommandLineOptions options) {
+    private TypeDBClient createTypeDBClient(CLIOptions options) {
         TypeDBClient client = null;
         try {
             if (options.server() != null) {
@@ -385,7 +385,7 @@ public class TypeDBConsole {
         return client;
     }
 
-    private TypeDBCredential createTypeDBCredential(CommandLineOptions options) {
+    private TypeDBCredential createTypeDBCredential(CLIOptions options) {
         TypeDBCredential credential;
         if (options.tlsEnabled()) {
             String optRootCa = options.tlsRootCA();
@@ -604,7 +604,7 @@ public class TypeDBConsole {
     }
 
     @CommandLine.Command(name = "typedb console", mixinStandardHelpOptions = true, version = {com.vaticle.typedb.console.Version.VERSION})
-    private static class CommandLineOptions implements Runnable {
+    private static class CLIOptions implements Runnable {
 
         @CommandLine.Option(
                 names = {"--server"},
@@ -624,7 +624,13 @@ public class TypeDBConsole {
         private @Nullable
         String username;
 
-        @CommandLine.Option(names = {"--password"}, description = "Password", interactive = true, arity = "0..1")
+        @CommandLine.Option(
+                names = {"--password"},
+                description = "Password",
+                prompt = "Enter password:",
+                interactive = true,
+                arity = "0..1"
+        )
         private @Nullable
         String password;
 
@@ -657,6 +663,9 @@ public class TypeDBConsole {
 
         @CommandLine.Spec
         CommandLine.Model.CommandSpec spec;
+
+        private CLIOptions() {
+        }
 
         @Override
         public void run() {

@@ -27,6 +27,7 @@ import com.vaticle.typedb.console.common.Utils;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.LineReader;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,9 +35,10 @@ import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.UNABLE_TO_READ_PASSWORD_INTERACTIVELY;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public interface ReplCommand {
+public interface REPLCommand {
 
     default boolean isExit() {
         return false;
@@ -134,7 +136,7 @@ public interface ReplCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-    class Exit implements ReplCommand {
+    class Exit implements REPLCommand {
 
         private static String token = "exit";
         private static String helpCommand = token;
@@ -151,7 +153,7 @@ public interface ReplCommand {
         }
     }
 
-    class Help implements ReplCommand {
+    class Help implements REPLCommand {
 
         private static String token = "help";
         private static String helpCommand = token;
@@ -168,7 +170,7 @@ public interface ReplCommand {
         }
     }
 
-    class Clear implements ReplCommand {
+    class Clear implements REPLCommand {
 
         private static String token = "clear";
         private static String helpCommand = token;
@@ -185,11 +187,11 @@ public interface ReplCommand {
         }
     }
 
-    abstract class Database implements ReplCommand {
+    abstract class Database implements REPLCommand {
 
         private static String token = "database";
 
-        public static class List extends ReplCommand.Database {
+        public static class List extends REPLCommand.Database {
 
             private static String token = "list";
             private static String helpCommand = Database.token + " " + token;
@@ -206,7 +208,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Create extends ReplCommand.Database {
+        public static class Create extends REPLCommand.Database {
 
             private static String token = "create";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -233,7 +235,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Delete extends ReplCommand.Database {
+        public static class Delete extends REPLCommand.Database {
 
             private static String token = "delete";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -260,7 +262,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Schema extends ReplCommand.Database {
+        public static class Schema extends REPLCommand.Database {
 
             private static String token = "schema";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -287,7 +289,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Replicas extends ReplCommand.Database {
+        public static class Replicas extends REPLCommand.Database {
 
             private static String token = "replicas";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -315,11 +317,11 @@ public interface ReplCommand {
         }
     }
 
-    abstract class User implements ReplCommand {
+    abstract class User implements REPLCommand {
 
         private static String token = "user";
 
-        public static class List extends ReplCommand.User {
+        public static class List extends REPLCommand.User {
 
             private static String token = "list";
             private static String helpCommand = User.token + " " + token;
@@ -336,7 +338,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Create extends ReplCommand.User {
+        public static class Create extends REPLCommand.User {
 
             private static String token = "create";
             private static String helpCommand = User.token + " " + token + " " + "<username> <password>";
@@ -369,7 +371,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Delete extends ReplCommand.User {
+        public static class Delete extends REPLCommand.User {
 
             private static String token = "delete";
             private static String helpCommand = User.token + " " + token + " " + "<username>";
@@ -397,7 +399,7 @@ public interface ReplCommand {
         }
     }
 
-    class Transaction implements ReplCommand {
+    class Transaction implements REPLCommand {
 
         private static String token = "transaction";
         private static String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
@@ -645,11 +647,11 @@ public interface ReplCommand {
         return Utils.buildHelpMenu(menu);
     }
 
-    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
-        ReplCommand command = null;
+    static REPLCommand getCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
+        REPLCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = getCommand(line, isCluster);
+            command = getCommand(line, reader, isCluster);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -658,8 +660,8 @@ public interface ReplCommand {
         return command;
     }
 
-    static ReplCommand getCommand(String line, boolean isCluster) {
-        ReplCommand command = null;
+    static REPLCommand getCommand(String line, @Nullable LineReader passwordReader, boolean isCluster) {
+        REPLCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
             command = new Exit();
@@ -670,9 +672,15 @@ public interface ReplCommand {
         }
         else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
             command = new User.List();
-        } else if (tokens.length == 4 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
+        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
             String name = tokens[2];
-            String password = tokens[3];
+            String password;
+            if (tokens.length == 3) {
+                if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+                password = passwordReader.readLine('0');
+            } else {
+                password = tokens[3];
+            }
             command = new User.Create(name, password);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];

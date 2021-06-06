@@ -17,10 +17,10 @@
 
 package com.vaticle.typedb.console.command;
 
-import com.vaticle.typedb.client.api.TypeDBClient;
-import com.vaticle.typedb.client.api.TypeDBOptions;
-import com.vaticle.typedb.client.api.TypeDBSession;
-import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.client.api.connection.TypeDBClient;
+import com.vaticle.typedb.client.api.connection.TypeDBOptions;
+import com.vaticle.typedb.client.api.connection.TypeDBSession;
+import com.vaticle.typedb.client.api.connection.TypeDBTransaction;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.Utils;
@@ -401,9 +401,9 @@ public interface REPLCommand {
 
     class Transaction implements REPLCommand {
 
-        private static String token = "transaction";
-        private static String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
-        private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
+        private static final String token = "transaction";
+        private static final String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
+        private static final String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
         private final TypeDBSession.Type sessionType;

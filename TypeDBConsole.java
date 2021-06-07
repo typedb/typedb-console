@@ -669,34 +669,36 @@ public class TypeDBConsole {
 
         @Override
         public void run() {
-            validateAddress();
-            validateCredential();
+            validateOptions();
         }
 
-        private void validateAddress() {
+        private void validateOptions() {
             if (server != null && cluster != null) {
                 throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--cluster' must be provided, but not both.");
+            } else {
+                if (cluster != null) validateClusterOptions();
+                else validateServerOptions();
             }
         }
 
-        private void validateCredential() {
-            if (server != null) {
-                if (username != null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--cluster'");
-                if (password != null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--cluster'");
-                if (tlsEnabled)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
-                if (tlsRootCA != null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
-            } else {
-                if (username == null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cluster'");
-                if (password == null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cluster'");
-                if (!tlsEnabled && tlsRootCA != null)
-                    throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
-            }
+        private void validateServerOptions() {
+            if (username != null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--cluster'");
+            if (password != null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--cluster'");
+            if (tlsEnabled)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
+            if (tlsRootCA != null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
+        }
+
+        private void validateClusterOptions() {
+            if (username == null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cluster'");
+            if (password == null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cluster'");
+            if (!tlsEnabled && tlsRootCA != null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
         }
 
         @Nullable

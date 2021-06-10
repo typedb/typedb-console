@@ -17,7 +17,7 @@
 
 package com.vaticle.typedb.console.common;
 
-import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.client.api.connection.TypeDBTransaction;
 import com.vaticle.typedb.client.api.answer.ConceptMap;
 import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.client.api.answer.Numeric;
@@ -28,7 +28,7 @@ import com.vaticle.typedb.client.api.concept.thing.Relation;
 import com.vaticle.typedb.client.api.concept.thing.Thing;
 import com.vaticle.typedb.client.api.concept.type.RoleType;
 import com.vaticle.typedb.client.api.concept.type.Type;
-import com.vaticle.typedb.client.api.database.Database;
+import com.vaticle.typedb.client.api.connection.database.Database;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;

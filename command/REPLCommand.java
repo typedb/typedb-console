@@ -17,16 +17,17 @@
 
 package com.vaticle.typedb.console.command;
 
-import com.vaticle.typedb.client.api.TypeDBClient;
-import com.vaticle.typedb.client.api.TypeDBOptions;
-import com.vaticle.typedb.client.api.TypeDBSession;
-import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.client.api.connection.TypeDBClient;
+import com.vaticle.typedb.client.api.connection.TypeDBOptions;
+import com.vaticle.typedb.client.api.connection.TypeDBSession;
+import com.vaticle.typedb.client.api.connection.TypeDBTransaction;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.Utils;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.LineReader;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,9 +35,10 @@ import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.UNABLE_TO_READ_PASSWORD_INTERACTIVELY;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public interface ReplCommand {
+public interface REPLCommand {
 
     default boolean isExit() {
         return false;
@@ -59,6 +61,30 @@ public interface ReplCommand {
     }
 
     default Clear asClear() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserList() {
+        return false;
+    }
+
+    default User.List asUserList() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserCreate() {
+        return false;
+    }
+
+    default User.Create asUserCreate() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserDelete() {
+        return false;
+    }
+
+    default User.Delete asUserDelete() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -110,7 +136,7 @@ public interface ReplCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-    class Exit implements ReplCommand {
+    class Exit implements REPLCommand {
 
         private static String token = "exit";
         private static String helpCommand = token;
@@ -127,7 +153,7 @@ public interface ReplCommand {
         }
     }
 
-    class Help implements ReplCommand {
+    class Help implements REPLCommand {
 
         private static String token = "help";
         private static String helpCommand = token;
@@ -144,7 +170,7 @@ public interface ReplCommand {
         }
     }
 
-    class Clear implements ReplCommand {
+    class Clear implements REPLCommand {
 
         private static String token = "clear";
         private static String helpCommand = token;
@@ -161,11 +187,11 @@ public interface ReplCommand {
         }
     }
 
-    abstract class Database implements ReplCommand {
+    abstract class Database implements REPLCommand {
 
         private static String token = "database";
 
-        public static class List extends ReplCommand.Database {
+        public static class List extends REPLCommand.Database {
 
             private static String token = "list";
             private static String helpCommand = Database.token + " " + token;
@@ -182,7 +208,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Create extends ReplCommand.Database {
+        public static class Create extends REPLCommand.Database {
 
             private static String token = "create";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -209,7 +235,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Delete extends ReplCommand.Database {
+        public static class Delete extends REPLCommand.Database {
 
             private static String token = "delete";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -236,7 +262,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Schema extends ReplCommand.Database {
+        public static class Schema extends REPLCommand.Database {
 
             private static String token = "schema";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -263,7 +289,7 @@ public interface ReplCommand {
             }
         }
 
-        public static class Replicas extends ReplCommand.Database {
+        public static class Replicas extends REPLCommand.Database {
 
             private static String token = "replicas";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
@@ -291,11 +317,93 @@ public interface ReplCommand {
         }
     }
 
-    class Transaction implements ReplCommand {
+    abstract class User implements REPLCommand {
 
-        private static String token = "transaction";
-        private static String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
-        private static String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
+        private static String token = "user";
+
+        public static class List extends REPLCommand.User {
+
+            private static String token = "list";
+            private static String helpCommand = User.token + " " + token;
+            private static String description = "List the users on the server";
+
+            @Override
+            public boolean isUserList() {
+                return true;
+            }
+
+            @Override
+            public User.List asUserList() {
+                return this;
+            }
+        }
+
+        public static class Create extends REPLCommand.User {
+
+            private static String token = "create";
+            private static String helpCommand = User.token + " " + token + " " + "<username> <password>";
+            private static String description = "Create a user with name <username> and password <password> on the server";
+
+            private final String user;
+            private final String password;
+
+            public Create(String user, String password) {
+                this.user = user;
+                this.password = password;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            public String password() {
+                return password;
+            }
+
+            @Override
+            public boolean isUserCreate() {
+                return true;
+            }
+
+            @Override
+            public User.Create asUserCreate() {
+                return this;
+            }
+        }
+
+        public static class Delete extends REPLCommand.User {
+
+            private static String token = "delete";
+            private static String helpCommand = User.token + " " + token + " " + "<username>";
+            private static String description = "Delete a user with name <username> on the server";
+
+            private final String user;
+
+            public Delete(String user) {
+                this.user = user;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            @Override
+            public boolean isUserDelete() {
+                return true;
+            }
+
+            @Override
+            public User.Delete asUserDelete() {
+                return this;
+            }
+        }
+    }
+
+    class Transaction implements REPLCommand {
+
+        private static final String token = "transaction";
+        private static final String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
+        private static final String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
         private final TypeDBSession.Type sessionType;
@@ -508,13 +616,20 @@ public interface ReplCommand {
         }
     }
 
-    static String getHelpMenu(TypeDBClient client) {
-        List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(
+    static String createHelpMenu(TypeDBClient client) {
+        List<Pair<String, String>> menu = new ArrayList<>();
+        if (client.isCluster()) {
+            menu.addAll(Arrays.asList(
+                    pair(User.List.helpCommand, User.List.description),
+                    pair(User.Create.helpCommand, User.Create.description),
+                    pair(User.Delete.helpCommand, User.Delete.description)));
+        }
+
+        menu.addAll(Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
                 pair(Database.Delete.helpCommand, Database.Delete.description),
                 pair(Database.Schema.helpCommand, Database.Schema.description)));
-
 
         if (client.isCluster()) {
             menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
@@ -529,14 +644,14 @@ public interface ReplCommand {
                 pair(Clear.helpCommand, Clear.description),
                 pair(Exit.helpCommand, Exit.description)
         ));
-        return Utils.buildHelpMenu(menu);
+        return Utils.createHelpMenu(menu);
     }
 
-    static ReplCommand getCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
-        ReplCommand command = null;
+    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
+        REPLCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = getCommand(line, isCluster);
+            command = readREPLCommand(line, reader, isCluster);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -545,8 +660,8 @@ public interface ReplCommand {
         return command;
     }
 
-    static ReplCommand getCommand(String line, boolean isCluster) {
-        ReplCommand command = null;
+    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isCluster) {
+        REPLCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
             command = new Exit();
@@ -554,6 +669,22 @@ public interface ReplCommand {
             command = new Help();
         } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
             command = new Clear();
+        }
+        else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
+            command = new User.List();
+        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
+            String name = tokens[2];
+            String password;
+            if (tokens.length == 3) {
+                if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+                password = Utils.readPassword(passwordReader, "Enter password:");
+            } else {
+                password = tokens[3];
+            }
+            command = new User.Create(name, password);
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
+            String name = tokens[2];
+            command = new User.Delete(name);
         } else if (tokens.length == 2 && tokens[0].equals(Database.token) && tokens[1].equals(Database.List.token)) {
             command = new Database.List();
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Create.token)) {

@@ -39,13 +39,13 @@ import static com.vaticle.typedb.console.common.exception.ErrorMessage.Transacti
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
 
-public interface TransactionReplCommand {
+public interface TransactionREPLCommand {
 
     default boolean isExit() {
         return false;
     }
 
-    default TransactionReplCommand.Exit asExit() {
+    default TransactionREPLCommand.Exit asExit() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -53,7 +53,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Help asHelp() {
+    default TransactionREPLCommand.Help asHelp() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -61,7 +61,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Clear asClear() {
+    default TransactionREPLCommand.Clear asClear() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -69,7 +69,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Commit asCommit() {
+    default TransactionREPLCommand.Commit asCommit() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -77,7 +77,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Rollback asRollback() {
+    default TransactionREPLCommand.Rollback asRollback() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -85,7 +85,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Close asClose() {
+    default TransactionREPLCommand.Close asClose() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -93,7 +93,7 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Source asSource() {
+    default TransactionREPLCommand.Source asSource() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -101,16 +101,16 @@ public interface TransactionReplCommand {
         return false;
     }
 
-    default TransactionReplCommand.Query asQuery() {
+    default TransactionREPLCommand.Query asQuery() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-    class Exit implements TransactionReplCommand {
+    class Exit implements TransactionREPLCommand {
 
-        private static String token = "exit";
-        private static String helpCommand = token;
-        private static String description = "Exit console";
-        private static int args = 0;
+        private static final String token = "exit";
+        private static final String helpCommand = token;
+        private static final String description = "Exit console";
+        private static final int args = 0;
 
         @Override
         public boolean isExit() {
@@ -118,17 +118,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Exit asExit() {
+        public TransactionREPLCommand.Exit asExit() {
             return this;
         }
     }
 
-    class Help implements TransactionReplCommand {
+    class Help implements TransactionREPLCommand {
 
-        private static String token = "help";
-        private static String helpCommand = token;
-        private static String description = "Print this help menu";
-        private static int args = 0;
+        private static final String token = "help";
+        private static final String helpCommand = token;
+        private static final String description = "Print this help menu";
+        private static final int args = 0;
 
         @Override
         public boolean isHelp() {
@@ -136,17 +136,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Help asHelp() {
+        public TransactionREPLCommand.Help asHelp() {
             return this;
         }
     }
 
-    class Clear implements TransactionReplCommand {
+    class Clear implements TransactionREPLCommand {
 
-        private static String token = "clear";
-        private static String helpCommand = token;
-        private static String description = "Clear console screen";
-        private static int args = 0;
+        private static final String token = "clear";
+        private static final String helpCommand = token;
+        private static final String description = "Clear console screen";
+        private static final int args = 0;
 
         @Override
         public boolean isClear() {
@@ -154,17 +154,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Clear asClear() {
+        public TransactionREPLCommand.Clear asClear() {
             return this;
         }
     }
 
-    class Commit implements TransactionReplCommand {
+    class Commit implements TransactionREPLCommand {
 
-        private static String token = "commit";
-        private static String helpCommand = token;
-        private static String description = "Commit the transaction changes and close transaction";
-        private static int args = 0;
+        private static final String token = "commit";
+        private static final String helpCommand = token;
+        private static final String description = "Commit the transaction changes and close transaction";
+        private static final int args = 0;
 
         @Override
         public boolean isCommit() {
@@ -172,17 +172,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Commit asCommit() {
+        public TransactionREPLCommand.Commit asCommit() {
             return this;
         }
     }
 
-    class Rollback implements TransactionReplCommand {
+    class Rollback implements TransactionREPLCommand {
 
-        private static String token = "rollback";
-        private static String helpCommand = token;
-        private static String description = "Rollback the transaction to the beginning state";
-        private static int args = 0;
+        private static final String token = "rollback";
+        private static final String helpCommand = token;
+        private static final String description = "Rollback the transaction to the beginning state";
+        private static final int args = 0;
 
         @Override
         public boolean isRollback() {
@@ -190,17 +190,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Rollback asRollback() {
+        public TransactionREPLCommand.Rollback asRollback() {
             return this;
         }
     }
 
-    class Close implements TransactionReplCommand {
+    class Close implements TransactionREPLCommand {
 
-        private static String token = "close";
-        private static String helpCommand = token;
-        private static String description = "Close the transaction without committing changes";
-        private static int args = 0;
+        private static final String token = "close";
+        private static final String helpCommand = token;
+        private static final String description = "Close the transaction without committing changes";
+        private static final int args = 0;
 
         @Override
         public boolean isClose() {
@@ -208,17 +208,17 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Close asClose() {
+        public TransactionREPLCommand.Close asClose() {
             return this;
         }
     }
 
-    class Source implements TransactionReplCommand {
+    class Source implements TransactionREPLCommand {
 
-        private static String token = "source";
-        private static String helpCommand = token + " <file>";
-        private static String description = "Run TypeQL queries in file";
-        private static int args = 1;
+        private static final String token = "source";
+        private static final String helpCommand = token + " <file>";
+        private static final String description = "Run TypeQL queries in file";
+        private static final int args = 1;
 
         private final String file;
 
@@ -236,15 +236,15 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Source asSource() {
+        public TransactionREPLCommand.Source asSource() {
             return this;
         }
     }
 
-    class Query implements TransactionReplCommand {
+    class Query implements TransactionREPLCommand {
 
-        private static String helpCommand = "<query>";
-        private static String description = "Run TypeQL query";
+        private static final String helpCommand = "<query>";
+        private static final String description = "Run TypeQL query";
 
         private final String query;
 
@@ -262,28 +262,28 @@ public interface TransactionReplCommand {
         }
 
         @Override
-        public TransactionReplCommand.Query asQuery() {
+        public TransactionREPLCommand.Query asQuery() {
             return this;
         }
     }
 
-    static String getHelpMenu() {
+    static String createHelpMenu() {
         List<Pair<String, String>> menu = Arrays.asList(
-                pair(TransactionReplCommand.Query.helpCommand, TransactionReplCommand.Query.description),
-                pair(TransactionReplCommand.Source.helpCommand, TransactionReplCommand.Source.description),
-                pair(TransactionReplCommand.Commit.helpCommand, TransactionReplCommand.Commit.description),
-                pair(TransactionReplCommand.Rollback.helpCommand, TransactionReplCommand.Rollback.description),
-                pair(TransactionReplCommand.Close.helpCommand, TransactionReplCommand.Close.description),
-                pair(TransactionReplCommand.Help.helpCommand, TransactionReplCommand.Help.description),
-                pair(TransactionReplCommand.Clear.helpCommand, TransactionReplCommand.Clear.description),
-                pair(TransactionReplCommand.Exit.helpCommand, TransactionReplCommand.Exit.description)
+                pair(TransactionREPLCommand.Query.helpCommand, TransactionREPLCommand.Query.description),
+                pair(TransactionREPLCommand.Source.helpCommand, TransactionREPLCommand.Source.description),
+                pair(TransactionREPLCommand.Commit.helpCommand, TransactionREPLCommand.Commit.description),
+                pair(TransactionREPLCommand.Rollback.helpCommand, TransactionREPLCommand.Rollback.description),
+                pair(TransactionREPLCommand.Close.helpCommand, TransactionREPLCommand.Close.description),
+                pair(TransactionREPLCommand.Help.helpCommand, TransactionREPLCommand.Help.description),
+                pair(TransactionREPLCommand.Clear.helpCommand, TransactionREPLCommand.Clear.description),
+                pair(TransactionREPLCommand.Exit.helpCommand, TransactionREPLCommand.Exit.description)
         );
-        return Utils.buildHelpMenu(menu);
+        return Utils.createHelpMenu(menu);
     }
 
-    static Either<TransactionReplCommand, String> getCommand(LineReader reader, String prompt) throws InterruptedException {
+    static Either<TransactionREPLCommand, String> readCommand(LineReader reader, String prompt) throws InterruptedException {
         String line = Utils.readNonEmptyLine(reader, prompt);
-        Either<TransactionReplCommand, String> command = getCommand(line);
+        Either<TransactionREPLCommand, String> command = readCommand(line);
         if (command.isSecond()) return command;
         else if (command.first().isQuery()) {
             String query = readMultilineQuery(reader, prompt, command.first().asQuery().query());
@@ -294,8 +294,8 @@ public interface TransactionReplCommand {
         return command;
     }
 
-    static Either<TransactionReplCommand, String> getCommand(String line) {
-        TransactionReplCommand command;
+    static Either<TransactionREPLCommand, String> readCommand(String line) {
+        TransactionREPLCommand command;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens[0].equals(Exit.token)) {
             if (tokens.length - 1 != Exit.args) return Either.second(INVALID_EXIT_ARGS.message(Exit.args, tokens.length - 1));

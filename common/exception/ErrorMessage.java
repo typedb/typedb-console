@@ -64,6 +64,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     public static class Console extends ErrorMessage {
         public static final Console INCOMPATIBLE_JAVA_RUNTIME =
                 new Console(1, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+        public static final Console UNABLE_TO_READ_PASSWORD_INTERACTIVELY =
+                new Console(1, "Unable to read password interactively in non-interactive mode.");
 
         private static final String codePrefix = "CON";
         private static final String messagePrefix = "Invalid Console Operation";

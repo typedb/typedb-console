@@ -28,7 +28,7 @@ import java.util.List;
 
 public class Utils {
 
-    public static String buildHelpMenu(List<Pair<String, String>> menu) {
+    public static String createHelpMenu(List<Pair<String, String>> menu) {
         if (menu.isEmpty()) return "\n";
         int maxHelpCommandLength = menu.stream().map(x -> x.first().length()).max(Integer::compare).get();
         int spacingLength = 4;
@@ -70,6 +70,10 @@ public class Utils {
             }
         }
         return line;
+    }
+
+    public static String readPassword(LineReader passwordReader, String prompt) {
+        return passwordReader.readLine(prompt, (char) 0);
     }
 
     public static String getContinuationPrompt(String prompt) {

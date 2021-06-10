@@ -44,6 +44,7 @@ import com.vaticle.typeql.lang.query.TypeQLInsert;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
+import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
@@ -436,6 +437,9 @@ public class TypeDBConsole {
             } else if (query instanceof TypeQLDelete) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
+            } else if (query instanceof TypeQLUpdate) {
+                Stream<ConceptMap> result = tx.query().update(query.asUpdate());
+                printCancellableResult(result, x -> printer.conceptMap(x, tx));
             } else if (query instanceof TypeQLMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
                 printCancellableResult(result, x -> printer.conceptMap(x, tx));
@@ -450,6 +454,8 @@ public class TypeDBConsole {
                 printCancellableResult(result, x -> printer.numericGroup(x, tx));
             } else if (query instanceof TypeQLCompute) {
                 throw new TypeDBConsoleException("Compute query is not yet supported");
+            } else {
+                throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
             }
         }
         return true;

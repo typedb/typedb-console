@@ -516,7 +516,7 @@ public class TypeDBConsole {
 
     private void runRollback(TypeDBTransaction tx) {
         tx.rollback();
-        printer.info("Transaction changes have rolled back");
+        printer.info("Transaction changes have rolled back, i.e. erased, and not committed.");
     }
 
     private void runClose(TypeDBTransaction tx) {

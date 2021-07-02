@@ -169,7 +169,7 @@ assemble_apt(
     maintainer = "Vaticle <community@vaticle.com>",
     description = "TypeDB (console)",
     depends = [
-      "openjdk-8-jre",
+      "openjdk-11-jre",
       "typedb-bin (>=%{@vaticle_typedb_common})"
     ],
     workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",

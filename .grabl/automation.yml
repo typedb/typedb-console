@@ -79,7 +79,7 @@ build:
         bazel run @vaticle_dependencies//distribution/artifact:create-netrc
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-        # Downgrading Python is needed to work around bazelbuild/rules_pkg#397
+        # Do not upgrade Python until bazelbuild/rules_pkg#397 is fixed
         pyenv install 3.7.9
         pyenv global 3.7.9
         sudo unlink /usr/bin/python3
@@ -125,7 +125,7 @@ release:
         cat VERSION
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-        # Downgrading Python is needed to work around bazelbuild/rules_pkg#397
+        # Do not upgrade Python until bazelbuild/rules_pkg#397 is fixed
         pyenv install 3.7.9
         pyenv global 3.7.9
         sudo unlink /usr/bin/python3

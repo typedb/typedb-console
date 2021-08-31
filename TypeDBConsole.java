@@ -28,6 +28,7 @@ import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.client.api.answer.Numeric;
 import com.vaticle.typedb.client.api.answer.NumericGroup;
 import com.vaticle.typedb.client.api.connection.database.Database;
+import com.vaticle.typedb.client.api.connection.user.User;
 import com.vaticle.typedb.client.common.exception.TypeDBClientException;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.util.Java;
@@ -45,8 +46,12 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
+import org.jline.builtins.Completers;
+import org.jline.reader.Candidate;
+import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.impl.completer.StringsCompleter;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.InfoCmp;
@@ -62,6 +67,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -74,6 +80,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static org.jline.builtins.Completers.TreeCompleter.node;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
@@ -162,6 +169,7 @@ public class TypeDBConsole {
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
+                    .completer(getCompleter(client))
                     .build();
             while (true) {
                 REPLCommand command;
@@ -211,6 +219,52 @@ public class TypeDBConsole {
         } finally {
             executorService.shutdownNow();
         }
+    }
+
+    private Completers.TreeCompleter getCompleter(TypeDBClient client) {
+        Completer databaseNameCompleter = (reader, line, candidates) -> client.databases().all().stream()
+                .map(Database::name)
+                .filter(name -> name.startsWith(line.word()))
+                .forEach(name -> candidates.add(new Candidate(name)));
+        Completer userNameCompleter = (reader, line, candidates) -> {
+            client.asCluster().users().all().stream()
+                    .map(User::name)
+                    // "admin" user is excluded as it can't be deleted
+                    .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
+                    .forEach(name -> candidates.add(new Candidate(name)));
+        };
+        final List<Completers.TreeCompleter.Node> nodes = new ArrayList<>();
+        nodes.add(
+                node(REPLCommand.Database.token,
+                        node(REPLCommand.Database.List.token),
+                        node(REPLCommand.Database.Create.token),
+                        node(REPLCommand.Database.Delete.token,
+                                node(databaseNameCompleter)),
+                        node(REPLCommand.Database.Schema.token,
+                                node(databaseNameCompleter)
+                        )
+                ));
+        if (client.isCluster()) {
+            nodes.add(node(REPLCommand.User.token,
+                    node(REPLCommand.User.List.token),
+                    node(REPLCommand.User.Create.token),
+                    node(REPLCommand.User.Delete.token,
+                            node(userNameCompleter))
+            ));
+        }
+        nodes.add(node(REPLCommand.Transaction.token,
+                node(databaseNameCompleter,
+                        node(new StringsCompleter("schema", "data"),
+                                node(new StringsCompleter("read", "write")
+                                        // TODO(vmax): complete [transaction-options] here
+                                )
+                        )
+                )
+        ));
+        nodes.add(node(REPLCommand.Help.token));
+        nodes.add(node(REPLCommand.Clear.token));
+        nodes.add(node(REPLCommand.Exit.token));
+        return new Completers.TreeCompleter(nodes);
     }
 
     private boolean transactionREPL(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {

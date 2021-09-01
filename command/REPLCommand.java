@@ -138,7 +138,7 @@ public interface REPLCommand {
 
     class Exit implements REPLCommand {
 
-        private static String token = "exit";
+        public static String token = "exit";
         private static String helpCommand = token;
         private static String description = "Exit console";
 
@@ -155,7 +155,7 @@ public interface REPLCommand {
 
     class Help implements REPLCommand {
 
-        private static String token = "help";
+        public static String token = "help";
         private static String helpCommand = token;
         private static String description = "Print this help menu";
 
@@ -172,7 +172,7 @@ public interface REPLCommand {
 
     class Clear implements REPLCommand {
 
-        private static String token = "clear";
+        public static String token = "clear";
         private static String helpCommand = token;
         private static String description = "Clear console screen";
 
@@ -189,11 +189,11 @@ public interface REPLCommand {
 
     abstract class Database implements REPLCommand {
 
-        private static String token = "database";
+        public static String token = "database";
 
         public static class List extends REPLCommand.Database {
 
-            private static String token = "list";
+            public static String token = "list";
             private static String helpCommand = Database.token + " " + token;
             private static String description = "List the databases on the server";
 
@@ -210,7 +210,7 @@ public interface REPLCommand {
 
         public static class Create extends REPLCommand.Database {
 
-            private static String token = "create";
+            public static String token = "create";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Create a database with name <db> on the server";
 
@@ -237,7 +237,7 @@ public interface REPLCommand {
 
         public static class Delete extends REPLCommand.Database {
 
-            private static String token = "delete";
+            public static String token = "delete";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Delete a database with name <db> on the server";
 
@@ -264,7 +264,7 @@ public interface REPLCommand {
 
         public static class Schema extends REPLCommand.Database {
 
-            private static String token = "schema";
+            public static String token = "schema";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "Print the schema of the database with name <db>";
 
@@ -291,7 +291,7 @@ public interface REPLCommand {
 
         public static class Replicas extends REPLCommand.Database {
 
-            private static String token = "replicas";
+            public static String token = "replicas";
             private static String helpCommand = Database.token + " " + token + " " + "<db>";
             private static String description = "List replicas of a database with name <db>";
 
@@ -319,11 +319,11 @@ public interface REPLCommand {
 
     abstract class User implements REPLCommand {
 
-        private static String token = "user";
+        public static String token = "user";
 
         public static class List extends REPLCommand.User {
 
-            private static String token = "list";
+            public static String token = "list";
             private static String helpCommand = User.token + " " + token;
             private static String description = "List the users on the server";
 
@@ -340,7 +340,7 @@ public interface REPLCommand {
 
         public static class Create extends REPLCommand.User {
 
-            private static String token = "create";
+            public static String token = "create";
             private static String helpCommand = User.token + " " + token + " " + "<username> <password>";
             private static String description = "Create a user with name <username> and password <password> on the server";
 
@@ -373,7 +373,7 @@ public interface REPLCommand {
 
         public static class Delete extends REPLCommand.User {
 
-            private static String token = "delete";
+            public static String token = "delete";
             private static String helpCommand = User.token + " " + token + " " + "<username>";
             private static String description = "Delete a user with name <username> on the server";
 
@@ -401,7 +401,7 @@ public interface REPLCommand {
 
     class Transaction implements REPLCommand {
 
-        private static final String token = "transaction";
+        public static final String token = "transaction";
         private static final String helpCommand = token + " <db> schema|data read|write [" + Options.token + "]";
         private static final String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 

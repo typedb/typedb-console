@@ -228,7 +228,7 @@ public class TypeDBConsole {
                 .forEach(name -> candidates.add(new Candidate(name)));
         Completer userNameCompleter = (reader, line, candidates) -> {
             client.asCluster().users().all().stream()
-                    .map(User::name)
+                    .map(User::username)
                     // "admin" user is excluded as it can't be deleted
                     .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
                     .forEach(name -> candidates.add(new Candidate(name)));
@@ -461,7 +461,7 @@ public class TypeDBConsole {
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
             if (clientCluster.users().all().size() > 0)
-                clientCluster.users().all().forEach(user -> printer.info(user.name()));
+                clientCluster.users().all().forEach(user -> printer.info(user.username()));
             else printer.info("No users are present on the server.");
             return true;
         } catch (TypeDBClientException e) {

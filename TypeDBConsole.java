@@ -611,7 +611,7 @@ public class TypeDBConsole {
             } else if (query instanceof TypeQLInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
+                else running.add(CompletableFuture.runAsync(() -> result.findFirst()));
             } else if (query instanceof TypeQLDelete) {
                 QueryFuture<Void> deleteFuture = tx.query().delete(query.asDelete());
                 if (printAnswers) {
@@ -621,11 +621,11 @@ public class TypeDBConsole {
             } else if (query instanceof TypeQLUpdate) {
                 Stream<ConceptMap> result = tx.query().update(query.asUpdate());
                 if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
+                else running.add(CompletableFuture.runAsync(() -> result.findFirst()));
             } else if (query instanceof TypeQLMatch) {
                 Stream<ConceptMap> result = tx.query().match(query.asMatch());
                 if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
+                else running.add(CompletableFuture.runAsync(() -> result.findFirst()));
             } else if (query instanceof TypeQLMatch.Aggregate) {
                 QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
                 if (printAnswers) printer.numeric(answerFuture.get());
@@ -633,11 +633,11 @@ public class TypeDBConsole {
             } else if (query instanceof TypeQLMatch.Group) {
                 Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
                 if (printAnswers) printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
+                else running.add(CompletableFuture.runAsync(() -> result.findFirst()));
             } else if (query instanceof TypeQLMatch.Group.Aggregate) {
                 Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
                 if (printAnswers) printCancellableResult(result, x -> printer.numericGroup(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
+                else running.add(CompletableFuture.runAsync(() -> result.findFirst()));
             } else if (query instanceof TypeQLCompute) {
                 throw new TypeDBConsoleException("Compute query is not yet supported");
             } else {

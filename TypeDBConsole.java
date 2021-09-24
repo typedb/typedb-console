@@ -603,17 +603,11 @@ public class TypeDBConsole {
         List<CompletableFuture<Void>> running = new ArrayList<>();
         for (TypeQLQuery query : queries) {
             if (query instanceof TypeQLDefine) {
-                QueryFuture<Void> defineFuture = tx.query().define(query.asDefine());
-                if (printAnswers) {
-                    defineFuture.get();
-                    printer.info("Concepts have been defined");
-                } else running.add(CompletableFuture.runAsync(defineFuture::get));
+                tx.query().define(query.asDefine()).get();
+                printer.info("Concepts have been defined");
             } else if (query instanceof TypeQLUndefine) {
-                QueryFuture<Void> undefineFuture = tx.query().undefine(query.asUndefine());
-                if (printAnswers) {
-                    undefineFuture.get();
-                    printer.info("Concepts have been undefined");
-                } else running.add(CompletableFuture.runAsync(undefineFuture::get));
+                tx.query().undefine(query.asUndefine()).get();
+                printer.info("Concepts have been undefined");
             } else if (query instanceof TypeQLInsert) {
                 Stream<ConceptMap> result = tx.query().insert(query.asInsert());
                 if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
@@ -634,7 +628,6 @@ public class TypeDBConsole {
                 else running.add(CompletableFuture.runAsync(result::findFirst));
             } else if (query instanceof TypeQLMatch.Aggregate) {
                 QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
-                ;
                 if (printAnswers) printer.numeric(answerFuture.get());
                 else running.add(CompletableFuture.runAsync(answerFuture::get));
             } else if (query instanceof TypeQLMatch.Group) {

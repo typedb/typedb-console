@@ -25,20 +25,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
 
     public static class TransactionRepl extends ErrorMessage {
 
+        public static final TransactionRepl INVALID_OPTIONAL_ARG =
+                new TransactionRepl(1, "'%s' does not have an optional argument '%s'.");
         public static final TransactionRepl INVALID_EXIT_ARGS =
-                new TransactionRepl(1, "'exit' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(2, "'exit' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_HELP_ARGS =
-                new TransactionRepl(2, "'help' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(3, "'help' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_CLEAR_ARGS =
-                new TransactionRepl(3, "'clear' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(4, "'clear' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_COMMIT_ARGS =
-                new TransactionRepl(4, "'commit' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(5, "'commit' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_ROLLBACK_ARGS =
-                new TransactionRepl(5, "'rollback' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(6, "'rollback' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_CLOSE_ARGS =
-                new TransactionRepl(6, "'close' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(7, "'close' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_SOURCE_ARGS =
-                new TransactionRepl(7, "'source' expects %s space-separated arguments, received %s.");
+                new TransactionRepl(8, "'source' expects any of %s space-separated arguments, received %s.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction command";

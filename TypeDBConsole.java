@@ -73,6 +73,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -309,7 +310,7 @@ public class TypeDBConsole {
                     } else if (replCommand.isSource()) {
                         runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
                     } else if (replCommand.isQuery()) {
-                        runQuery(tx, replCommand.asQuery().query(), true);
+                        runQueriesPrintAnswers(tx, replCommand.asQuery().query());
                     }
                 }
             }
@@ -396,7 +397,7 @@ public class TypeDBConsole {
                                     boolean success = runSource(tx, source.file(), source.printAnswers());
                                     if (!success) return false;
                                 } else if (txCommand.first().isQuery()) {
-                                    boolean success = runQuery(tx, txCommand.first().asQuery().query(), true);
+                                    boolean success = runQueriesPrintAnswers(tx, txCommand.first().asQuery().query());
                                     if (!success) return false;
                                 } else {
                                     printer.error("Command is not available while running console script.");
@@ -585,68 +586,109 @@ public class TypeDBConsole {
     private boolean runSource(TypeDBTransaction tx, String file, boolean printAnswers) {
         try {
             String queryString = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
-            return runQuery(tx, queryString, printAnswers);
+            if (printAnswers) return runQueriesPrintAnswers(tx, queryString);
+            else return runQueriesAsync(tx, queryString);
         } catch (IOException e) {
             printer.error("Failed to open file '" + file + "'");
             return false;
         }
     }
 
+    private boolean runQueriesPrintAnswers(TypeDBTransaction tx, String queryString) {
+        Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
+        if (!queries.isPresent()) return false;
+        queries.get().forEach(query -> runQueryPrintAnswers(tx, query));
+        return true;
+    }
+
+    private boolean runQueriesAsync(TypeDBTransaction tx, String queryString) {
+        Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
+        if (!queries.isPresent()) return false;
+        CompletableFuture.allOf(queries.get().stream().map(query -> runQueryAsync(tx, query))
+                .toArray(CompletableFuture[]::new)).join();
+        return true;
+    }
+
+    private void runQueryPrintAnswers(TypeDBTransaction tx, TypeQLQuery query) {
+        if (query instanceof TypeQLDefine) {
+            tx.query().define(query.asDefine()).get();
+            printer.info("Concepts have been defined");
+        } else if (query instanceof TypeQLUndefine) {
+            tx.query().undefine(query.asUndefine()).get();
+            printer.info("Concepts have been undefined");
+        } else if (query instanceof TypeQLInsert) {
+            Stream<ConceptMap> result = tx.query().insert(query.asInsert());
+            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+        } else if (query instanceof TypeQLDelete) {
+            tx.query().delete(query.asDelete()).get();
+            printer.info("Concepts have been deleted");
+        } else if (query instanceof TypeQLUpdate) {
+            Stream<ConceptMap> result = tx.query().update(query.asUpdate());
+            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+        } else if (query instanceof TypeQLMatch) {
+            Stream<ConceptMap> result = tx.query().match(query.asMatch());
+            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+        } else if (query instanceof TypeQLMatch.Aggregate) {
+            QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
+            printer.numeric(answerFuture.get());
+        } else if (query instanceof TypeQLMatch.Group) {
+            Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
+            printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
+        } else if (query instanceof TypeQLMatch.Group.Aggregate) {
+            Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
+            printCancellableResult(result, x -> printer.numericGroup(x, tx));
+        } else if (query instanceof TypeQLCompute) {
+            throw new TypeDBConsoleException("Compute query is not yet supported");
+        } else {
+            throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
+        }
+    }
+
     @SuppressWarnings("CheckReturnValue")
-    private boolean runQuery(TypeDBTransaction tx, String queryString, boolean printAnswers) {
-        List<TypeQLQuery> queries;
+    private CompletableFuture<Void> runQueryAsync(TypeDBTransaction tx, TypeQLQuery query) {
+        if (query instanceof TypeQLDefine) {
+            tx.query().define(query.asDefine()).get();
+            printer.info("Concepts have been defined");
+            return CompletableFuture.completedFuture(null);
+        } else if (query instanceof TypeQLUndefine) {
+            tx.query().undefine(query.asUndefine()).get();
+            printer.info("Concepts have been undefined");
+            return CompletableFuture.completedFuture(null);
+        } else if (query instanceof TypeQLInsert) {
+            Stream<ConceptMap> result = tx.query().insert(query.asInsert());
+            return CompletableFuture.runAsync(result::findFirst);
+        } else if (query instanceof TypeQLDelete) {
+            QueryFuture<Void> deleteFuture = tx.query().delete(query.asDelete());
+            return CompletableFuture.runAsync(deleteFuture::get);
+        } else if (query instanceof TypeQLUpdate) {
+            Stream<ConceptMap> result = tx.query().update(query.asUpdate());
+            return CompletableFuture.runAsync(result::findFirst);
+        } else if (query instanceof TypeQLMatch) {
+            Stream<ConceptMap> result = tx.query().match(query.asMatch());
+            return CompletableFuture.runAsync(result::findFirst);
+        } else if (query instanceof TypeQLMatch.Aggregate) {
+            QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
+            return CompletableFuture.runAsync(answerFuture::get);
+        } else if (query instanceof TypeQLMatch.Group) {
+            Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
+            return CompletableFuture.runAsync(result::findFirst);
+        } else if (query instanceof TypeQLMatch.Group.Aggregate) {
+            Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
+            return CompletableFuture.runAsync(result::findFirst);
+        } else if (query instanceof TypeQLCompute) {
+            throw new TypeDBConsoleException("Compute query is not yet supported");
+        } else {
+            throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
+        }
+    }
+
+    Optional<List<TypeQLQuery>> parseQueries(String queryString) {
         try {
-            queries = TypeQL.parseQueries(queryString).collect(toList());
+            return Optional.of(TypeQL.parseQueries(queryString).collect(toList()));
         } catch (TypeQLException e) {
             printer.error(e.getMessage());
-            return false;
+            return Optional.empty();
         }
-        List<CompletableFuture<Void>> running = new ArrayList<>();
-        for (TypeQLQuery query : queries) {
-            if (query instanceof TypeQLDefine) {
-                tx.query().define(query.asDefine()).get();
-                printer.info("Concepts have been defined");
-            } else if (query instanceof TypeQLUndefine) {
-                tx.query().undefine(query.asUndefine()).get();
-                printer.info("Concepts have been undefined");
-            } else if (query instanceof TypeQLInsert) {
-                Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-                if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
-            } else if (query instanceof TypeQLDelete) {
-                QueryFuture<Void> deleteFuture = tx.query().delete(query.asDelete());
-                if (printAnswers) {
-                    deleteFuture.get();
-                    printer.info("Concepts have been deleted");
-                } else running.add(CompletableFuture.runAsync(deleteFuture::get));
-            } else if (query instanceof TypeQLUpdate) {
-                Stream<ConceptMap> result = tx.query().update(query.asUpdate());
-                if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
-            } else if (query instanceof TypeQLMatch) {
-                Stream<ConceptMap> result = tx.query().match(query.asMatch());
-                if (printAnswers) printCancellableResult(result, x -> printer.conceptMap(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
-            } else if (query instanceof TypeQLMatch.Aggregate) {
-                QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
-                if (printAnswers) printer.numeric(answerFuture.get());
-                else running.add(CompletableFuture.runAsync(answerFuture::get));
-            } else if (query instanceof TypeQLMatch.Group) {
-                Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
-                if (printAnswers) printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
-            } else if (query instanceof TypeQLMatch.Group.Aggregate) {
-                Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
-                if (printAnswers) printCancellableResult(result, x -> printer.numericGroup(x, tx));
-                else running.add(CompletableFuture.runAsync(result::findFirst));
-            } else if (query instanceof TypeQLCompute) {
-                throw new TypeDBConsoleException("Compute query is not yet supported");
-            } else {
-                throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
-            }
-        }
-        CompletableFuture.allOf(running.toArray(new CompletableFuture[0])).join();
-        return true;
     }
 
     private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {

@@ -222,7 +222,7 @@ public interface TransactionREPLCommand {
         private static final String helpCommand = token + " <file> [--print-answers]";
         private static final String description = "Run TypeQL queries in file.";
         private static final Set<String> optionalArgs = set("--print-answers");
-        private static final Set<Integer> args = set(1, 2);
+        private static final int mandatoryArgs = 1;
 
         private final String file;
         private final boolean printAnswers;
@@ -326,9 +326,10 @@ public interface TransactionREPLCommand {
             if (tokens.length - 1 != Close.args) return Either.second(INVALID_CLOSE_ARGS.message(Close.args, tokens.length - 1));
             command = new Close();
         } else if (tokens[0].equals(Source.token)) {
+            int args = tokens.length - 1;
             boolean printAnswers = false;
-            if (!Source.args.contains(tokens.length - 1)) {
-                return Either.second(INVALID_SOURCE_ARGS.message(Source.args, tokens.length - 1));
+            if (args < Source.mandatoryArgs || args > Source.mandatoryArgs + Source.optionalArgs.size()) {
+                return Either.second(INVALID_SOURCE_ARGS.message(Source.mandatoryArgs, Source.optionalArgs.size(), args));
             } else if (tokens.length == 3) {
                 String printAnswersArg = tokens[2];
                 if (!Source.optionalArgs.contains(printAnswersArg)) {

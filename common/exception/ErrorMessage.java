@@ -40,7 +40,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TransactionRepl INVALID_CLOSE_ARGS =
                 new TransactionRepl(7, "'close' expects %s space-separated arguments, received %s.");
         public static final TransactionRepl INVALID_SOURCE_ARGS =
-                new TransactionRepl(8, "'source' expects any of %s space-separated arguments, received %s.");
+                new TransactionRepl(8, "'source' expects %s mandatory arguments and up to %s optional " +
+                        "arguments, received %s arguments.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction command";

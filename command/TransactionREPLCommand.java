@@ -28,14 +28,17 @@ import org.jline.reader.UserInterruptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_OPTIONAL_ARG;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
 
@@ -216,18 +219,25 @@ public interface TransactionREPLCommand {
     class Source implements TransactionREPLCommand {
 
         private static final String token = "source";
-        private static final String helpCommand = token + " <file>";
-        private static final String description = "Run TypeQL queries in file";
-        private static final int args = 1;
+        private static final String helpCommand = token + " <file> [--print-answers]";
+        private static final String description = "Run TypeQL queries in file.";
+        private static final Set<String> optionalArgs = set("--print-answers");
+        private static final int mandatoryArgs = 1;
 
         private final String file;
+        private final boolean printAnswers;
 
-        public Source(String file) {
+        public Source(String file, boolean printAnswers) {
             this.file = file;
+            this.printAnswers = printAnswers;
         }
 
         public String file() {
             return file;
+        }
+
+        public boolean printAnswers() {
+            return printAnswers;
         }
 
         @Override
@@ -316,9 +326,18 @@ public interface TransactionREPLCommand {
             if (tokens.length - 1 != Close.args) return Either.second(INVALID_CLOSE_ARGS.message(Close.args, tokens.length - 1));
             command = new Close();
         } else if (tokens[0].equals(Source.token)) {
-            if (tokens.length - 1 != Source.args) return Either.second(INVALID_SOURCE_ARGS.message(Source.args, tokens.length - 1));
+            int args = tokens.length - 1;
+            boolean printAnswers = false;
+            if (args < Source.mandatoryArgs || args > Source.mandatoryArgs + Source.optionalArgs.size()) {
+                return Either.second(INVALID_SOURCE_ARGS.message(Source.mandatoryArgs, Source.optionalArgs.size(), args));
+            } else if (tokens.length == 3) {
+                String printAnswersArg = tokens[2];
+                if (!Source.optionalArgs.contains(printAnswersArg)) {
+                    return Either.second(INVALID_OPTIONAL_ARG.message(Source.token, printAnswersArg));
+                } else printAnswers = true;
+            }
             String file = tokens[1];
-            command = new Source(file);
+            command = new Source(file, printAnswers);
         } else {
             command = new Query(line);
         }

@@ -80,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -103,6 +104,7 @@ public class TypeDBConsole {
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
+    private boolean hasUncommittedChanges = false;
 
     private TypeDBConsole(Printer printer) {
         this.printer = printer;
@@ -276,16 +278,17 @@ public class TypeDBConsole {
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
                 .build();
-        StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
+        StringBuilder promptBuilder = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
-            prompt.append("[any-replica]");
-        prompt.append("> ");
+            promptBuilder.append("[any-replica]");
         try (TypeDBSession session = client.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
+            hasUncommittedChanges = false;
             while (true) {
                 Either<TransactionREPLCommand, String> command;
                 try {
-                    command = TransactionREPLCommand.readCommand(reader, prompt.toString());
+                    String prompt = hasUncommittedChanges ? promptBuilder + "*> " : promptBuilder + "> ";
+                    command = TransactionREPLCommand.readCommand(reader, prompt);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -310,6 +313,7 @@ public class TypeDBConsole {
                         break;
                     } else if (replCommand.isSource()) {
                         runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
+                        hasUncommittedChanges = true;
                     } else if (replCommand.isQuery()) {
                         runQueriesPrintAnswers(tx, replCommand.asQuery().query());
                     }
@@ -652,12 +656,19 @@ public class TypeDBConsole {
         if (query instanceof TypeQLDefine) {
             tx.query().define(query.asDefine()).get();
             printer.info("Concepts have been defined");
+            hasUncommittedChanges = true;
         } else if (query instanceof TypeQLUndefine) {
             tx.query().undefine(query.asUndefine()).get();
             printer.info("Concepts have been undefined");
+            hasUncommittedChanges = true;
         } else if (query instanceof TypeQLInsert) {
             Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+            AtomicBoolean changed = new AtomicBoolean(false);
+            printCancellableResult(result, x -> {
+                changed.set(true);
+                printer.conceptMap(x, tx);
+            });
+            if (changed.get()) hasUncommittedChanges = true;
         } else if (query instanceof TypeQLDelete) {
             Stream<ConceptMap> result = tx.query().match(query.asDelete().match());
             AtomicInteger answerCount = new AtomicInteger();
@@ -668,12 +679,20 @@ public class TypeDBConsole {
             if (answerCount.get() > 0) {
                 tx.query().delete(query.asDelete()).get();
                 printer.info("Concepts have been deleted");
+                hasUncommittedChanges = true;
             } else {
                 printer.info("No concepts were matched");
             }
         } else if (query instanceof TypeQLUpdate) {
+            Stream<ConceptMap> matchResult = tx.query().match(query.asUpdate().match());
+            AtomicInteger answerCount = new AtomicInteger();
+            printCancellableResult(matchResult, x -> {
+                answerCount.getAndIncrement();
+                printer.conceptMap(x, tx);
+            });
             Stream<ConceptMap> result = tx.query().update(query.asUpdate());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));
+            if (answerCount.get() > 0) hasUncommittedChanges = true;
         } else if (query instanceof TypeQLMatch) {
             Stream<ConceptMap> result = tx.query().match(query.asMatch());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));

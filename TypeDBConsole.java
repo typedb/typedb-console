@@ -80,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -658,8 +659,18 @@ public class TypeDBConsole {
             Stream<ConceptMap> result = tx.query().insert(query.asInsert());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));
         } else if (query instanceof TypeQLDelete) {
-            tx.query().delete(query.asDelete()).get();
-            printer.info("Concepts have been deleted");
+            Stream<ConceptMap> result = tx.query().match(query.asDelete().match());
+            AtomicInteger answerCount = new AtomicInteger();
+            printCancellableResult(result, x -> {
+                answerCount.getAndIncrement();
+                printer.conceptMap(x, tx);
+            });
+            if (answerCount.get() > 0) {
+                tx.query().delete(query.asDelete()).get();
+                printer.info("Concepts have been deleted");
+            } else {
+                printer.info("No concepts were matched");
+            }
         } else if (query instanceof TypeQLUpdate) {
             Stream<ConceptMap> result = tx.query().update(query.asUpdate());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));

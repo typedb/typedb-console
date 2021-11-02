@@ -38,6 +38,7 @@ import com.vaticle.typedb.console.command.TransactionREPLCommand;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLCompute;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -80,6 +81,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -102,6 +105,7 @@ public class TypeDBConsole {
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
+    private boolean hasUncommittedChanges = false;
 
     private TypeDBConsole(Printer printer) {
         this.printer = printer;
@@ -275,16 +279,18 @@ public class TypeDBConsole {
                 .terminal(terminal)
                 .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
                 .build();
-        StringBuilder prompt = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
-        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get())
-            prompt.append("[any-replica]");
-        prompt.append("> ");
+        StringBuilder promptBuilder = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
+        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) {
+            promptBuilder.append("[any-replica]");
+        }
         try (TypeDBSession session = client.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
+            hasUncommittedChanges = false;
             while (true) {
                 Either<TransactionREPLCommand, String> command;
                 try {
-                    command = TransactionREPLCommand.readCommand(reader, prompt.toString());
+                    String prompt = hasUncommittedChanges ? promptBuilder + "*> " : promptBuilder + "> ";
+                    command = TransactionREPLCommand.readCommand(reader, prompt);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -308,7 +314,8 @@ public class TypeDBConsole {
                         runClose(tx);
                         break;
                     } else if (replCommand.isSource()) {
-                        runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
+                        RunQueriesResult result = runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
+                        hasUncommittedChanges = result.hasChanges();
                     } else if (replCommand.isQuery()) {
                         runQueriesPrintAnswers(tx, replCommand.asQuery().query());
                     }
@@ -394,10 +401,10 @@ public class TypeDBConsole {
                                     break;
                                 } else if (txCommand.first().isSource()) {
                                     TransactionREPLCommand.Source source = txCommand.first().asSource();
-                                    boolean success = runSource(tx, source.file(), source.printAnswers());
+                                    boolean success = runSource(tx, source.file(), source.printAnswers()).success();
                                     if (!success) return false;
                                 } else if (txCommand.first().isQuery()) {
-                                    boolean success = runQueriesPrintAnswers(tx, txCommand.first().asQuery().query());
+                                    boolean success = runQueriesPrintAnswers(tx, txCommand.first().asQuery().query()).success();
                                     if (!success) return false;
                                 } else {
                                     printer.error("Command is not available while running console script.");
@@ -583,30 +590,32 @@ public class TypeDBConsole {
         else printer.info("Transaction closed");
     }
 
-    private boolean runSource(TypeDBTransaction tx, String file, boolean printAnswers) {
+    private RunQueriesResult runSource(TypeDBTransaction tx, String file, boolean printAnswers) {
         try {
             String queryString = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
             if (printAnswers) return runQueriesPrintAnswers(tx, queryString);
             else return runQueries(tx, queryString);
         } catch (IOException e) {
             printer.error("Failed to open file '" + file + "'");
-            return false;
+            return RunQueriesResult.error();
         }
     }
 
-    private boolean runQueries(TypeDBTransaction tx, String queryString) {
+    private RunQueriesResult runQueries(TypeDBTransaction tx, String queryString) {
         Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
-        if (!queries.isPresent()) return false;
+        if (!queries.isPresent()) return RunQueriesResult.error();
         CompletableFuture.allOf(queries.get().stream().map(query -> runQuery(tx, query))
                 .toArray(CompletableFuture[]::new)).join();
-        return true;
+        boolean hasChanges = queries.get().stream().anyMatch(query -> query.type() == TypeQLArg.QueryType.WRITE);
+        return new RunQueriesResult(true, hasChanges);
     }
 
-    private boolean runQueriesPrintAnswers(TypeDBTransaction tx, String queryString) {
+    private RunQueriesResult runQueriesPrintAnswers(TypeDBTransaction tx, String queryString) {
         Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
-        if (!queries.isPresent()) return false;
+        if (!queries.isPresent()) return RunQueriesResult.error();
         queries.get().forEach(query -> runQueryPrintAnswers(tx, query));
-        return true;
+        boolean hasChanges = queries.get().stream().anyMatch(query -> query.type() == TypeQLArg.QueryType.WRITE);
+        return new RunQueriesResult(true, hasChanges);
     }
 
     @SuppressWarnings("CheckReturnValue")
@@ -651,18 +660,37 @@ public class TypeDBConsole {
         if (query instanceof TypeQLDefine) {
             tx.query().define(query.asDefine()).get();
             printer.info("Concepts have been defined");
+            hasUncommittedChanges = true;
         } else if (query instanceof TypeQLUndefine) {
             tx.query().undefine(query.asUndefine()).get();
             printer.info("Concepts have been undefined");
+            hasUncommittedChanges = true;
         } else if (query instanceof TypeQLInsert) {
             Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+            AtomicBoolean changed = new AtomicBoolean(false);
+            printCancellableResult(result, x -> {
+                changed.set(true);
+                printer.conceptMap(x, tx);
+            });
+            if (changed.get()) hasUncommittedChanges = true;
         } else if (query instanceof TypeQLDelete) {
-            tx.query().delete(query.asDelete()).get();
-            printer.info("Concepts have been deleted");
+            long limitedCount = tx.query().match(query.asDelete().match()).limit(20).count();
+            if (limitedCount > 0) {
+                tx.query().delete(query.asDelete()).get();
+                if (limitedCount == 20) printer.info("Deleted from 20+ matched answers");
+                else printer.info("Deleted from " + limitedCount + " matched answers");
+                hasUncommittedChanges = true;
+            } else {
+                printer.info("No concepts were matched");
+            }
         } else if (query instanceof TypeQLUpdate) {
             Stream<ConceptMap> result = tx.query().update(query.asUpdate());
-            printCancellableResult(result, x -> printer.conceptMap(x, tx));
+            AtomicBoolean changed = new AtomicBoolean(false);
+            printCancellableResult(result, x -> {
+                changed.set(true);
+                printer.conceptMap(x, tx);
+            });
+            if (changed.get()) hasUncommittedChanges = true;
         } else if (query instanceof TypeQLMatch) {
             Stream<ConceptMap> result = tx.query().match(query.asMatch());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));

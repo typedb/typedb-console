@@ -684,15 +684,13 @@ public class TypeDBConsole {
                 printer.info("No concepts were matched");
             }
         } else if (query instanceof TypeQLUpdate) {
-            Stream<ConceptMap> matchResult = tx.query().match(query.asUpdate().match());
-            AtomicInteger answerCount = new AtomicInteger();
-            printCancellableResult(matchResult, x -> {
-                answerCount.getAndIncrement();
+            Stream<ConceptMap> result = tx.query().update(query.asUpdate());
+            AtomicBoolean changed = new AtomicBoolean(false);
+            printCancellableResult(result, x -> {
+                changed.set(true);
                 printer.conceptMap(x, tx);
             });
-            Stream<ConceptMap> result = tx.query().update(query.asUpdate());
-            printCancellableResult(result, x -> printer.conceptMap(x, tx));
-            if (answerCount.get() > 0) hasUncommittedChanges = true;
+            if (changed.get()) hasUncommittedChanges = true;
         } else if (query instanceof TypeQLMatch) {
             Stream<ConceptMap> result = tx.query().match(query.asMatch());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));

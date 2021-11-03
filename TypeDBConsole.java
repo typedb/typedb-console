@@ -678,7 +678,7 @@ public class TypeDBConsole {
             if (limitedCount > 0) {
                 tx.query().delete(query.asDelete()).get();
                 if (limitedCount == 20) printer.info("Deleted from 20+ matched answers");
-                else printer.info("Deleted from " + limitedCount + " matched answers");
+                else printer.info("Deleted from " + limitedCount + " matched answer(s)");
                 hasUncommittedChanges = true;
             } else {
                 printer.info("No concepts were matched");

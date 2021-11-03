@@ -343,10 +343,10 @@ public class TypeDBConsole {
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
         try (TypeDBClient client = createTypeDBClient(options)) {
-            int i = 0;
-            for (; i < inlineCommands.size() && !cancelled[0]; i++) {
+            for (int i = 0; i < inlineCommands.size() && !cancelled[0]; i++) {
                 String commandString = inlineCommands.get(i);
                 printer.info("+ " + commandString);
+                if (commandString.startsWith("#")) continue;
                 REPLCommand command = REPLCommand.readREPLCommand(commandString, null, client.isCluster());
                 if (command != null) {
                     if (command.isUserList()) {

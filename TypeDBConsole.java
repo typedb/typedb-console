@@ -18,17 +18,17 @@
 package com.vaticle.typedb.console;
 
 import com.vaticle.typedb.client.TypeDB;
-import com.vaticle.typedb.client.api.connection.TypeDBClient;
-import com.vaticle.typedb.client.api.connection.TypeDBCredential;
-import com.vaticle.typedb.client.api.connection.TypeDBOptions;
-import com.vaticle.typedb.client.api.connection.TypeDBSession;
-import com.vaticle.typedb.client.api.connection.TypeDBTransaction;
+import com.vaticle.typedb.client.api.TypeDBClient;
+import com.vaticle.typedb.client.api.TypeDBCredential;
+import com.vaticle.typedb.client.api.TypeDBOptions;
+import com.vaticle.typedb.client.api.TypeDBSession;
+import com.vaticle.typedb.client.api.TypeDBTransaction;
 import com.vaticle.typedb.client.api.answer.ConceptMap;
 import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.client.api.answer.Numeric;
 import com.vaticle.typedb.client.api.answer.NumericGroup;
-import com.vaticle.typedb.client.api.connection.database.Database;
-import com.vaticle.typedb.client.api.connection.user.User;
+import com.vaticle.typedb.client.api.database.Database;
+import com.vaticle.typedb.client.api.user.User;
 import com.vaticle.typedb.client.api.query.QueryFuture;
 import com.vaticle.typedb.client.common.exception.TypeDBClientException;
 import com.vaticle.typedb.common.collection.Either;
@@ -82,7 +82,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -455,10 +454,11 @@ public class TypeDBConsole {
         TypeDBCredential credential;
         if (options.tlsEnabled()) {
             String optRootCa = options.tlsRootCA();
-            if (optRootCa != null)
-                credential = new TypeDBCredential(options.username(), options.password(), true, Paths.get(optRootCa));
-            else
+            if (optRootCa != null) {
+                credential = new TypeDBCredential(options.username(), options.password(), Paths.get(optRootCa));
+            } else {
                 credential = new TypeDBCredential(options.username(), options.password(), true);
+            }
         } else
             credential = new TypeDBCredential(options.username(), options.password(), false);
         return credential;

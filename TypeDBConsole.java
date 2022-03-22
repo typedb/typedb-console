@@ -28,8 +28,8 @@ import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.client.api.answer.Numeric;
 import com.vaticle.typedb.client.api.answer.NumericGroup;
 import com.vaticle.typedb.client.api.database.Database;
-import com.vaticle.typedb.client.api.user.User;
 import com.vaticle.typedb.client.api.query.QueryFuture;
+import com.vaticle.typedb.client.api.user.User;
 import com.vaticle.typedb.client.common.exception.TypeDBClientException;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.util.Java;
@@ -40,7 +40,6 @@ import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
-import com.vaticle.typeql.lang.query.TypeQLCompute;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -85,10 +84,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static org.jline.builtins.Completers.TreeCompleter.node;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
+import static org.jline.builtins.Completers.TreeCompleter.node;
 
 public class TypeDBConsole {
 
@@ -649,8 +648,6 @@ public class TypeDBConsole {
         } else if (query instanceof TypeQLMatch.Group.Aggregate) {
             Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
             return CompletableFuture.runAsync(result::findFirst);
-        } else if (query instanceof TypeQLCompute) {
-            throw new TypeDBConsoleException("Compute query is not yet supported");
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
         }
@@ -703,8 +700,6 @@ public class TypeDBConsole {
         } else if (query instanceof TypeQLMatch.Group.Aggregate) {
             Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
             printCancellableResult(result, x -> printer.numericGroup(x, tx));
-        } else if (query instanceof TypeQLCompute) {
-            throw new TypeDBConsoleException("Compute query is not yet supported");
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
         }

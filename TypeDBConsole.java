@@ -281,6 +281,7 @@ public class TypeDBConsole {
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) {
             promptBuilder.append("[any-replica]");
         }
+        options.transactionTimeoutMillis((int) Duration.ofHours(1).toMillis());
         try (TypeDBSession session = client.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
             hasUncommittedChanges = false;

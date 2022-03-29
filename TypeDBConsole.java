@@ -99,6 +99,7 @@ public class TypeDBConsole {
     private static final Path TRANSACTION_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
+    private static final int ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
 
     private final Printer printer;
     private ExecutorService executorService;
@@ -281,7 +282,7 @@ public class TypeDBConsole {
         if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) {
             promptBuilder.append("[any-replica]");
         }
-        options.transactionTimeoutMillis((int) Duration.ofHours(1).toMillis());
+        options.transactionTimeoutMillis(ONE_HOUR_IN_MILLIS);
         try (TypeDBSession session = client.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
             hasUncommittedChanges = false;

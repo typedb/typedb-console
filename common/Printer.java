@@ -30,13 +30,15 @@ import com.vaticle.typedb.client.api.concept.type.RoleType;
 import com.vaticle.typedb.client.api.concept.type.Type;
 import com.vaticle.typedb.client.api.database.Database;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStyle;
-
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.ISA;
+import static java.util.stream.Collectors.joining;
 
 public class Printer {
     private final PrintStream out;
@@ -60,9 +62,11 @@ public class Printer {
     }
 
     public void conceptMapGroup(ConceptMapGroup answer, TypeDBTransaction tx) {
+        out.println(conceptDisplayString(answer.owner(), tx) + " => {");
         for (ConceptMap conceptMap : answer.conceptMaps()) {
-            out.println(conceptDisplayString(answer.owner(), tx) + " => " + conceptMapDisplayString(conceptMap, tx));
+            out.println(indent(conceptMapDisplayString(conceptMap, tx)));
         }
+        out.println("}");
     }
 
     public void numeric(Numeric answer) {
@@ -83,17 +87,18 @@ public class Printer {
     }
 
     private String conceptMapDisplayString(ConceptMap conceptMap, TypeDBTransaction tx) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
-        for (Map.Entry<String, Concept> entry : conceptMap.map().entrySet()) {
-            Concept concept = entry.getValue();
-            sb.append(TypeQLToken.Char.$).append(entry.getKey());
-            sb.append(" ");
-            sb.append(conceptDisplayString(concept, tx));
-            sb.append("; ");
-        }
+        String content = conceptMap.map().entrySet().stream().map(
+                e -> TypeQLToken.Char.$ + e.getKey() + " " + conceptDisplayString(e.getValue(), tx) + ";"
+        ).collect(joining("\n"));
+        StringBuilder sb = new StringBuilder("{");
+        if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
+        else sb.append(" ").append(content).append(" ");
         sb.append("}");
         return sb.toString();
+    }
+
+    private static String indent(String string) {
+        return Arrays.stream(string.split("\n")).map(s -> "    " + s).collect(joining("\n"));
     }
 
     private String conceptDisplayString(Concept concept, TypeDBTransaction tx) {
@@ -109,15 +114,14 @@ public class Printer {
             sb.append(" ").append(relationDisplayString(concept.asThing().asRelation(), tx));
         }
         if (concept instanceof Thing) {
-            sb.append(" ").append(isaDisplayString(concept.asThing(), tx));
+            sb.append(" ").append(isaDisplayString(concept.asThing()));
         }
         return sb.toString();
     }
 
-    private String isaDisplayString(Thing thing, TypeDBTransaction tx) {
+    private String isaDisplayString(Thing thing) {
         StringBuilder sb = new StringBuilder();
-        Type type = thing.asRemote(tx).getType();
-        sb.append(colorKeyword(TypeQLToken.Constraint.ISA.toString())).append(" ").append(colorType(type.getLabel().scopedName()));
+        sb.append(colorKeyword(ISA.toString())).append(" ").append(colorType(thing.getType().getLabel().scopedName()));
         return sb.toString();
     }
 
@@ -129,7 +133,7 @@ public class Printer {
             RoleType role = rolePlayer.getKey();
             List<? extends Thing> things = rolePlayer.getValue();
             for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel().scopedName()) + ": " + colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
+                String rolePlayerString = colorType(role.getLabel().name()) + ": " + colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
                 rolePlayerStrings.add(rolePlayerString);
             }
         }

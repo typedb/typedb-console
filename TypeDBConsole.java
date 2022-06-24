@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Vaticle
+ * Copyright (C) 2022 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -93,7 +93,7 @@ public class TypeDBConsole {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
-            "Copyright (C) 2021 Vaticle\n";
+            "Copyright (C) 2022 Vaticle\n";
     private static final Path COMMAND_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =

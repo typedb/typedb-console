@@ -45,10 +45,10 @@ java_library(
         "@vaticle_typedb_client_java//:client-java",
         "@vaticle_typedb_client_java//api",
         "@vaticle_typedb_client_java//common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//common:common",
-        "@vaticle_typeql_lang_java//query",
-        "@vaticle_typeql_lang_java//pattern",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java/pattern",
         "@vaticle_typedb_common//:common",
 
         # External dependencies
@@ -195,7 +195,7 @@ release_validate_deps(
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
         "@vaticle_typedb_common",
-        "@vaticle_typeql_lang_java",
+        "@vaticle_typeql",
         "@vaticle_typedb_client_java",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
@@ -203,8 +203,25 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "command/*", "common/*", "common/exception/*", ".grabl/*"]),
-    license_type = "agpl",
+    include = glob([
+        "*",
+        ".grabl/*",
+        "command/*",
+        "common/*",
+        "common/exception/*",
+    ]),
+    exclude = [
+        ".bazelversion",
+        "LICENSE",
+        "VERSION",
+    ] + glob(["*.md"]),
+    license_type = "agpl-header",
+)
+
+checkstyle_test(
+    name = "checkstyle-license",
+    include = ["LICENSE"],
+    license_type = "agpl-fulltext",
 )
 
 # CI targets that are not declared in any BUILD file, but are called externally

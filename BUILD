@@ -205,7 +205,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        ".grabl/*",
+        ".factory/*",
         "command/*",
         "common/*",
         "common/exception/*",

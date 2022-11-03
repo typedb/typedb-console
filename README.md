@@ -1,6 +1,6 @@
 # TypeDB Console
 
-[![Grabl](https://grabl.io/api/status/vaticle/typedb-console/badge.svg)](https://grabl.io/vaticle/typedb-console)
+[![Factory](https://factory.vaticle.com/api/status/vaticle/typedb-console/badge.svg)](https://factory.vaticle.com/vaticle/typedb-console)
 [![GitHub release](https://img.shields.io/github/release/vaticle/typedb-console.svg)](https://github.com/vaticle/typedb-console/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://vaticle.com/discord)
 [![Discussion Forum](https://img.shields.io/discourse/https/forum.vaticle.com/topics.svg)](https://forum.vaticle.com)

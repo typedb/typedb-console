@@ -134,7 +134,7 @@ release:
         sudo unlink /usr/bin/python3
         sudo ln -s $(which python3) /usr/bin/python3
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
-        bazel run --define version=$(cat VERSION) //binary:deploy-apt -- release
+        bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     deploy-artifact-release:
       image: vaticle-ubuntu-22.04
       dependencies: [deploy-github]

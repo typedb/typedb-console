@@ -81,6 +81,7 @@ build:
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         # Do not upgrade Python until bazelbuild/rules_pkg#397 is fixed
+        export PYENV_ROOT="/opt/pyenv"
         pyenv install 3.7.9
         pyenv global 3.7.9
         sudo unlink /usr/bin/python3

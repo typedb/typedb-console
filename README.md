@@ -30,6 +30,8 @@ You can provide several command arguments when running console in the terminal.
 
 TypeDB Console provides two levels of interaction: database-level commands and transaction-level commands. The database-level command is the first level of interaction, i.e. first-level REPL. From one of the database-level commands, you can open a transaction to the database. This will open a transaction-level interface, i.e. second-level REPL.
 
+Console also offers command completion, accessible with a `tab` keypress.
+
 ### Database-level commands
 
 - `database create <db>` : Create a database with name `<db>` on the server. For example:

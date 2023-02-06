@@ -36,6 +36,7 @@ import com.vaticle.typedb.common.util.Java;
 import com.vaticle.typedb.console.command.REPLCommand;
 import com.vaticle.typedb.console.command.TransactionREPLCommand;
 import com.vaticle.typedb.console.common.Printer;
+import com.vaticle.typedb.console.common.Utils;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -771,7 +772,7 @@ public class TypeDBConsole {
         @CommandLine.Option(
                 names = {"--password"},
                 description = "Password",
-                prompt = "Enter password:",
+                prompt = "Password: ",
                 interactive = true,
                 arity = "0..1"
         )

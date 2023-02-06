@@ -341,8 +341,8 @@ public interface REPLCommand {
         public static class Create extends REPLCommand.User {
 
             public static String token = "create";
-            private static String helpCommand = User.token + " " + token + " " + "<username> <password>";
-            private static String description = "Create a user with name <username> and password <password> on the server";
+            private static String helpCommand = User.token + " " + token + " " + "<username>";
+            private static String description = "Create a user with name <username> and a supplied password on the server";
 
             private final String user;
             private final String password;
@@ -673,15 +673,10 @@ public interface REPLCommand {
         }
         else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
             command = new User.List();
-        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
             String name = tokens[2];
-            String password;
-            if (tokens.length == 3) {
-                if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-                password = Utils.readPassword(passwordReader, "Enter password:");
-            } else {
-                password = tokens[3];
-            }
+            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+            String password = Utils.readPassword(passwordReader, "Password: ");
             command = new User.Create(name, password);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];

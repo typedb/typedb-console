@@ -73,7 +73,7 @@ public class Utils {
     }
 
     public static String readPassword(LineReader passwordReader, String prompt) {
-        return passwordReader.readLine(prompt, (char) 0);
+        return passwordReader.readLine(prompt, '*');
     }
 
     public static String getContinuationPrompt(String prompt) {

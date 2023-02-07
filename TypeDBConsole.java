@@ -36,7 +36,6 @@ import com.vaticle.typedb.common.util.Java;
 import com.vaticle.typedb.console.command.REPLCommand;
 import com.vaticle.typedb.console.command.TransactionREPLCommand;
 import com.vaticle.typedb.console.common.Printer;
-import com.vaticle.typedb.console.common.Utils;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -195,8 +194,10 @@ public class TypeDBConsole {
                 } else if (command.isUserList()) {
                     runUserList(client);
                 } else if (command.isUserCreate()) {
-                    REPLCommand.User.Create userCommand = command.asUserCreate();
-                    runUserCreate(client, userCommand.user(), userCommand.password());
+                    runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
+                } else if (command.isUserPassword()) {
+                    runUserPassword(client, command.asUserPassword().user(),
+                            command.asUserPassword().password());
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
@@ -256,6 +257,7 @@ public class TypeDBConsole {
             nodes.add(node(REPLCommand.User.token,
                     node(REPLCommand.User.List.token),
                     node(REPLCommand.User.Create.token),
+                    node(REPLCommand.User.Password.token),
                     node(REPLCommand.User.Delete.token,
                             node(userNameCompleter))
             ));
@@ -494,6 +496,22 @@ public class TypeDBConsole {
             TypeDBClient.Cluster clientCluster = client.asCluster();
             clientCluster.users().create(user, password);
             printer.info("User '" + user + "' created");
+            return true;
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserPassword(TypeDBClient client, String user, String password) {
+        try {
+            if (!client.isCluster()) {
+                printer.error("The command 'user update' is only available in TypeDB Cluster.");
+                return false;
+            }
+            TypeDBClient.Cluster clientCluster = client.asCluster();
+            clientCluster.users().get(user).password(password);
+            printer.info("Updated password for user '" + user + "'");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());

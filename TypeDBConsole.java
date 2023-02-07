@@ -196,8 +196,7 @@ public class TypeDBConsole {
                 } else if (command.isUserCreate()) {
                     runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPassword()) {
-                    runUserPassword(client, command.asUserPassword().user(),
-                            command.asUserPassword().password());
+                    runUserPassword(client, command.asUserPassword().user(), command.asUserPassword().password());
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {

@@ -80,6 +80,14 @@ public interface REPLCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
+    default boolean isUserPassword() {
+        return false;
+    }
+
+    default User.Password asUserPassword() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
     default boolean isUserDelete() {
         return false;
     }
@@ -371,6 +379,39 @@ public interface REPLCommand {
             }
         }
 
+        public static class Password extends REPLCommand.User {
+
+            public static String token = "password";
+            private static String helpCommand = User.token + " " + token + " " + "<username>";
+            private static String description = "Update the password of user with name <username>";
+
+            private final String user;
+            private final String password;
+
+            public Password(String user, String password) {
+                this.user = user;
+                this.password = password;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            public String password() {
+                return password;
+            }
+
+            @Override
+            public boolean isUserPassword() {
+                return true;
+            }
+
+            @Override
+            public Password asUserPassword() {
+                return this;
+            }
+        }
+
         public static class Delete extends REPLCommand.User {
 
             public static String token = "delete";
@@ -623,6 +664,7 @@ public interface REPLCommand {
             menu.addAll(Arrays.asList(
                     pair(User.List.helpCommand, User.List.description),
                     pair(User.Create.helpCommand, User.Create.description),
+                    pair(User.Password.helpCommand, User.Password.description),
                     pair(User.Delete.helpCommand, User.Delete.description)));
         }
 
@@ -678,6 +720,11 @@ public interface REPLCommand {
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
             String password = Utils.readPassword(passwordReader, "Password: ");
             command = new User.Create(name, password);
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Password.token)) {
+            String name = tokens[2];
+            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+            String password = Utils.readPassword(passwordReader, "Password: ");
+            command = new User.Password(name, password);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];
             command = new User.Delete(name);

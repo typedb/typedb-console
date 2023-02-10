@@ -24,6 +24,8 @@ You can provide several command arguments when running console in the terminal.
 - `--username=<username>` : TypeDB Cluster username to connect with.
 - `--password` : Interactively enter password to connect to TypeDB Cluster with.
 - `--script=<script>` : Run commands in the script file in non-interactive mode.
+- `--tls-enabled`: Enable TLS for connecting to TypeDB Cluster.
+- `--tls-root-ca`: Path to root CA certificate for TLS encryption.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
@@ -72,8 +74,8 @@ Console also offers command completion, accessible with a `tab` keypress.
 - `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you hit enter twice. For example:
   ```
   my-typedb-database::schema::write> define
-                                    name sub attribute, value string;
-                                    person sub entity, owns name;
+                                     name sub attribute, value string;
+                                     person sub entity, owns name;
 
   Concepts have been defined
   ```

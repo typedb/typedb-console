@@ -447,6 +447,10 @@ public class TypeDBConsole {
                 String optCluster = options.cluster();
                 if (optCluster != null) {
                     client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
+                    long expiryDays = client.asCluster().users().get(options.username).expiryDays();
+                    if (expiryDays <= 7) {
+                        printer.info("Your password will expire in " + expiryDays + " days.");
+                    }
                 } else {
                     client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
                 }

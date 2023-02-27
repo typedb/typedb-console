@@ -100,6 +100,8 @@ public class TypeDBConsole {
     private static final Path TRANSACTION_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
+
+    private static final int PASSWORD_EXPIRY_WARN_DAYS = 7;
     private static final int ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
 
     private final Printer printer;
@@ -448,7 +450,7 @@ public class TypeDBConsole {
                 if (optCluster != null) {
                     client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
                     long expiryDays = client.asCluster().users().get(options.username).expiryDays();
-                    if (expiryDays <= 7) {
+                    if (expiryDays <= PASSWORD_EXPIRY_WARN_DAYS) {
                         printer.info("Your password will expire in " + expiryDays + " days.");
                     }
                 } else {

@@ -456,8 +456,8 @@ public class TypeDBConsole {
                 String optCluster = options.cluster();
                 if (optCluster != null) {
                     client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
-                    long passwordExpiryDays = client.asCluster().users().get(options.username).passwordExpiryDays();
-                    if (passwordExpiryDays <= PASSWORD_EXPIRY_WARN_DAYS) {
+                    Optional<Long> passwordExpiryDays = client.asCluster().users().get(options.username).passwordExpiryDays();
+                    if (passwordExpiryDays.isPresent() && passwordExpiryDays.get() <= PASSWORD_EXPIRY_WARN_DAYS) {
                         printer.info("Your password will expire in " + passwordExpiryDays + " days.");
                     }
                 } else {
@@ -525,9 +525,14 @@ public class TypeDBConsole {
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().get(username).passwordUpdate(oldPassword, newPassword);
-            printer.info("Updated password for user '" + username + "'");
-            return true;
+            if (clientCluster.users().contains(username)) {
+                clientCluster.users().get(username).passwordUpdate(oldPassword, newPassword);
+                printer.info("Updated password for user '" + username + "'");
+                return true;
+            } else {
+                printer.info("No such user '" + username + "'");
+                return false;
+            }
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;
@@ -541,9 +546,14 @@ public class TypeDBConsole {
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().passwordSet(username, password);
-            printer.info("Set password for user '" + username + "'");
-            return true;
+            if (clientCluster.users().contains(username)) {
+                clientCluster.users().passwordSet(username, password);
+                printer.info("Set password for user '" + username + "'");
+                return true;
+            } else {
+                printer.info("No such user '" + username + "'");
+                return false;
+            }
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;

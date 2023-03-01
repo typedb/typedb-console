@@ -775,6 +775,11 @@ public interface REPLCommand {
             String oldPassword = Utils.readPassword(passwordReader, "Old password: ");
             String newPassword = Utils.readPassword(passwordReader, "New password: ");
             command = new User.PasswordUpdate(name, oldPassword, newPassword);
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
+            String name = tokens[2];
+            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+            String newPassword = Utils.readPassword(passwordReader, "New password: ");
+            command = new User.PasswordSet(name, newPassword);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];
             command = new User.Delete(name);

@@ -772,9 +772,9 @@ public interface REPLCommand {
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-            String oldPassword = Utils.readPassword(passwordReader, "Old password: ");
-            String newPassword = Utils.readPassword(passwordReader, "New password: ");
-            command = new User.PasswordUpdate(name, oldPassword, newPassword);
+            String passwordOld = Utils.readPassword(passwordReader, "Old password: ");
+            String passwordNew = Utils.readPassword(passwordReader, "New password: ");
+            command = new User.PasswordUpdate(name, passwordOld, passwordNew);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);

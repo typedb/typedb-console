@@ -518,21 +518,16 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPasswordUpdate(TypeDBClient client, String username, String oldPassword, String newPassword) {
+    private boolean runUserPasswordUpdate(TypeDBClient client, String username, String passwordOld, String passwordNew) {
         try {
             if (!client.isCluster()) {
                 printer.error("The command 'user password-update' is only available in TypeDB Cluster.");
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            if (clientCluster.users().contains(username)) {
-                clientCluster.users().get(username).passwordUpdate(oldPassword, newPassword);
-                printer.info("Updated password for user '" + username + "'");
-                return true;
-            } else {
-                printer.info("No such user '" + username + "'");
-                return false;
-            }
+            clientCluster.users().get(username).passwordUpdate(passwordOld, passwordNew);
+            printer.info("Updated password for user '" + username + "'");
+            return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
             return false;

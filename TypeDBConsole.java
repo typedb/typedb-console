@@ -201,8 +201,8 @@ public class TypeDBConsole {
                     REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
                     runUserPasswordUpdate(client,
                             userPasswordUpdate.user(),
-                            userPasswordUpdate.oldPassword(),
-                            userPasswordUpdate.newPassword());
+                            userPasswordUpdate.passwordOld(),
+                            userPasswordUpdate.passwordNew());
                 } else if (command.isUserPasswordSet()) {
                     REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
                     runUserPasswordSet(client,

@@ -394,25 +394,25 @@ public interface REPLCommand {
             private static String description = "Update the password of user with name <username>";
 
             private final String user;
-            private final String oldPassword;
-            private final String newPassword;
+            private final String passwordOld;
+            private final String passwordNew;
 
-            public PasswordUpdate(String user, String oldPassword, String newPassword) {
+            public PasswordUpdate(String user, String passwordOld, String passwordNew) {
                 this.user = user;
-                this.oldPassword = oldPassword;
-                this.newPassword = newPassword;
+                this.passwordOld = passwordOld;
+                this.passwordNew = passwordNew;
             }
 
             public String user() {
                 return user;
             }
 
-            public String oldPassword() {
-                return oldPassword;
+            public String passwordOld() {
+                return passwordOld;
             }
 
-            public String newPassword() {
-                return newPassword;
+            public String passwordNew() {
+                return passwordNew;
             }
 
             @Override

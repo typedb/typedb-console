@@ -509,7 +509,7 @@ public class TypeDBConsole {
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().get(user).password(password);
+            clientCluster.users().passwordSet(user, password);
             printer.info("Updated password for user '" + user + "'");
             return true;
         } catch (TypeDBClientException e) {
@@ -525,7 +525,7 @@ public class TypeDBConsole {
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().get(user).delete();
+            clientCluster.users().delete(user);
             printer.info("User '" + user + "' deleted");
             return true;
         } catch (TypeDBClientException e) {

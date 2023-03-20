@@ -390,21 +390,15 @@ public interface REPLCommand {
         public static class PasswordUpdate extends REPLCommand.User {
 
             public static String token = "password-update";
-            private static String helpCommand = User.token + " " + token + " " + "<username>";
-            private static String description = "Update the password of user with name <username>";
+            private static String helpCommand = User.token + " " + token;
+            private static String description = "Update the password of the current user";
 
-            private final String user;
             private final String passwordOld;
             private final String passwordNew;
 
-            public PasswordUpdate(String user, String passwordOld, String passwordNew) {
-                this.user = user;
+            public PasswordUpdate(String passwordOld, String passwordNew) {
                 this.passwordOld = passwordOld;
                 this.passwordNew = passwordNew;
-            }
-
-            public String user() {
-                return user;
             }
 
             public String passwordOld() {
@@ -761,20 +755,18 @@ public interface REPLCommand {
             command = new Help();
         } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
             command = new Clear();
-        }
-        else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
+        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
             command = new User.List();
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
             String password = Utils.readPassword(passwordReader, "Password: ");
             command = new User.Create(name, password);
-        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
-            String name = tokens[2];
+        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
             String passwordOld = Utils.readPassword(passwordReader, "Old password: ");
             String passwordNew = Utils.readPassword(passwordReader, "New password: ");
-            command = new User.PasswordUpdate(name, passwordOld, passwordNew);
+            command = new User.PasswordUpdate(passwordOld, passwordNew);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);

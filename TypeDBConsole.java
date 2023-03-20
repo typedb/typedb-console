@@ -196,7 +196,10 @@ public class TypeDBConsole {
                 } else if (command.isUserCreate()) {
                     runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPassword()) {
-                    runUserPassword(client, command.asUserPassword().user(), command.asUserPassword().password());
+                    runUserPassword(client,
+                            command.asUserPassword().user(),
+                            command.asUserPassword().oldPassword(),
+                            command.asUserPassword().newPassword());
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
@@ -502,14 +505,14 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPassword(TypeDBClient client, String user, String password) {
+    private boolean runUserPassword(TypeDBClient client, String user, String oldPassword, String newPassword) {
         try {
             if (!client.isCluster()) {
                 printer.error("The command 'user update' is only available in TypeDB Cluster.");
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().passwordSet(user, password);
+            clientCluster.users().passwordSet(user, newPassword);
             printer.info("Updated password for user '" + user + "'");
             return true;
         } catch (TypeDBClientException e) {

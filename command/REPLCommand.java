@@ -386,19 +386,26 @@ public interface REPLCommand {
             private static String description = "Update the password of user with name <username>";
 
             private final String user;
-            private final String password;
+            private final String oldPassword;
 
-            public Password(String user, String password) {
+            private final String newPassword;
+
+            public Password(String user, String oldPassword, String newPassword) {
                 this.user = user;
-                this.password = password;
+                this.oldPassword = oldPassword;
+                this.newPassword = newPassword;
             }
 
             public String user() {
                 return user;
             }
 
-            public String password() {
-                return password;
+            public String oldPassword() {
+                return oldPassword;
+            }
+
+            public String newPassword() {
+                return newPassword;
             }
 
             @Override
@@ -723,8 +730,9 @@ public interface REPLCommand {
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Password.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-            String password = Utils.readPassword(passwordReader, "Password: ");
-            command = new User.Password(name, password);
+            String oldPassword = Utils.readPassword(passwordReader, "Old password: ");
+            String newPassword = Utils.readPassword(passwordReader, "New password: ");
+            command = new User.Password(name, oldPassword, newPassword);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];
             command = new User.Delete(name);

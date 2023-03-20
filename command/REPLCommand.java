@@ -80,11 +80,19 @@ public interface REPLCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-    default boolean isUserPassword() {
+    default boolean isUserPasswordUpdate() {
         return false;
     }
 
-    default User.Password asUserPassword() {
+    default User.PasswordUpdate asUserPasswordUpdate() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserPasswordSet() {
+        return false;
+    }
+
+    default User.PasswordSet asUserPasswordSet() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -379,16 +387,50 @@ public interface REPLCommand {
             }
         }
 
-        public static class Password extends REPLCommand.User {
+        public static class PasswordUpdate extends REPLCommand.User {
 
-            public static String token = "password";
+            public static String token = "password-update";
+            private static String helpCommand = User.token + " " + token;
+            private static String description = "Update the password of the current user";
+
+            private final String passwordOld;
+            private final String passwordNew;
+
+            public PasswordUpdate(String passwordOld, String passwordNew) {
+                this.passwordOld = passwordOld;
+                this.passwordNew = passwordNew;
+            }
+
+            public String passwordOld() {
+                return passwordOld;
+            }
+
+            public String passwordNew() {
+                return passwordNew;
+            }
+
+            @Override
+            public boolean isUserPasswordUpdate() {
+                return true;
+            }
+
+            @Override
+            public PasswordUpdate asUserPasswordUpdate() {
+                return this;
+            }
+        }
+
+        public static class PasswordSet extends REPLCommand.User {
+
+            public static String token = "password-set";
             private static String helpCommand = User.token + " " + token + " " + "<username>";
-            private static String description = "Update the password of user with name <username>";
+            private static String description = "Set the password of user with name <username>";
 
             private final String user;
+
             private final String password;
 
-            public Password(String user, String password) {
+            public PasswordSet(String user, String password) {
                 this.user = user;
                 this.password = password;
             }
@@ -402,12 +444,12 @@ public interface REPLCommand {
             }
 
             @Override
-            public boolean isUserPassword() {
+            public boolean isUserPasswordSet() {
                 return true;
             }
 
             @Override
-            public Password asUserPassword() {
+            public PasswordSet asUserPasswordSet() {
                 return this;
             }
         }
@@ -664,7 +706,8 @@ public interface REPLCommand {
             menu.addAll(Arrays.asList(
                     pair(User.List.helpCommand, User.List.description),
                     pair(User.Create.helpCommand, User.Create.description),
-                    pair(User.Password.helpCommand, User.Password.description),
+                    pair(User.PasswordUpdate.helpCommand, User.PasswordUpdate.description),
+                    pair(User.PasswordSet.helpCommand, User.PasswordSet.description),
                     pair(User.Delete.helpCommand, User.Delete.description)));
         }
 
@@ -712,19 +755,23 @@ public interface REPLCommand {
             command = new Help();
         } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
             command = new Clear();
-        }
-        else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
+        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
             command = new User.List();
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
             String password = Utils.readPassword(passwordReader, "Password: ");
             command = new User.Create(name, password);
-        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Password.token)) {
+        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
+            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+            String passwordOld = Utils.readPassword(passwordReader, "Old password: ");
+            String passwordNew = Utils.readPassword(passwordReader, "New password: ");
+            command = new User.PasswordUpdate(passwordOld, passwordNew);
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
             String name = tokens[2];
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-            String password = Utils.readPassword(passwordReader, "Password: ");
-            command = new User.Password(name, password);
+            String newPassword = Utils.readPassword(passwordReader, "New password: ");
+            command = new User.PasswordSet(name, newPassword);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];
             command = new User.Delete(name);

@@ -100,6 +100,8 @@ public class TypeDBConsole {
     private static final Path TRANSACTION_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
+
+    private static final int PASSWORD_EXPIRY_WARN_DAYS = 7;
     private static final int ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
 
     private final Printer printer;
@@ -195,8 +197,17 @@ public class TypeDBConsole {
                     runUserList(client);
                 } else if (command.isUserCreate()) {
                     runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
-                } else if (command.isUserPassword()) {
-                    runUserPassword(client, command.asUserPassword().user(), command.asUserPassword().password());
+                } else if (command.isUserPasswordUpdate()) {
+                    REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                    runUserPasswordUpdate(client,
+                            options.username,
+                            userPasswordUpdate.passwordOld(),
+                            userPasswordUpdate.passwordNew());
+                } else if (command.isUserPasswordSet()) {
+                    REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
+                    runUserPasswordSet(client,
+                            userPasswordSet.user(),
+                            userPasswordSet.password());
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
@@ -256,7 +267,8 @@ public class TypeDBConsole {
             nodes.add(node(REPLCommand.User.token,
                     node(REPLCommand.User.List.token),
                     node(REPLCommand.User.Create.token),
-                    node(REPLCommand.User.Password.token),
+                    node(REPLCommand.User.PasswordUpdate.token),
+                    node(REPLCommand.User.PasswordSet.token),
                     node(REPLCommand.User.Delete.token,
                             node(userNameCompleter))
             ));
@@ -444,6 +456,10 @@ public class TypeDBConsole {
                 String optCluster = options.cluster();
                 if (optCluster != null) {
                     client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
+                    Optional<Long> passwordExpiryDays = client.asCluster().users().get(options.username).passwordExpiryDays();
+                    if (passwordExpiryDays.isPresent() && passwordExpiryDays.get() <= PASSWORD_EXPIRY_WARN_DAYS) {
+                        printer.info("Your password will expire in " + passwordExpiryDays.get() + " days.");
+                    }
                 } else {
                     client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
                 }
@@ -486,15 +502,15 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserCreate(TypeDBClient client, String user, String password) {
+    private boolean runUserCreate(TypeDBClient client, String username, String password) {
         try {
             if (!client.isCluster()) {
                 printer.error("The command 'user create' is only available in TypeDB Cluster.");
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().create(user, password);
-            printer.info("User '" + user + "' created");
+            clientCluster.users().create(username, password);
+            printer.info("User '" + username + "' created");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
@@ -502,15 +518,15 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPassword(TypeDBClient client, String user, String password) {
+    private boolean runUserPasswordUpdate(TypeDBClient client, String username, String passwordOld, String passwordNew) {
         try {
             if (!client.isCluster()) {
-                printer.error("The command 'user update' is only available in TypeDB Cluster.");
+                printer.error("The command 'user password-update' is only available in TypeDB Cluster.");
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().passwordSet(user, password);
-            printer.info("Updated password for user '" + user + "'");
+            clientCluster.users().get(username).passwordUpdate(passwordOld, passwordNew);
+            printer.info("Updated password for user '" + username + "'");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());
@@ -518,15 +534,36 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserDelete(TypeDBClient client, String user) {
+    private boolean runUserPasswordSet(TypeDBClient client, String username, String password) {
+        try {
+            if (!client.isCluster()) {
+                printer.error("The command 'user password-set' is only available in TypeDB Cluster.");
+                return false;
+            }
+            TypeDBClient.Cluster clientCluster = client.asCluster();
+            if (clientCluster.users().contains(username)) {
+                clientCluster.users().passwordSet(username, password);
+                printer.info("Set password for user '" + username + "'");
+                return true;
+            } else {
+                printer.info("No such user '" + username + "'");
+                return false;
+            }
+        } catch (TypeDBClientException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserDelete(TypeDBClient client, String username) {
         try {
             if (!client.isCluster()) {
                 printer.error("The command 'user delete' is only available in TypeDB Cluster.");
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().delete(user);
-            printer.info("User '" + user + "' deleted");
+            clientCluster.users().delete(username);
+            printer.info("User '" + username + "' deleted");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());

@@ -199,15 +199,23 @@ public class TypeDBConsole {
                     runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPasswordUpdate()) {
                     REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
-                    runUserPasswordUpdate(client,
+                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(client,
                             options.username,
                             userPasswordUpdate.passwordOld(),
                             userPasswordUpdate.passwordNew());
+                    if (passwordUpdateSuccessful) {
+                        printer.info("Please login again with your updated password.");
+                        break;
+                    }
                 } else if (command.isUserPasswordSet()) {
                     REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
-                    runUserPasswordSet(client,
+                    boolean passwordSetSuccessful = runUserPasswordSet(client,
                             userPasswordSet.user(),
                             userPasswordSet.password());
+                    if (passwordSetSuccessful && userPasswordSet.user().equals(client.asCluster().user().username())) {
+                        printer.info("Please login again with your updated password.");
+                        break;
+                    }
                 } else if (command.isUserDelete()) {
                     runUserDelete(client, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
@@ -526,7 +534,7 @@ public class TypeDBConsole {
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
             clientCluster.users().get(username).passwordUpdate(passwordOld, passwordNew);
-            printer.info("Updated password for user '" + username + "'");
+            printer.info("Updated password for user '" + username + "'.");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());

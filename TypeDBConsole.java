@@ -467,7 +467,7 @@ public class TypeDBConsole {
                     Optional<Duration> passwordExpiry = client.asCluster().users().get(options.username)
                             .passwordExpirySeconds().map(Duration::ofSeconds);
                     if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
-                        printer.info("Your password will expire in " + passwordExpiry.get().toHours() + " hours.");
+                        printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
                     }
                 } else {
                     client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);

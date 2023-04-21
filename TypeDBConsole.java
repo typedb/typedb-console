@@ -501,9 +501,16 @@ public class TypeDBConsole {
                 return false;
             }
             TypeDBClient.Cluster clientCluster = client.asCluster();
-            if (clientCluster.users().all().size() > 0)
-                clientCluster.users().all().forEach(user -> printer.info(user.username()));
-            else printer.info("No users are present on the server.");
+            if (clientCluster.users().all().size() > 0) {
+                clientCluster.users().all().forEach(user -> {
+                    Optional<Long> expirySeconds = user.passwordExpirySeconds();
+                    if (expirySeconds.isPresent()) {
+                        printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
+                    } else {
+                        printer.info(user.username());
+                    }
+                });
+            } else printer.info("No users are present on the server.");
             return true;
         } catch (TypeDBClientException e) {
             printer.error(e.getMessage());

@@ -229,7 +229,6 @@ filegroup(
     name = "ci",
     data = [
         "@vaticle_dependencies//library/maven:update",
-        "@vaticle_dependencies//tool/bazelrun:rbe",
         "@vaticle_dependencies//distribution/artifact:create-netrc",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",

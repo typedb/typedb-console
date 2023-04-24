@@ -25,5 +25,5 @@ def vaticle_typedb_artifact():
         artifact_name = "typedb-server-linux-{version}.tar.gz",
         tag_source = deployment["artifact.release"],
         commit_source = deployment["artifact.snapshot"],
-        commit = "ab258158efd6f608fe6df2fb4ebf6e5d9f710765"
+        commit = "c36d4deeb6a7f9b53dced92002e57c1df9963f7a"
     )

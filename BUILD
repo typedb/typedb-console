@@ -212,6 +212,8 @@ checkstyle_test(
     ]),
     exclude = [
         ".bazelversion",
+        ".bazel-remote-cache.rc",
+        ".bazel-cache-credential.json",
         "LICENSE",
         "VERSION",
     ] + glob(["*.md"]),
@@ -230,6 +232,7 @@ filegroup(
     data = [
         "@vaticle_dependencies//library/maven:update",
         "@vaticle_dependencies//distribution/artifact:create-netrc",
+        "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",
         "@vaticle_dependencies//tool/release/notes:create",

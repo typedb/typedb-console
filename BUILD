@@ -158,7 +158,7 @@ deploy_github(
     repository = deployment_console["github.repository"],
     title = "TypeDB Console",
     title_append_version = True,
-    release_description = "//:RELEASE_TEMPLATE.md",
+    release_description = "//:LATEST_RELEASE_NOTES.md",
     archive = ":assemble-versioned-all",
     draft = False
 )

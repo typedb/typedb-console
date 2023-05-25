@@ -96,7 +96,7 @@ public class Printer {
         String content = conceptMap.map().entrySet().stream().sorted(comparator)
                 .map(e -> {
                     if (e.getValue().isValue()) {
-                        return TypeQLToken.Char.QUESTION_MARK + e.getKey() + " = " + valueDisplayString(e.getValue().asValue()) + ";";
+                        return TypeQLToken.Char.QUESTION_MARK + e.getKey() + " = " + conceptDisplayString(e.getValue().asValue(), tx) + ";";
                     } else {
                         return TypeQLToken.Char.$ + e.getKey() + " " + conceptDisplayString(e.getValue(), tx) + ";";
                     }

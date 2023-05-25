@@ -113,6 +113,8 @@ public class Printer {
     }
 
     private String conceptDisplayString(Concept concept, TypeDBTransaction tx) {
+        if (concept.isValue()) return valueDisplayString(concept.asValue());
+
         StringBuilder sb = new StringBuilder();
         if (concept instanceof Attribute<?>) {
             sb.append(attributeDisplayString(concept.asThing().asAttribute()));

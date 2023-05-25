@@ -28,15 +28,19 @@ import com.vaticle.typedb.client.api.concept.thing.Relation;
 import com.vaticle.typedb.client.api.concept.thing.Thing;
 import com.vaticle.typedb.client.api.concept.type.RoleType;
 import com.vaticle.typedb.client.api.concept.type.Type;
+import com.vaticle.typedb.client.api.concept.value.Value;
 import com.vaticle.typedb.client.api.database.Database;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStyle;
+
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.ISA;
 import static java.util.stream.Collectors.joining;
 
@@ -87,9 +91,16 @@ public class Printer {
     }
 
     private String conceptMapDisplayString(ConceptMap conceptMap, TypeDBTransaction tx) {
-        String content = conceptMap.map().entrySet().stream().map(
-                e -> TypeQLToken.Char.$ + e.getKey() + " " + conceptDisplayString(e.getValue(), tx) + ";"
-        ).collect(joining("\n"));
+        Comparator<Map.Entry<String, Concept>> comparator = Comparator.comparing(e -> e.getValue().isValue());
+        comparator = comparator.thenComparing(e -> e.getKey().toLowerCase());
+        String content = conceptMap.map().entrySet().stream().sorted(comparator)
+                .map(e -> {
+                    if (e.getValue().isValue()) {
+                        return TypeQLToken.Char.QUESTION_MARK + e.getKey() + " = " + valueDisplayString(e.getValue().asValue()) + ";";
+                    } else {
+                        return TypeQLToken.Char.$ + e.getKey() + " " + conceptDisplayString(e.getValue(), tx) + ";";
+                    }
+                }).collect(joining("\n"));
         StringBuilder sb = new StringBuilder("{");
         if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
         else sb.append(" ").append(content).append(" ");
@@ -116,7 +127,12 @@ public class Printer {
         if (concept instanceof Thing) {
             sb.append(" ").append(isaDisplayString(concept.asThing()));
         }
+
         return sb.toString();
+    }
+
+    private String valueDisplayString(Value<?> value) {
+        return com.vaticle.typeql.lang.common.util.Strings.valueToString(value.getValue());
     }
 
     private String isaDisplayString(Thing thing) {

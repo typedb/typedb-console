@@ -34,6 +34,6 @@ def vaticle_typedb_common():
 def vaticle_typedb_client_java():
     git_repository(
         name = "vaticle_typedb_client_java",
-        remote = "https://github.com/krishnangovindraj/typedb-client-java",
-        commit = "608c17f4d96eae050337d0bbe81ffd48b7bfa349",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_client_java
+        remote = "https://github.com/vaticle/typedb-client-java",
+        commit = "16c23649627001b44b39337f9d904619b4dac97c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_client_java
     )

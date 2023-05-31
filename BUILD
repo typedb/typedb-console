@@ -232,9 +232,9 @@ filegroup(
     data = [
         "@vaticle_dependencies//library/maven:update",
         "@vaticle_dependencies//distribution/artifact:create-netrc",
-        "@vaticle_dependencies//tool/bazelinstall:rbe.sh",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",
         "@vaticle_dependencies//tool/release/notes:create",
+        "@vaticle_dependencies//tool/release/notes:validate",
     ],
 )

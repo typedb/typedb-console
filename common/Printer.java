@@ -17,19 +17,19 @@
 
 package com.vaticle.typedb.console.common;
 
-import com.vaticle.typedb.client.api.TypeDBTransaction;
-import com.vaticle.typedb.client.api.answer.ConceptMap;
-import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
-import com.vaticle.typedb.client.api.answer.Numeric;
-import com.vaticle.typedb.client.api.answer.NumericGroup;
-import com.vaticle.typedb.client.api.concept.Concept;
-import com.vaticle.typedb.client.api.concept.thing.Attribute;
-import com.vaticle.typedb.client.api.concept.thing.Relation;
-import com.vaticle.typedb.client.api.concept.thing.Thing;
-import com.vaticle.typedb.client.api.concept.type.RoleType;
-import com.vaticle.typedb.client.api.concept.type.Type;
-import com.vaticle.typedb.client.api.concept.value.Value;
-import com.vaticle.typedb.client.api.database.Database;
+import com.vaticle.typedb.driver.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.answer.ConceptMap;
+import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
+import com.vaticle.typedb.driver.api.answer.Numeric;
+import com.vaticle.typedb.driver.api.answer.NumericGroup;
+import com.vaticle.typedb.driver.api.concept.Concept;
+import com.vaticle.typedb.driver.api.concept.thing.Attribute;
+import com.vaticle.typedb.driver.api.concept.thing.Relation;
+import com.vaticle.typedb.driver.api.concept.thing.Thing;
+import com.vaticle.typedb.driver.api.concept.type.RoleType;
+import com.vaticle.typedb.driver.api.concept.type.Type;
+import com.vaticle.typedb.driver.api.concept.value.Value;
+import com.vaticle.typedb.driver.api.database.Database;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.jline.utils.AttributedString;

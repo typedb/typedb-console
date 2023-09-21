@@ -42,9 +42,9 @@ java_library(
     name = "console",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
-        "@vaticle_typedb_client_java//java:client-java",
-        "@vaticle_typedb_client_java//java/api",
-        "@vaticle_typedb_client_java//java/common",
+        "@vaticle_typedb_driver//java:driver-java",
+        "@vaticle_typedb_driver//java/api",
+        "@vaticle_typedb_driver//java/common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/query",
@@ -196,7 +196,7 @@ release_validate_deps(
     tagged_deps = [
         "@vaticle_typedb_common",
         "@vaticle_typeql",
-        "@vaticle_typedb_client_java",
+        "@vaticle_typedb_driver",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )

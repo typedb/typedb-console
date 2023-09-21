@@ -17,19 +17,19 @@
 
 package com.vaticle.typedb.console;
 
-import com.vaticle.typedb.client.TypeDB;
-import com.vaticle.typedb.client.api.TypeDBClient;
-import com.vaticle.typedb.client.api.TypeDBCredential;
-import com.vaticle.typedb.client.api.TypeDBOptions;
-import com.vaticle.typedb.client.api.TypeDBSession;
-import com.vaticle.typedb.client.api.TypeDBTransaction;
-import com.vaticle.typedb.client.api.answer.ConceptMap;
-import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
-import com.vaticle.typedb.client.api.answer.Numeric;
-import com.vaticle.typedb.client.api.answer.NumericGroup;
-import com.vaticle.typedb.client.api.database.Database;
-import com.vaticle.typedb.client.api.user.User;
-import com.vaticle.typedb.client.common.exception.TypeDBClientException;
+import com.vaticle.typedb.driver.TypeDB;
+import com.vaticle.typedb.driver.api.TypeDBDriver;
+import com.vaticle.typedb.driver.api.TypeDBCredential;
+import com.vaticle.typedb.driver.api.TypeDBOptions;
+import com.vaticle.typedb.driver.api.TypeDBSession;
+import com.vaticle.typedb.driver.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.answer.ConceptMap;
+import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
+import com.vaticle.typedb.driver.api.answer.Numeric;
+import com.vaticle.typedb.driver.api.answer.NumericGroup;
+import com.vaticle.typedb.driver.api.database.Database;
+import com.vaticle.typedb.driver.api.user.User;
+import com.vaticle.typedb.driver.common.exception.TypeDBDriverException;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.util.Java;
 import com.vaticle.typedb.console.command.REPLCommand;
@@ -172,34 +172,34 @@ public class TypeDBConsole {
 
     private void runREPLMode(CLIOptions options) {
         printer.info(COPYRIGHT);
-        boolean isCluster = options.cluster() != null;
-        try (TypeDBClient client = createTypeDBClient(options)) {
+        boolean isEnterprise = options.enterprise() != null;
+        try (TypeDBDriver driver = createTypeDBDriver(options)) {
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
-                    .completer(getCompleter(client, isCluster))
+                    .completer(getCompleter(driver, isEnterprise))
                     .build();
             while (true) {
                 REPLCommand command;
                 try {
-                    command = REPLCommand.readREPLCommand(reader, printer, "> ", isCluster);
+                    command = REPLCommand.readREPLCommand(reader, printer, "> ", isEnterprise);
                 } catch (InterruptedException e) {
                     break;
                 }
                 if (command.isExit()) {
                     break;
                 } else if (command.isHelp()) {
-                    printer.info(REPLCommand.createHelpMenu(client, isCluster));
+                    printer.info(REPLCommand.createHelpMenu(driver, isEnterprise));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command.isUserList()) {
-                    runUserList(client, isCluster);
+                    runUserList(driver, isEnterprise);
                 } else if (command.isUserCreate()) {
-                    runUserCreate(client, isCluster, command.asUserCreate().user(), command.asUserCreate().password());
+                    runUserCreate(driver, isEnterprise, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPasswordUpdate()) {
                     REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
-                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(client,
-                            isCluster,
+                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                            isEnterprise,
                             options.username,
                             userPasswordUpdate.passwordOld(),
                             userPasswordUpdate.passwordNew());
@@ -209,53 +209,53 @@ public class TypeDBConsole {
                     }
                 } else if (command.isUserPasswordSet()) {
                     REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
-                    boolean passwordSetSuccessful = runUserPasswordSet(client,
-                            isCluster,
+                    boolean passwordSetSuccessful = runUserPasswordSet(driver,
+                            isEnterprise,
                             userPasswordSet.user(),
                             userPasswordSet.password());
-                    if (passwordSetSuccessful && userPasswordSet.user().equals(client.user().username())) {
+                    if (passwordSetSuccessful && userPasswordSet.user().equals(driver.user().username())) {
                         printer.info("Please login again with your updated password.");
                         break;
                     }
                 } else if (command.isUserDelete()) {
-                    runUserDelete(client, isCluster, command.asUserDelete().user());
+                    runUserDelete(driver, isEnterprise, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
-                    runDatabaseList(client);
+                    runDatabaseList(driver);
                 } else if (command.isDatabaseCreate()) {
-                    runDatabaseCreate(client, command.asDatabaseCreate().database());
+                    runDatabaseCreate(driver, command.asDatabaseCreate().database());
                 } else if (command.isDatabaseDelete()) {
-                    runDatabaseDelete(client, command.asDatabaseDelete().database());
+                    runDatabaseDelete(driver, command.asDatabaseDelete().database());
                 } else if (command.isDatabaseSchema()) {
-                    runDatabaseSchema(client, command.asDatabaseSchema().database());
+                    runDatabaseSchema(driver, command.asDatabaseSchema().database());
                 } else if (command.isDatabaseReplicas()) {
-                    runDatabaseReplicas(client, isCluster, command.asDatabaseReplicas().database());
+                    runDatabaseReplicas(driver, isEnterprise, command.asDatabaseReplicas().database());
                 } else if (command.isTransaction()) {
                     String database = command.asTransaction().database();
                     TypeDBSession.Type sessionType = command.asTransaction().sessionType();
                     TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
                     TypeDBOptions typedbOptions = command.asTransaction().options();
-                    if (typedbOptions.readAnyReplica().isPresent() && !isCluster) {
-                        printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
+                    if (typedbOptions.readAnyReplica().isPresent() && !isEnterprise) {
+                        printer.error("The option '--any-replica' is only available in TypeDB Enterprise.");
                         continue;
                     }
-                    boolean shouldExit = transactionREPL(client, isCluster, database, sessionType, transactionType, typedbOptions);
+                    boolean shouldExit = transactionREPL(driver, isEnterprise, database, sessionType, transactionType, typedbOptions);
                     if (shouldExit) break;
                 }
             }
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
         } finally {
             executorService.shutdownNow();
         }
     }
 
-    private Completers.TreeCompleter getCompleter(TypeDBClient client, boolean isCluster) {
-        Completer databaseNameCompleter = (reader, line, candidates) -> client.databases().all().stream()
+    private Completers.TreeCompleter getCompleter(TypeDBDriver driver, boolean isEnterprise) {
+        Completer databaseNameCompleter = (reader, line, candidates) -> driver.databases().all().stream()
                 .map(Database::name)
                 .filter(name -> name.startsWith(line.word()))
                 .forEach(name -> candidates.add(new Candidate(name)));
         Completer userNameCompleter = (reader, line, candidates) -> {
-            client.users().all().stream()
+            driver.users().all().stream()
                     .map(User::username)
                     // "admin" user is excluded as it can't be deleted
                     .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
@@ -272,7 +272,7 @@ public class TypeDBConsole {
                                 node(databaseNameCompleter)
                         )
                 ));
-        if (isCluster) {
+        if (isEnterprise) {
             nodes.add(node(REPLCommand.User.token,
                     node(REPLCommand.User.List.token),
                     node(REPLCommand.User.Create.token),
@@ -297,18 +297,18 @@ public class TypeDBConsole {
         return new Completers.TreeCompleter(nodes);
     }
 
-    private boolean transactionREPL(TypeDBClient client, boolean isCluster, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
+    private boolean transactionREPL(TypeDBDriver driver, boolean isEnterprise, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .parser(new DefaultParser().escapeChars(null))
                 .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
                 .build();
         StringBuilder promptBuilder = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
-        if (isCluster && options.readAnyReplica().isPresent() && options.readAnyReplica().get()) {
+        if (isEnterprise && options.readAnyReplica().isPresent() && options.readAnyReplica().get()) {
             promptBuilder.append("[any-replica]");
         }
         options.transactionTimeoutMillis(ONE_HOUR_IN_MILLIS);
-        try (TypeDBSession session = client.session(database, sessionType, options);
+        try (TypeDBSession session = driver.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
             hasUncommittedChanges = false;
             while (true) {
@@ -346,7 +346,7 @@ public class TypeDBConsole {
                     }
                 }
             }
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
         }
         return false;
@@ -367,48 +367,48 @@ public class TypeDBConsole {
         inlineCommands = inlineCommands.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
-        boolean isCluster = options.cluster() != null;
-        try (TypeDBClient client = createTypeDBClient(options)) {
+        boolean isEnterprise = options.enterprise() != null;
+        try (TypeDBDriver driver = createTypeDBDriver(options)) {
             for (int i = 0; i < inlineCommands.size() && !cancelled[0]; i++) {
                 String commandString = inlineCommands.get(i);
                 printer.info("+ " + commandString);
                 if (commandString.startsWith("#")) continue;
-                REPLCommand command = REPLCommand.readREPLCommand(commandString, null, isCluster);
+                REPLCommand command = REPLCommand.readREPLCommand(commandString, null, isEnterprise);
                 if (command != null) {
                     if (command.isUserList()) {
-                        boolean success = runUserList(client, isCluster);
+                        boolean success = runUserList(driver, isEnterprise);
                         if (!success) return false;
                     } else if (command.isUserCreate()) {
-                        boolean success = runUserCreate(client, isCluster, command.asUserCreate().user(), command.asUserCreate().password());
+                        boolean success = runUserCreate(driver, isEnterprise, command.asUserCreate().user(), command.asUserCreate().password());
                         if (!success) return false;
                     } else if (command.isUserDelete()) {
-                        boolean success = runUserDelete(client, isCluster, command.asUserDelete().user());
+                        boolean success = runUserDelete(driver, isEnterprise, command.asUserDelete().user());
                         if (!success) return false;
                     } else if (command.isDatabaseList()) {
-                        boolean success = runDatabaseList(client);
+                        boolean success = runDatabaseList(driver);
                         if (!success) return false;
                     } else if (command.isDatabaseCreate()) {
-                        boolean success = runDatabaseCreate(client, command.asDatabaseCreate().database());
+                        boolean success = runDatabaseCreate(driver, command.asDatabaseCreate().database());
                         if (!success) return false;
                     } else if (command.isDatabaseSchema()) {
-                        boolean success = runDatabaseSchema(client, command.asDatabaseSchema().database());
+                        boolean success = runDatabaseSchema(driver, command.asDatabaseSchema().database());
                         if (!success) return false;
                     } else if (command.isDatabaseDelete()) {
-                        boolean success = runDatabaseDelete(client, command.asDatabaseDelete().database());
+                        boolean success = runDatabaseDelete(driver, command.asDatabaseDelete().database());
                         if (!success) return false;
                     } else if (command.isDatabaseReplicas()) {
-                        boolean success = runDatabaseReplicas(client, isCluster, command.asDatabaseReplicas().database());
+                        boolean success = runDatabaseReplicas(driver, isEnterprise, command.asDatabaseReplicas().database());
                         if (!success) return false;
                     } else if (command.isTransaction()) {
                         String database = command.asTransaction().database();
                         TypeDBSession.Type sessionType = command.asTransaction().sessionType();
                         TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
                         TypeDBOptions sessionOptions = command.asTransaction().options();
-                        if (sessionOptions.readAnyReplica().isPresent() && !isCluster) {
-                            printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
+                        if (sessionOptions.readAnyReplica().isPresent() && !isEnterprise) {
+                            printer.error("The option '--any-replica' is only available in TypeDB Enterprise.");
                             return false;
                         }
-                        try (TypeDBSession session = client.session(database, sessionType, sessionOptions);
+                        try (TypeDBSession session = driver.session(database, sessionType, sessionOptions);
                              TypeDBTransaction tx = session.transaction(transactionType)) {
                             for (i += 1; i < inlineCommands.size() && !cancelled[0]; i++) {
                                 String txCommandString = inlineCommands.get(i);
@@ -436,7 +436,7 @@ public class TypeDBConsole {
                                     printer.error("Command is not available while running console script.");
                                 }
                             }
-                        } catch (TypeDBClientException e) {
+                        } catch (TypeDBDriverException e) {
                             printer.error(e.getMessage());
                             return false;
                         }
@@ -448,7 +448,7 @@ public class TypeDBConsole {
                     return false;
                 }
             }
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         } finally {
@@ -457,29 +457,29 @@ public class TypeDBConsole {
         return true;
     }
 
-    private TypeDBClient createTypeDBClient(CLIOptions options) {
-        TypeDBClient client = null;
+    private TypeDBDriver createTypeDBDriver(CLIOptions options) {
+        TypeDBDriver driver = null;
         try {
             if (options.server() != null) {
-                client = TypeDB.coreClient(options.server());
+                driver = TypeDB.coreDriver(options.server());
             } else {
-                String optCluster = options.cluster();
-                if (optCluster != null) {
-                    client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
-                    Optional<Duration> passwordExpiry = client.users().get(options.username)
+                String optEnterprise = options.enterprise();
+                if (optEnterprise != null) {
+                    driver = TypeDB.enterpriseDriver(set(optEnterprise.split(",")), createTypeDBCredential(options));
+                    Optional<Duration> passwordExpiry = driver.users().get(options.username)
                             .passwordExpirySeconds().map(Duration::ofSeconds);
                     if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
                         printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
                     }
                 } else {
-                    client = TypeDB.coreClient(TypeDB.DEFAULT_ADDRESS);
+                    driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS);
                 }
             }
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             System.exit(1);
         }
-        return client;
+        return driver;
     }
 
     private TypeDBCredential createTypeDBCredential(CLIOptions options) {
@@ -496,14 +496,14 @@ public class TypeDBConsole {
         return credential;
     }
 
-    private boolean runUserList(TypeDBClient client, boolean isCluster) {
+    private boolean runUserList(TypeDBDriver driver, boolean isEnterprise) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'user list' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'user list' is only available in TypeDB Enterprise.");
                 return false;
             }
-            if (client.users().all().size() > 0) {
-                client.users().all().forEach(user -> {
+            if (driver.users().all().size() > 0) {
+                driver.users().all().forEach(user -> {
                     Optional<Long> expirySeconds = user.passwordExpirySeconds();
                     if (expirySeconds.isPresent()) {
                         printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
@@ -513,133 +513,133 @@ public class TypeDBConsole {
                 });
             } else printer.info("No users are present on the server.");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runUserCreate(TypeDBClient client, boolean isCluster, String username, String password) {
+    private boolean runUserCreate(TypeDBDriver driver, boolean isEnterprise, String username, String password) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'user create' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'user create' is only available in TypeDB Enterprise.");
                 return false;
             }
-            client.users().create(username, password);
+            driver.users().create(username, password);
             printer.info("User '" + username + "' created");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runUserPasswordUpdate(TypeDBClient client, boolean isCluster, String username, String passwordOld, String passwordNew) {
+    private boolean runUserPasswordUpdate(TypeDBDriver driver, boolean isEnterprise, String username, String passwordOld, String passwordNew) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'user password-update' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'user password-update' is only available in TypeDB Enterprise.");
                 return false;
             }
-            client.users().get(username).passwordUpdate(passwordOld, passwordNew);
+            driver.users().get(username).passwordUpdate(passwordOld, passwordNew);
             printer.info("Updated password for user '" + username + "'.");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runUserPasswordSet(TypeDBClient client, boolean isCluster, String username, String password) {
+    private boolean runUserPasswordSet(TypeDBDriver driver, boolean isEnterprise, String username, String password) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'user password-set' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'user password-set' is only available in TypeDB Enterprise.");
                 return false;
             }
-            if (client.users().contains(username)) {
-                client.users().passwordSet(username, password);
+            if (driver.users().contains(username)) {
+                driver.users().passwordSet(username, password);
                 printer.info("Set password for user '" + username + "'");
                 return true;
             } else {
                 printer.info("No such user '" + username + "'");
                 return false;
             }
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runUserDelete(TypeDBClient client, boolean isCluster, String username) {
+    private boolean runUserDelete(TypeDBDriver driver, boolean isEnterprise, String username) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'user delete' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'user delete' is only available in TypeDB Enterprise.");
                 return false;
             }
-            client.users().delete(username);
+            driver.users().delete(username);
             printer.info("User '" + username + "' deleted");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseList(TypeDBClient client) {
+    private boolean runDatabaseList(TypeDBDriver driver) {
         try {
-            if (client.databases().all().size() > 0)
-                client.databases().all().forEach(database -> printer.info(database.name()));
+            if (driver.databases().all().size() > 0)
+                driver.databases().all().forEach(database -> printer.info(database.name()));
             else printer.info("No databases are present on the server.");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseCreate(TypeDBClient client, String database) {
+    private boolean runDatabaseCreate(TypeDBDriver driver, String database) {
         try {
-            client.databases().create(database);
+            driver.databases().create(database);
             printer.info("Database '" + database + "' created");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseSchema(TypeDBClient client, String database) {
+    private boolean runDatabaseSchema(TypeDBDriver driver, String database) {
         try {
-            String schema = client.databases().get(database).schema();
+            String schema = driver.databases().get(database).schema();
             printer.info(schema);
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseDelete(TypeDBClient client, String database) {
+    private boolean runDatabaseDelete(TypeDBDriver driver, String database) {
         try {
-            client.databases().get(database).delete();
+            driver.databases().get(database).delete();
             printer.info("Database '" + database + "' deleted");
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
     }
 
-    private boolean runDatabaseReplicas(TypeDBClient client, boolean isCluster, String database) {
+    private boolean runDatabaseReplicas(TypeDBDriver driver, boolean isEnterprise, String database) {
         try {
-            if (!isCluster) {
-                printer.error("The command 'database replicas' is only available in TypeDB Cluster.");
+            if (!isEnterprise) {
+                printer.error("The command 'database replicas' is only available in TypeDB Enterprise.");
                 return false;
             }
-            for (Database.Replica replica : client.databases().get(database).replicas()) {
+            for (Database.Replica replica : driver.databases().get(database).replicas()) {
                 printer.databaseReplica(replica);
             }
             return true;
-        } catch (TypeDBClientException e) {
+        } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             return false;
         }
@@ -794,7 +794,7 @@ public class TypeDBConsole {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            throw (TypeDBClientException) e.getCause();
+            throw (TypeDBDriverException) e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
             printer.info("answers: " + counter[0] + ", total (with concept details) duration: " + Duration.between(start, end).toMillis() + " ms");
@@ -815,11 +815,11 @@ public class TypeDBConsole {
         String server;
 
         @CommandLine.Option(
-                names = {"--cluster"},
-                description = "TypeDB Cluster address to which Console will connect to"
+                names = {"--enterprise"},
+                description = "TypeDB Enterprise address to which Console will connect to"
         )
         private @Nullable
-        String cluster;
+        String enterprise;
 
         @CommandLine.Option(names = {"--username"}, description = "Username")
         private @Nullable
@@ -837,7 +837,7 @@ public class TypeDBConsole {
 
         @CommandLine.Option(
                 names = {"--tls-enabled"},
-                description = "Whether to connect to TypeDB Cluster with TLS encryption"
+                description = "Whether to connect to TypeDB Enterprise with TLS encryption"
         )
         private boolean tlsEnabled;
 
@@ -874,30 +874,30 @@ public class TypeDBConsole {
         }
 
         private void validateOptions() {
-            if (server != null && cluster != null) {
-                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--cluster' must be provided, but not both.");
+            if (server != null && enterprise != null) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--enterprise' must be provided, but not both.");
             } else {
-                if (cluster != null) validateClusterOptions();
+                if (enterprise != null) validateEnterpriseOptions();
                 else validateServerOptions();
             }
         }
 
         private void validateServerOptions() {
             if (username != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--enterprise'");
             if (password != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--enterprise'");
             if (tlsEnabled)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--enterprise'");
             if (tlsRootCA != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--enterprise'");
         }
 
-        private void validateClusterOptions() {
+        private void validateEnterpriseOptions() {
             if (username == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--enterprise'");
             if (password == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cluster'");
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--enterprise'");
             if (!tlsEnabled && tlsRootCA != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
         }
@@ -908,8 +908,8 @@ public class TypeDBConsole {
         }
 
         @Nullable
-        private String cluster() {
-            return cluster;
+        private String enterprise() {
+            return enterprise;
         }
 
         private String username() {

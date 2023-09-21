@@ -17,10 +17,10 @@
 
 package com.vaticle.typedb.console.command;
 
-import com.vaticle.typedb.client.api.TypeDBClient;
-import com.vaticle.typedb.client.api.TypeDBOptions;
-import com.vaticle.typedb.client.api.TypeDBSession;
-import com.vaticle.typedb.client.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.TypeDBDriver;
+import com.vaticle.typedb.driver.api.TypeDBOptions;
+import com.vaticle.typedb.driver.api.TypeDBSession;
+import com.vaticle.typedb.driver.api.TypeDBTransaction;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.Utils;
@@ -532,17 +532,17 @@ public interface REPLCommand {
 
         public static String token = "transaction-options";
 
-        static TypeDBOptions from(String[] optionTokens, boolean isCluster) {
-            if (isCluster) return parseClusterOptions(optionTokens, new TypeDBOptions());
+        static TypeDBOptions from(String[] optionTokens, boolean isEnterprise) {
+            if (isEnterprise) return parseEnterpriseOptions(optionTokens, new TypeDBOptions());
             else return parseCoreOptions(optionTokens, new TypeDBOptions());
         }
 
-        private static TypeDBOptions parseClusterOptions(String[] optionTokens, TypeDBOptions options) {
+        private static TypeDBOptions parseEnterpriseOptions(String[] optionTokens, TypeDBOptions options) {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<TypeDBOptions> option = Options.Cluster.clusterOption(token.substring(2));
+                Option<TypeDBOptions> option = Options.Enterprise.enterpriseOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -606,20 +606,20 @@ public interface REPLCommand {
             }
         }
 
-        static class Cluster extends Core {
+        static class Enterprise extends Core {
 
-            private static List<Option.Cluster> options = withCoreOptions(
-                    Option.cluster("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+            private static List<Option.Enterprise> options = withCoreOptions(
+                    Option.enterprise("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
-            private static List<Option.Cluster> withCoreOptions(Option.Cluster... clusterOptions) {
-                List<Option.Cluster> extendedOptions = new ArrayList<>();
-                Core.options.forEach(opt -> extendedOptions.add(opt.asClusterOption()));
-                extendedOptions.addAll(Arrays.asList(clusterOptions));
+            private static List<Option.Enterprise> withCoreOptions(Option.Enterprise... enterpriseOptions) {
+                List<Option.Enterprise> extendedOptions = new ArrayList<>();
+                Core.options.forEach(opt -> extendedOptions.add(opt.asEnterpriseOption()));
+                extendedOptions.addAll(Arrays.asList(enterpriseOptions));
                 return extendedOptions;
             }
 
-            public static Option<TypeDBOptions> clusterOption(String token) throws IllegalArgumentException {
+            public static Option<TypeDBOptions> enterpriseOption(String token) throws IllegalArgumentException {
                 return from(token, options);
             }
 
@@ -646,8 +646,8 @@ public interface REPLCommand {
                 return new Option.Core(name, arg, description, builder);
             }
 
-            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
-                return new Option.Cluster(name, arg, description, builder);
+            static Option.Enterprise enterprise(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+                return new Option.Enterprise(name, arg, description, builder);
             }
 
             OPTIONS build(OPTIONS options, String arg) {
@@ -666,14 +666,14 @@ public interface REPLCommand {
                     super(name, arg, description, builder);
                 }
 
-                Option.Cluster asClusterOption() {
-                    return new Option.Cluster(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg));
+                Option.Enterprise asEnterpriseOption() {
+                    return new Option.Enterprise(name, arg, description, (enterpriseOption, arg) -> builder.apply(enterpriseOption, arg));
                 }
             }
 
-            static class Cluster extends Option<TypeDBOptions> {
+            static class Enterprise extends Option<TypeDBOptions> {
 
-                private Cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+                private Enterprise(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                     super(name, arg, description, builder);
                 }
             }
@@ -700,9 +700,9 @@ public interface REPLCommand {
         }
     }
 
-    static String createHelpMenu(TypeDBClient client, boolean isCluster) {
+    static String createHelpMenu(TypeDBDriver driver, boolean isEnterprise) {
         List<Pair<String, String>> menu = new ArrayList<>();
-        if (client.users() != null) {
+        if (driver.users() != null) {
             menu.addAll(Arrays.asList(
                     pair(User.List.helpCommand, User.List.description),
                     pair(User.Create.helpCommand, User.Create.description),
@@ -717,12 +717,12 @@ public interface REPLCommand {
                 pair(Database.Delete.helpCommand, Database.Delete.description),
                 pair(Database.Schema.helpCommand, Database.Schema.description)));
 
-        if (isCluster) {
+        if (isEnterprise) {
             menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
         }
 
         menu.add(pair(Transaction.helpCommand, Transaction.description));
-        if (isCluster) menu.addAll(Options.Cluster.helpMenu());
+        if (isEnterprise) menu.addAll(Options.Enterprise.helpMenu());
         else menu.addAll(Options.Core.helpMenu());
 
         menu.addAll(Arrays.asList(
@@ -733,11 +733,11 @@ public interface REPLCommand {
         return Utils.createHelpMenu(menu);
     }
 
-    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isCluster) throws InterruptedException {
+    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isEnterprise) throws InterruptedException {
         REPLCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = readREPLCommand(line, reader, isCluster);
+            command = readREPLCommand(line, reader, isEnterprise);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -746,7 +746,7 @@ public interface REPLCommand {
         return command;
     }
 
-    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isCluster) {
+    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isEnterprise) {
         REPLCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
@@ -795,7 +795,7 @@ public interface REPLCommand {
             TypeDBSession.Type sessionType = tokens[2].equals("schema") ? TypeDBSession.Type.SCHEMA : TypeDBSession.Type.DATA;
             TypeDBTransaction.Type transactionType = tokens[3].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.WRITE;
             TypeDBOptions options;
-            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCluster);
+            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isEnterprise);
             else options = new TypeDBOptions();
             command = new Transaction(database, sessionType, transactionType, options);
         }

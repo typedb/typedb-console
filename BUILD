@@ -17,7 +17,7 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
@@ -42,9 +42,9 @@ java_library(
     name = "console",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
-        "@vaticle_typedb_client_java//:client-java",
-        "@vaticle_typedb_client_java//api",
-        "@vaticle_typedb_client_java//common",
+        "@vaticle_typedb_client_java//java:client-java",
+        "@vaticle_typedb_client_java//java/api",
+        "@vaticle_typedb_client_java//java/common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/query",

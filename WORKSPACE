@@ -44,6 +44,9 @@ kt_register_toolchains()
 load("@vaticle_dependencies//builder/python:deps.bzl", python_deps = "deps")
 python_deps()
 
+load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
+rules_jvm_external_deps()
+
 # Load //builder/antlr
 load("@vaticle_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps", "antlr_version")
 antlr_deps()
@@ -55,15 +58,49 @@ rules_antlr_dependencies(antlr_version, JAVA)
 # Load //builder/grpc
 load("@vaticle_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
 grpc_deps()
-load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
-com_github_grpc_grpc_deps = "grpc_deps")
-com_github_grpc_grpc_deps()
-load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
-java_grpc_compile()
+
+load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
+rules_proto_grpc_toolchains()
+rules_proto_grpc_repos()
+
+load("@rules_proto_grpc//java:repositories.bzl", rules_proto_grpc_java_repos = "java_repos")
+rules_proto_grpc_java_repos()
+
+load("@io_grpc_grpc_java//:repositories.bzl", "IO_GRPC_GRPC_JAVA_ARTIFACTS")
+load("@vaticle_dependencies//library/maven:rules.bzl", "parse_unversioned")
+io_grpc_artifacts = [parse_unversioned(c) for c in IO_GRPC_GRPC_JAVA_ARTIFACTS]
 
 # Load //distribution/docker
 load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
+
+# Load //builder/rust
+load("@vaticle_dependencies//builder/rust:deps.bzl", rust_deps = "deps")
+rust_deps()
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_analyzer_toolchain_repository")
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+rules_rust_dependencies()
+load("@rules_rust//rust:defs.bzl", "rust_common")
+rust_register_toolchains(
+    edition = "2021",
+    extra_target_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+    ],
+    rust_analyzer_version = rust_common.default_version,
+)
+
+load("@vaticle_dependencies//library/crates:crates.bzl", "fetch_crates")
+fetch_crates()
+load("@crates//:defs.bzl", "crate_repositories")
+crate_repositories()
+
+load("@vaticle_dependencies//tool/swig:deps.bzl", swig_deps = "deps")
+swig_deps()
 
 # Load //tool/common
 load("@vaticle_dependencies//tool/common:deps.bzl", "vaticle_dependencies_ci_pip",
@@ -112,9 +149,8 @@ load("//dependencies/vaticle:repositories.bzl", "vaticle_typedb_common", "vaticl
 vaticle_typedb_common()
 vaticle_typedb_client_java()
 
-load("@vaticle_typedb_client_java//dependencies/vaticle:repositories.bzl", "vaticle_factory_tracing", "vaticle_typedb_protocol", "vaticle_typeql")
+load("@vaticle_typedb_client_java//dependencies/vaticle:repositories.bzl", "vaticle_typedb_protocol", "vaticle_typeql")
 vaticle_typeql()
-vaticle_factory_tracing()
 vaticle_typedb_protocol()
 
 # Load artifacts
@@ -125,7 +161,6 @@ vaticle_typedb_artifact()
 load("@vaticle_typedb_common//dependencies/maven:artifacts.bzl", vaticle_typedb_common_artifacts = "artifacts")
 load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
 load("@vaticle_typedb_client_java//dependencies/maven:artifacts.bzl", vaticle_typedb_client_java_artifacts = "artifacts")
-load("@vaticle_factory_tracing//dependencies/maven:artifacts.bzl", vaticle_factory_tracing_artifacts = "artifacts")
 load("@vaticle_typedb_console//dependencies/maven:artifacts.bzl", vaticle_typedb_console_artifacts = "artifacts")
 
 ###############
@@ -135,12 +170,16 @@ load("@vaticle_typedb_console//dependencies/maven:artifacts.bzl", vaticle_typedb
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 maven(
     vaticle_typedb_common_artifacts +
-    vaticle_factory_tracing_artifacts +
     vaticle_typeql_artifacts +
     vaticle_typedb_client_java_artifacts +
     vaticle_typedb_console_artifacts +
-    vaticle_dependencies_tool_maven_artifacts
+    vaticle_dependencies_tool_maven_artifacts +
+    io_grpc_artifacts,
+    generate_compat_repositories = True,
 )
+
+load("@maven//:compat.bzl", "compat_repositories")
+compat_repositories()
 
 ############################################
 # Create @vaticle_typedb_console_workspace_refs #

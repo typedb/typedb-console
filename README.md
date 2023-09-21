@@ -20,11 +20,11 @@ cd <your_typedb_console_dir>/
 You can provide several command arguments when running console in the terminal.
 
 - `--server=<address>` : TypeDB server address to which the console will connect to.
-- `--cluster=<address>` : TypeDB Cluster server address to which the console will connect to.
-- `--username=<username>` : TypeDB Cluster username to connect with.
-- `--password` : Interactively enter password to connect to TypeDB Cluster with.
+- `--enterprise=<address>` : TypeDB Enterprise server address to which the console will connect to.
+- `--username=<username>` : TypeDB Enterprise username to connect with.
+- `--password` : Interactively enter password to connect to TypeDB Enterprise with.
 - `--script=<script>` : Run commands in the script file in non-interactive mode.
-- `--tls-enabled`: Enable TLS for connecting to TypeDB Cluster.
+- `--tls-enabled`: Enable TLS for connecting to TypeDB Enterprise.
 - `--tls-root-ca`: Path to root CA certificate for TLS encryption.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.

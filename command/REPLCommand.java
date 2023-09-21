@@ -533,16 +533,16 @@ public interface REPLCommand {
         public static String token = "transaction-options";
 
         static TypeDBOptions from(String[] optionTokens, boolean isCluster) {
-            if (isCluster) return parseClusterOptions(optionTokens, TypeDBOptions.cluster());
-            else return parseCoreOptions(optionTokens, TypeDBOptions.core());
+            if (isCluster) return parseClusterOptions(optionTokens, new TypeDBOptions());
+            else return parseCoreOptions(optionTokens, new TypeDBOptions());
         }
 
-        private static TypeDBOptions.Cluster parseClusterOptions(String[] optionTokens, TypeDBOptions.Cluster options) {
+        private static TypeDBOptions parseClusterOptions(String[] optionTokens, TypeDBOptions options) {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<TypeDBOptions.Cluster> option = Options.Cluster.clusterOption(token.substring(2));
+                Option<TypeDBOptions> option = Options.Cluster.clusterOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -619,7 +619,7 @@ public interface REPLCommand {
                 return extendedOptions;
             }
 
-            public static Option<TypeDBOptions.Cluster> clusterOption(String token) throws IllegalArgumentException {
+            public static Option<TypeDBOptions> clusterOption(String token) throws IllegalArgumentException {
                 return from(token, options);
             }
 
@@ -646,7 +646,7 @@ public interface REPLCommand {
                 return new Option.Core(name, arg, description, builder);
             }
 
-            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions.Cluster, Object, TypeDBOptions.Cluster> builder) {
+            static Option.Cluster cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                 return new Option.Cluster(name, arg, description, builder);
             }
 
@@ -667,13 +667,13 @@ public interface REPLCommand {
                 }
 
                 Option.Cluster asClusterOption() {
-                    return new Option.Cluster(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg).asCluster());
+                    return new Option.Cluster(name, arg, description, (clusterOption, arg) -> builder.apply(clusterOption, arg));
                 }
             }
 
-            static class Cluster extends Option<TypeDBOptions.Cluster> {
+            static class Cluster extends Option<TypeDBOptions> {
 
-                private Cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions.Cluster, Object, TypeDBOptions.Cluster> builder) {
+                private Cluster(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                     super(name, arg, description, builder);
                 }
             }
@@ -700,9 +700,9 @@ public interface REPLCommand {
         }
     }
 
-    static String createHelpMenu(TypeDBClient client) {
+    static String createHelpMenu(TypeDBClient client, boolean isCluster) {
         List<Pair<String, String>> menu = new ArrayList<>();
-        if (client.isCluster()) {
+        if (client.users() != null) {
             menu.addAll(Arrays.asList(
                     pair(User.List.helpCommand, User.List.description),
                     pair(User.Create.helpCommand, User.Create.description),
@@ -717,12 +717,12 @@ public interface REPLCommand {
                 pair(Database.Delete.helpCommand, Database.Delete.description),
                 pair(Database.Schema.helpCommand, Database.Schema.description)));
 
-        if (client.isCluster()) {
+        if (isCluster) {
             menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
         }
 
         menu.add(pair(Transaction.helpCommand, Transaction.description));
-        if (client.isCluster()) menu.addAll(Options.Cluster.helpMenu());
+        if (isCluster) menu.addAll(Options.Cluster.helpMenu());
         else menu.addAll(Options.Core.helpMenu());
 
         menu.addAll(Arrays.asList(
@@ -796,7 +796,7 @@ public interface REPLCommand {
             TypeDBTransaction.Type transactionType = tokens[3].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.WRITE;
             TypeDBOptions options;
             if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCluster);
-            else options = isCluster ? TypeDBOptions.cluster() : TypeDBOptions.core();
+            else options = new TypeDBOptions();
             command = new Transaction(database, sessionType, transactionType, options);
         }
         return command;

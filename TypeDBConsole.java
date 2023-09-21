@@ -28,7 +28,6 @@ import com.vaticle.typedb.client.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.client.api.answer.Numeric;
 import com.vaticle.typedb.client.api.answer.NumericGroup;
 import com.vaticle.typedb.client.api.database.Database;
-import com.vaticle.typedb.client.api.query.QueryFuture;
 import com.vaticle.typedb.client.api.user.User;
 import com.vaticle.typedb.client.common.exception.TypeDBClientException;
 import com.vaticle.typedb.common.collection.Either;
@@ -76,7 +75,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -174,32 +172,34 @@ public class TypeDBConsole {
 
     private void runREPLMode(CLIOptions options) {
         printer.info(COPYRIGHT);
+        boolean isCluster = options.cluster() != null;
         try (TypeDBClient client = createTypeDBClient(options)) {
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
-                    .completer(getCompleter(client))
+                    .completer(getCompleter(client, isCluster))
                     .build();
             while (true) {
                 REPLCommand command;
                 try {
-                    command = REPLCommand.readREPLCommand(reader, printer, "> ", client.isCluster());
+                    command = REPLCommand.readREPLCommand(reader, printer, "> ", isCluster);
                 } catch (InterruptedException e) {
                     break;
                 }
                 if (command.isExit()) {
                     break;
                 } else if (command.isHelp()) {
-                    printer.info(REPLCommand.createHelpMenu(client));
+                    printer.info(REPLCommand.createHelpMenu(client, isCluster));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command.isUserList()) {
-                    runUserList(client);
+                    runUserList(client, isCluster);
                 } else if (command.isUserCreate()) {
-                    runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
+                    runUserCreate(client, isCluster, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPasswordUpdate()) {
                     REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
                     boolean passwordUpdateSuccessful = runUserPasswordUpdate(client,
+                            isCluster,
                             options.username,
                             userPasswordUpdate.passwordOld(),
                             userPasswordUpdate.passwordNew());
@@ -210,14 +210,15 @@ public class TypeDBConsole {
                 } else if (command.isUserPasswordSet()) {
                     REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
                     boolean passwordSetSuccessful = runUserPasswordSet(client,
+                            isCluster,
                             userPasswordSet.user(),
                             userPasswordSet.password());
-                    if (passwordSetSuccessful && userPasswordSet.user().equals(client.asCluster().user().username())) {
+                    if (passwordSetSuccessful && userPasswordSet.user().equals(client.user().username())) {
                         printer.info("Please login again with your updated password.");
                         break;
                     }
                 } else if (command.isUserDelete()) {
-                    runUserDelete(client, command.asUserDelete().user());
+                    runUserDelete(client, isCluster, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
                     runDatabaseList(client);
                 } else if (command.isDatabaseCreate()) {
@@ -227,17 +228,17 @@ public class TypeDBConsole {
                 } else if (command.isDatabaseSchema()) {
                     runDatabaseSchema(client, command.asDatabaseSchema().database());
                 } else if (command.isDatabaseReplicas()) {
-                    runDatabaseReplicas(client, command.asDatabaseReplicas().database());
+                    runDatabaseReplicas(client, isCluster, command.asDatabaseReplicas().database());
                 } else if (command.isTransaction()) {
                     String database = command.asTransaction().database();
                     TypeDBSession.Type sessionType = command.asTransaction().sessionType();
                     TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
                     TypeDBOptions typedbOptions = command.asTransaction().options();
-                    if (typedbOptions.isCluster() && !client.isCluster()) {
+                    if (typedbOptions.readAnyReplica().isPresent() && !isCluster) {
                         printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
                         continue;
                     }
-                    boolean shouldExit = transactionREPL(client, database, sessionType, transactionType, typedbOptions);
+                    boolean shouldExit = transactionREPL(client, isCluster, database, sessionType, transactionType, typedbOptions);
                     if (shouldExit) break;
                 }
             }
@@ -248,13 +249,13 @@ public class TypeDBConsole {
         }
     }
 
-    private Completers.TreeCompleter getCompleter(TypeDBClient client) {
+    private Completers.TreeCompleter getCompleter(TypeDBClient client, boolean isCluster) {
         Completer databaseNameCompleter = (reader, line, candidates) -> client.databases().all().stream()
                 .map(Database::name)
                 .filter(name -> name.startsWith(line.word()))
                 .forEach(name -> candidates.add(new Candidate(name)));
         Completer userNameCompleter = (reader, line, candidates) -> {
-            client.asCluster().users().all().stream()
+            client.users().all().stream()
                     .map(User::username)
                     // "admin" user is excluded as it can't be deleted
                     .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
@@ -271,7 +272,7 @@ public class TypeDBConsole {
                                 node(databaseNameCompleter)
                         )
                 ));
-        if (client.isCluster()) {
+        if (isCluster) {
             nodes.add(node(REPLCommand.User.token,
                     node(REPLCommand.User.List.token),
                     node(REPLCommand.User.Create.token),
@@ -296,14 +297,14 @@ public class TypeDBConsole {
         return new Completers.TreeCompleter(nodes);
     }
 
-    private boolean transactionREPL(TypeDBClient client, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
+    private boolean transactionREPL(TypeDBClient client, boolean isCluster, String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .parser(new DefaultParser().escapeChars(null))
                 .variable(LineReader.HISTORY_FILE, TRANSACTION_HISTORY_FILE)
                 .build();
         StringBuilder promptBuilder = new StringBuilder(database + "::" + sessionType.name().toLowerCase() + "::" + transactionType.name().toLowerCase());
-        if (options.isCluster() && options.asCluster().readAnyReplica().isPresent() && options.asCluster().readAnyReplica().get()) {
+        if (isCluster && options.readAnyReplica().isPresent() && options.readAnyReplica().get()) {
             promptBuilder.append("[any-replica]");
         }
         options.transactionTimeoutMillis(ONE_HOUR_IN_MILLIS);
@@ -366,21 +367,22 @@ public class TypeDBConsole {
         inlineCommands = inlineCommands.stream().map(x -> x.trim()).filter(x -> !x.isEmpty()).collect(toList());
         boolean[] cancelled = new boolean[]{false};
         terminal.handle(Terminal.Signal.INT, s -> cancelled[0] = true);
+        boolean isCluster = options.cluster() != null;
         try (TypeDBClient client = createTypeDBClient(options)) {
             for (int i = 0; i < inlineCommands.size() && !cancelled[0]; i++) {
                 String commandString = inlineCommands.get(i);
                 printer.info("+ " + commandString);
                 if (commandString.startsWith("#")) continue;
-                REPLCommand command = REPLCommand.readREPLCommand(commandString, null, client.isCluster());
+                REPLCommand command = REPLCommand.readREPLCommand(commandString, null, isCluster);
                 if (command != null) {
                     if (command.isUserList()) {
-                        boolean success = runUserList(client);
+                        boolean success = runUserList(client, isCluster);
                         if (!success) return false;
                     } else if (command.isUserCreate()) {
-                        boolean success = runUserCreate(client, command.asUserCreate().user(), command.asUserCreate().password());
+                        boolean success = runUserCreate(client, isCluster, command.asUserCreate().user(), command.asUserCreate().password());
                         if (!success) return false;
                     } else if (command.isUserDelete()) {
-                        boolean success = runUserDelete(client, command.asUserDelete().user());
+                        boolean success = runUserDelete(client, isCluster, command.asUserDelete().user());
                         if (!success) return false;
                     } else if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(client);
@@ -395,14 +397,14 @@ public class TypeDBConsole {
                         boolean success = runDatabaseDelete(client, command.asDatabaseDelete().database());
                         if (!success) return false;
                     } else if (command.isDatabaseReplicas()) {
-                        boolean success = runDatabaseReplicas(client, command.asDatabaseReplicas().database());
+                        boolean success = runDatabaseReplicas(client, isCluster, command.asDatabaseReplicas().database());
                         if (!success) return false;
                     } else if (command.isTransaction()) {
                         String database = command.asTransaction().database();
                         TypeDBSession.Type sessionType = command.asTransaction().sessionType();
                         TypeDBTransaction.Type transactionType = command.asTransaction().transactionType();
                         TypeDBOptions sessionOptions = command.asTransaction().options();
-                        if (sessionOptions.isCluster() && !client.isCluster()) {
+                        if (sessionOptions.readAnyReplica().isPresent() && !isCluster) {
                             printer.error("The option '--any-replica' is only available in TypeDB Cluster.");
                             return false;
                         }
@@ -464,7 +466,7 @@ public class TypeDBConsole {
                 String optCluster = options.cluster();
                 if (optCluster != null) {
                     client = TypeDB.clusterClient(set(optCluster.split(",")), createTypeDBCredential(options));
-                    Optional<Duration> passwordExpiry = client.asCluster().users().get(options.username)
+                    Optional<Duration> passwordExpiry = client.users().get(options.username)
                             .passwordExpirySeconds().map(Duration::ofSeconds);
                     if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
                         printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
@@ -494,15 +496,14 @@ public class TypeDBConsole {
         return credential;
     }
 
-    private boolean runUserList(TypeDBClient client) {
+    private boolean runUserList(TypeDBClient client, boolean isCluster) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'user list' is only available in TypeDB Cluster.");
                 return false;
             }
-            TypeDBClient.Cluster clientCluster = client.asCluster();
-            if (clientCluster.users().all().size() > 0) {
-                clientCluster.users().all().forEach(user -> {
+            if (client.users().all().size() > 0) {
+                client.users().all().forEach(user -> {
                     Optional<Long> expirySeconds = user.passwordExpirySeconds();
                     if (expirySeconds.isPresent()) {
                         printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
@@ -518,14 +519,13 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserCreate(TypeDBClient client, String username, String password) {
+    private boolean runUserCreate(TypeDBClient client, boolean isCluster, String username, String password) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'user create' is only available in TypeDB Cluster.");
                 return false;
             }
-            TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().create(username, password);
+            client.users().create(username, password);
             printer.info("User '" + username + "' created");
             return true;
         } catch (TypeDBClientException e) {
@@ -534,14 +534,13 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPasswordUpdate(TypeDBClient client, String username, String passwordOld, String passwordNew) {
+    private boolean runUserPasswordUpdate(TypeDBClient client, boolean isCluster, String username, String passwordOld, String passwordNew) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'user password-update' is only available in TypeDB Cluster.");
                 return false;
             }
-            TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().get(username).passwordUpdate(passwordOld, passwordNew);
+            client.users().get(username).passwordUpdate(passwordOld, passwordNew);
             printer.info("Updated password for user '" + username + "'.");
             return true;
         } catch (TypeDBClientException e) {
@@ -550,15 +549,14 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPasswordSet(TypeDBClient client, String username, String password) {
+    private boolean runUserPasswordSet(TypeDBClient client, boolean isCluster, String username, String password) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'user password-set' is only available in TypeDB Cluster.");
                 return false;
             }
-            TypeDBClient.Cluster clientCluster = client.asCluster();
-            if (clientCluster.users().contains(username)) {
-                clientCluster.users().passwordSet(username, password);
+            if (client.users().contains(username)) {
+                client.users().passwordSet(username, password);
                 printer.info("Set password for user '" + username + "'");
                 return true;
             } else {
@@ -571,14 +569,13 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserDelete(TypeDBClient client, String username) {
+    private boolean runUserDelete(TypeDBClient client, boolean isCluster, String username) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'user delete' is only available in TypeDB Cluster.");
                 return false;
             }
-            TypeDBClient.Cluster clientCluster = client.asCluster();
-            clientCluster.users().delete(username);
+            client.users().delete(username);
             printer.info("User '" + username + "' deleted");
             return true;
         } catch (TypeDBClientException e) {
@@ -632,13 +629,13 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runDatabaseReplicas(TypeDBClient client, String database) {
+    private boolean runDatabaseReplicas(TypeDBClient client, boolean isCluster, String database) {
         try {
-            if (!client.isCluster()) {
+            if (!isCluster) {
                 printer.error("The command 'database replicas' is only available in TypeDB Cluster.");
                 return false;
             }
-            for (Database.Replica replica : client.asCluster().databases().get(database).replicas()) {
+            for (Database.Replica replica : client.databases().get(database).replicas()) {
                 printer.databaseReplica(replica);
             }
             return true;
@@ -678,8 +675,7 @@ public class TypeDBConsole {
     private RunQueriesResult runQueries(TypeDBTransaction tx, String queryString) {
         Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
         if (!queries.isPresent()) return RunQueriesResult.error();
-        CompletableFuture.allOf(queries.get().stream().map(query -> runQuery(tx, query))
-                .toArray(CompletableFuture[]::new)).join();
+        queries.get().stream().forEach(query -> runQuery(tx, query));
         boolean hasChanges = queries.get().stream().anyMatch(query -> query.type() == TypeQLArg.QueryType.WRITE);
         return new RunQueriesResult(true, hasChanges);
     }
@@ -693,36 +689,27 @@ public class TypeDBConsole {
     }
 
     @SuppressWarnings("CheckReturnValue")
-    private CompletableFuture<Void> runQuery(TypeDBTransaction tx, TypeQLQuery query) {
+    private void runQuery(TypeDBTransaction tx, TypeQLQuery query) {
         if (query instanceof TypeQLDefine) {
-            tx.query().define(query.asDefine()).get();
+            tx.query().define(query.asDefine());
             printer.info("Concepts have been defined");
-            return CompletableFuture.completedFuture(null);
         } else if (query instanceof TypeQLUndefine) {
-            tx.query().undefine(query.asUndefine()).get();
+            tx.query().undefine(query.asUndefine());
             printer.info("Concepts have been undefined");
-            return CompletableFuture.completedFuture(null);
         } else if (query instanceof TypeQLInsert) {
-            Stream<ConceptMap> result = tx.query().insert(query.asInsert());
-            return CompletableFuture.runAsync(result::findFirst);
+            Optional<ConceptMap> ignore = tx.query().insert(query.asInsert()).findFirst();
         } else if (query instanceof TypeQLDelete) {
-            QueryFuture<Void> deleteFuture = tx.query().delete(query.asDelete());
-            return CompletableFuture.runAsync(deleteFuture::get);
+            tx.query().delete(query.asDelete());
         } else if (query instanceof TypeQLUpdate) {
-            Stream<ConceptMap> result = tx.query().update(query.asUpdate());
-            return CompletableFuture.runAsync(result::findFirst);
+            Optional<ConceptMap> ignore = tx.query().update(query.asUpdate()).findFirst();
         } else if (query instanceof TypeQLMatch) {
-            Stream<ConceptMap> result = tx.query().match(query.asMatch());
-            return CompletableFuture.runAsync(result::findFirst);
+            Optional<ConceptMap> ignore = tx.query().match(query.asMatch()).findFirst();
         } else if (query instanceof TypeQLMatch.Aggregate) {
-            QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
-            return CompletableFuture.runAsync(answerFuture::get);
+            Numeric ignore = tx.query().match(query.asMatchAggregate());
         } else if (query instanceof TypeQLMatch.Group) {
-            Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
-            return CompletableFuture.runAsync(result::findFirst);
+            Optional<ConceptMapGroup> ignore = tx.query().match(query.asMatchGroup()).findFirst();
         } else if (query instanceof TypeQLMatch.Group.Aggregate) {
-            Stream<NumericGroup> result = tx.query().match(query.asMatchGroupAggregate());
-            return CompletableFuture.runAsync(result::findFirst);
+            Optional<NumericGroup> ignore = tx.query().match(query.asMatchGroupAggregate()).findFirst();
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
         }
@@ -730,11 +717,11 @@ public class TypeDBConsole {
 
     private void runQueryPrintAnswers(TypeDBTransaction tx, TypeQLQuery query) {
         if (query instanceof TypeQLDefine) {
-            tx.query().define(query.asDefine()).get();
+            tx.query().define(query.asDefine());
             printer.info("Concepts have been defined");
             hasUncommittedChanges = true;
         } else if (query instanceof TypeQLUndefine) {
-            tx.query().undefine(query.asUndefine()).get();
+            tx.query().undefine(query.asUndefine());
             printer.info("Concepts have been undefined");
             hasUncommittedChanges = true;
         } else if (query instanceof TypeQLInsert) {
@@ -748,7 +735,7 @@ public class TypeDBConsole {
         } else if (query instanceof TypeQLDelete) {
             long limitedCount = tx.query().match(query.asDelete().match()).limit(20).count();
             if (limitedCount > 0) {
-                tx.query().delete(query.asDelete()).get();
+                tx.query().delete(query.asDelete());
                 if (limitedCount == 20) printer.info("Deleted from 20+ matched answers");
                 else printer.info("Deleted from " + limitedCount + " matched answer(s)");
                 hasUncommittedChanges = true;
@@ -767,8 +754,7 @@ public class TypeDBConsole {
             Stream<ConceptMap> result = tx.query().match(query.asMatch());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));
         } else if (query instanceof TypeQLMatch.Aggregate) {
-            QueryFuture<Numeric> answerFuture = tx.query().match(query.asMatchAggregate());
-            printer.numeric(answerFuture.get());
+            printer.numeric(tx.query().match(query.asMatchAggregate()));
         } else if (query instanceof TypeQLMatch.Group) {
             Stream<ConceptMapGroup> result = tx.query().match(query.asMatchGroup());
             printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));

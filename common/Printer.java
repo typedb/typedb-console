@@ -182,8 +182,8 @@ public class Printer {
                 .append(" ")
                 .append(colorType(type.getLabel().toString()));
 
-        Type superType = type.getSupertype(tx);
-        if (superType != null) {
+        if (!type.isRoot()) {
+            Type superType = type.getSupertype(tx);
             sb.append(" ")
                     .append(colorKeyword(TypeQLToken.Constraint.SUB.toString()))
                     .append(" ")

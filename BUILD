@@ -59,7 +59,19 @@ java_library(
         "@maven//:org_jline_jline_terminal_jansi",
         "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
-    ],
+    ] + select({
+        "@vaticle_dependencies//util/platform:is_mac": [
+            "@vaticle_typedb_driver//java:typedb_driver_jni-macosx-aarch64__do_not_reference",
+            "@vaticle_typedb_driver//java:typedb_driver_jni-macosx-x86_64__do_not_reference",
+        ],
+        "@vaticle_dependencies//util/platform:is_windows": [
+            "@vaticle_typedb_driver//java:typedb_driver_jni-windows-x86_64__do_not_reference",
+        ],
+        "@vaticle_dependencies//util/platform:is_linux": [
+            "@vaticle_typedb_driver//java:typedb_driver_jni-linux-aarch64__do_not_reference",
+            "@vaticle_typedb_driver//java:typedb_driver_jni-linux-x86_64__do_not_reference",
+        ],
+    }),
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-console:{pom_version}"],

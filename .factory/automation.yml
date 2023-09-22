@@ -45,7 +45,7 @@ build:
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
-    deploy-artifact-snapshot:
+    deploy-linux-x86_64-artifact-snapshot:
       filter:
         owner: vaticle
         branch: master
@@ -60,10 +60,10 @@ build:
         bazel run @vaticle_dependencies//distribution/artifact:create-netrc
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
-    deploy-apt-snapshot:
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
+#        bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
+#        bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
+    deploy-linux-x86_64-apt-snapshot:
       filter:
         owner: vaticle
         branch: master
@@ -85,7 +85,7 @@ build:
         sudo unlink /usr/bin/python3
         sudo ln -s $(which python3) /usr/bin/python3
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-x86_64- -- snapshot
 release:
   filter:
     owner: vaticle

@@ -182,26 +182,6 @@ deploy_artifact(
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
 )
-#
-#assemble_versioned(
-#    name = "assemble-versioned-all",
-#    targets = [
-#        ":assemble-linux-targz",
-#        ":assemble-mac-zip",
-#        ":assemble-windows-zip",
-#    ],
-#)
-#
-#deploy_github(
-#    name = "deploy-github",
-#    organisation = deployment_console["github.organisation"],
-#    repository = deployment_console["github.repository"],
-#    title = "TypeDB Console",
-#    title_append_version = True,
-#    release_description = "//:RELEASE_NOTES_LATEST.md",
-#    archive = ":assemble-versioned-all",
-#    draft = False
-#)
 
 assemble_apt(
     name = "assemble-linux-x86_64-apt",
@@ -264,8 +244,8 @@ release_validate_deps(
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
         "@vaticle_typedb_common",
-        "@vaticle_typeql",
         "@vaticle_typedb_driver",
+        "@vaticle_typeql",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
@@ -295,9 +275,9 @@ checkstyle_test(
     license_type = "agpl-fulltext",
 )
 
-# CI targets that are not declared in any BUILD file, but are called externally
+# Tools to be built during `build //...`
 filegroup(
-    name = "ci",
+    name = "tools",
     data = [
         "@vaticle_dependencies//library/maven:update",
         "@vaticle_dependencies//distribution/artifact:create-netrc",

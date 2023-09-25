@@ -24,17 +24,12 @@ REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
 ECHO Building and deploying windows package...
-SET DEPLOY_PIP_USERNAME=%REPO_VATICLE_USERNAME%
-SET DEPLOY_PIP_PASSWORD=%REPO_VATICLE_PASSWORD%
-python.exe -m pip install twine
-git rev-parse HEAD > version_temp.txt
-set /p VER=<version_temp.txt
+export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
 
-bazel --output_user_root=C:/tmp run --verbose_failures --define version=%VER% //python:deploy-pip39 -- snapshot
+SET /p VER=<VERSION
+bazel --output_user_root=C:/bazel run --verbose_failures --define version=%VER% //:deploy-windows-x86_64 -- release
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
 
-bazel --output_user_root=C:/tmp run --verbose_failures --define version=%VER% //python:deploy-pip310 -- snapshot
-IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
-
-bazel --output_user_root=C:/tmp run --verbose_failures --define version=%VER% //python:deploy-pip311 -- snapshot
-IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
+MD dist
+COPY bazel-bin\typedb-console-windows-x86_64.zip dist\typedb-console-windows-x86_64.zip

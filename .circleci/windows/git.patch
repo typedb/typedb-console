@@ -6,7 +6,7 @@ index 7b30ef2e..145bc0ce 100644
  # under the License.
  #
  
--workspace(name = "vaticle_typedb_driver")
+-workspace(name = "vaticle_typedb_console")
 +workspace(name = "v")
  
  ################################

@@ -254,6 +254,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
+        ".circleci/**/*",
         ".factory/*",
         "command/*",
         "common/*",

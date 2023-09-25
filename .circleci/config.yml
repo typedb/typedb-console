@@ -298,23 +298,23 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-artifact-snapshot-linux-aarch64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-artifact-snapshot-mac-aarch64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-apt-snapshot-x86_64:
           filters:
             branches:
@@ -322,7 +322,7 @@ workflows:
       - deploy-apt-snapshot-aarch64:
           filters:
             branches:
-              only: [ master, development ]
+              only: [ master, development, platform-specific-releases ]
   release:
     jobs:
       - deploy-artifact-release-linux-x86_64:

@@ -28,7 +28,7 @@ export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
 export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
 
 SET /p VER=<VERSION
-bazel --output_user_root=C:/bazel run --verbose_failures --define version=%VER% //:deploy-windows-x86_64 -- release
+bazel --output_user_root=C:/bazel run --verbose_failures --define version=%VER% //:deploy-windows-x86_64-zip -- release
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
 
 MD dist

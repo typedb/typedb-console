@@ -110,7 +110,7 @@ jobs:
       - install-bazel-mac
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-aarch64-zip -- snapshot
 

@@ -27,7 +27,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("//:deployment.bzl", deployment_console = "deployment")
 load("@vaticle_dependencies//util/platform:constraints.bzl", "constraint_linux_aarch64", "constraint_linux_x86_64",
-     "constraint_mac_aarch64", "constraint_mac_x86_64", "constraint_win_aarch64")
+     "constraint_mac_aarch64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
 genrule(
     name = "version",
@@ -130,7 +130,7 @@ assemble_zip(
     output_filename = "typedb-console-windows-x86_64",
     targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"],
-    target_compatible_with = constraint_win_aarch64
+    target_compatible_with = constraint_win_x86_64
 )
 
 deploy_artifact(

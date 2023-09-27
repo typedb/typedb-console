@@ -26,6 +26,8 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("//:deployment.bzl", deployment_console = "deployment")
+load("@vaticle_dependencies//util/platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
+     "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
 genrule(
     name = "version",
@@ -39,7 +41,7 @@ genrule(
 )
 
 java_library(
-    name = "console",
+    name = "console-native",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
         "@vaticle_typedb_driver//java:driver-java",
@@ -59,28 +61,15 @@ java_library(
         "@maven//:org_jline_jline_terminal_jansi",
         "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
-    ] + select({
-        "@vaticle_dependencies//util/platform:is_mac": [
-            "@vaticle_typedb_driver//java:typedb_driver_jni-macosx-aarch64__do_not_reference",
-            "@vaticle_typedb_driver//java:typedb_driver_jni-macosx-x86_64__do_not_reference",
-        ],
-        "@vaticle_dependencies//util/platform:is_windows": [
-            "@vaticle_typedb_driver//java:typedb_driver_jni-windows-x86_64__do_not_reference",
-        ],
-        "@vaticle_dependencies//util/platform:is_linux": [
-            "@vaticle_typedb_driver//java:typedb_driver_jni-linux-aarch64__do_not_reference",
-            "@vaticle_typedb_driver//java:typedb_driver_jni-linux-x86_64__do_not_reference",
-        ],
-    }),
+    ],
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-console:{pom_version}"],
 )
 
 java_binary(
-    name = "console-binary",
+    name = "console-binary-native",
     main_class = "com.vaticle.typedb.console.TypeDBConsole",
-    runtime_deps = [":console"],
+    runtime_deps = [":console-native"],
     visibility = ["//:__pkg__"],
     # If running the console binary directly, include the following logback to reduce noise
 #    resource_strip_prefix = "conf/logback",
@@ -88,15 +77,15 @@ java_binary(
 )
 
 java_deps(
-    name = "console-deps",
-    target = ":console-binary",
+    name = "console-deps-native",
+    target = ":console-binary-native",
     java_deps_root = "console/lib/",
     visibility = ["//visibility:public"],
 )
 
 pkg_tar(
-    name = "console-artifact",
-    deps = [":console-deps"],
+    name = "console-artifact-native",
+    deps = [":console-deps-native"],
     extension = "tar.gz",
     files = {
         "//conf/logback:logback.xml": "console/conf/logback.xml"
@@ -105,78 +94,97 @@ pkg_tar(
 )
 
 assemble_targz(
-    name = "assemble-linux-targz",
-    output_filename = "typedb-console-linux",
-    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    visibility = ["//visibility:public"]
+    name = "assemble-linux-x86_64-targz",
+    output_filename = "typedb-console-linux-x86_64",
+    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    visibility = ["//visibility:public"],
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+assemble_targz(
+    name = "assemble-linux-arm64-targz",
+    output_filename = "typedb-console-linux-arm64",
+    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    visibility = ["//visibility:public"],
+    target_compatible_with = constraint_linux_arm64
 )
 
 assemble_zip(
-    name = "assemble-mac-zip",
-    output_filename = "typedb-console-mac",
-    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    visibility = ["//visibility:public"]
+    name = "assemble-mac-x86_64-zip",
+    output_filename = "typedb-console-mac-x86_64",
+    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    visibility = ["//visibility:public"],
+    target_compatible_with = constraint_mac_x86_64
 )
 
 assemble_zip(
-    name = "assemble-windows-zip",
-    output_filename = "typedb-console-windows",
-    targets = [":console-artifact", "@vaticle_typedb_common//binary:assemble-bat-targz"],
-    visibility = ["//visibility:public"]
+    name = "assemble-mac-arm64-zip",
+    output_filename = "typedb-console-mac-arm64",
+    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    visibility = ["//visibility:public"],
+    target_compatible_with = constraint_mac_arm64
+)
+
+assemble_zip(
+    name = "assemble-windows-x86_64-zip",
+    output_filename = "typedb-console-windows-x86_64",
+    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    visibility = ["//visibility:public"],
+    target_compatible_with = constraint_win_x86_64
 )
 
 deploy_artifact(
-    name = "deploy-linux-targz",
-    target = ":assemble-linux-targz",
+    name = "deploy-linux-x86_64-targz",
+    target = ":assemble-linux-x86_64-targz",
     artifact_group = "vaticle_typedb_console",
-    artifact_name = "typedb-console-linux-{version}.tar.gz",
+    artifact_name = "typedb-console-linux-x86_64-{version}.tar.gz",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
-    name = "deploy-mac-zip",
-    target = ":assemble-mac-zip",
+    name = "deploy-linux-arm64-targz",
+    target = ":assemble-linux-arm64-targz",
     artifact_group = "vaticle_typedb_console",
-    artifact_name = "typedb-console-mac-{version}.zip",
+    artifact_name = "typedb-console-linux-arm64-{version}.tar.gz",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
-    name = "deploy-windows-zip",
-    target = ":assemble-windows-zip",
+    name = "deploy-mac-x86_64-zip",
+    target = ":assemble-mac-x86_64-zip",
     artifact_group = "vaticle_typedb_console",
-    artifact_name = "typedb-console-windows-{version}.zip",
+    artifact_name = "typedb-console-mac-x86_64-{version}.zip",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
 )
 
-assemble_versioned(
-    name = "assemble-versioned-all",
-    targets = [
-        ":assemble-linux-targz",
-        ":assemble-mac-zip",
-        ":assemble-windows-zip",
-    ],
+deploy_artifact(
+    name = "deploy-mac-arm64-zip",
+    target = ":assemble-mac-arm64-zip",
+    artifact_group = "vaticle_typedb_console",
+    artifact_name = "typedb-console-mac-arm64-{version}.zip",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    visibility = ["//visibility:public"],
 )
 
-deploy_github(
-    name = "deploy-github",
-    organisation = deployment_console["github.organisation"],
-    repository = deployment_console["github.repository"],
-    title = "TypeDB Console",
-    title_append_version = True,
-    release_description = "//:RELEASE_NOTES_LATEST.md",
-    archive = ":assemble-versioned-all",
-    draft = False
+deploy_artifact(
+    name = "deploy-windows-x86_64-zip",
+    target = ":assemble-windows-x86_64-zip",
+    artifact_group = "vaticle_typedb_console",
+    artifact_name = "typedb-console-windows-x86_64-{version}.zip",
+    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    visibility = ["//visibility:public"],
 )
 
 assemble_apt(
-    name = "assemble-linux-apt",
+    name = "assemble-linux-x86_64-apt",
     package_name = "typedb-console",
     maintainer = "Vaticle <community@vaticle.com>",
     description = "TypeDB (console)",
@@ -188,16 +196,47 @@ assemble_apt(
     files = {
         "//conf/logback:logback.xml": "console/conf/logback.xml"
     },
-    archives = [":console-deps"],
+    archives = [":console-deps-native"],
     installation_dir = "/opt/typedb/core/",
     empty_dirs = [
          "opt/typedb/core/console/lib/",
     ],
+    architecture = "x86_64",
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typedb-console",
+    maintainer = "Vaticle <community@vaticle.com>",
+    description = "TypeDB (console)",
+    depends = [
+      "openjdk-11-jre",
+      "typedb-bin (>=%{@vaticle_typedb_common})"
+    ],
+    workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
+    files = {
+        "//conf/logback:logback.xml": "console/conf/logback.xml"
+    },
+    archives = [":console-deps-native"],
+    installation_dir = "/opt/typedb/core/",
+    empty_dirs = [
+         "opt/typedb/core/console/lib/",
+    ],
+    architecture = "arm64",
+    target_compatible_with = constraint_linux_arm64,
 )
 
 deploy_apt(
-    name = "deploy-apt",
-    target = ":assemble-linux-apt",
+    name = "deploy-apt-x86_64",
+    target = ":assemble-linux-x86_64-apt",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release'],
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    target = ":assemble-linux-arm64-apt",
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release'],
 )
@@ -207,8 +246,8 @@ release_validate_deps(
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
         "@vaticle_typedb_common",
-        "@vaticle_typeql",
         "@vaticle_typedb_driver",
+        "@vaticle_typeql",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
@@ -217,6 +256,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
+        ".circleci/**/*",
         ".factory/*",
         "command/*",
         "common/*",
@@ -226,6 +266,7 @@ checkstyle_test(
         ".bazelversion",
         ".bazel-remote-cache.rc",
         ".bazel-cache-credential.json",
+        ".circleci/windows/short_workspace.patch",
         "LICENSE",
         "VERSION",
     ] + glob(["*.md"]),
@@ -238,9 +279,9 @@ checkstyle_test(
     license_type = "agpl-fulltext",
 )
 
-# CI targets that are not declared in any BUILD file, but are called externally
+# Tools to be built during `build //...`
 filegroup(
-    name = "ci",
+    name = "tools",
     data = [
         "@vaticle_dependencies//library/maven:update",
         "@vaticle_dependencies//distribution/artifact:create-netrc",

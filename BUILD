@@ -26,8 +26,8 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("//:deployment.bzl", deployment_console = "deployment")
-load("@vaticle_dependencies//util/platform:constraints.bzl", "constraint_linux_aarch64", "constraint_linux_x86_64",
-     "constraint_mac_aarch64", "constraint_mac_x86_64", "constraint_win_x86_64")
+load("@vaticle_dependencies//util/platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
+     "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
 genrule(
     name = "version",
@@ -102,11 +102,11 @@ assemble_targz(
 )
 
 assemble_targz(
-    name = "assemble-linux-aarch64-targz",
-    output_filename = "typedb-console-linux-aarch64",
+    name = "assemble-linux-arm64-targz",
+    output_filename = "typedb-console-linux-arm64",
     targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
-    target_compatible_with = constraint_linux_aarch64
+    target_compatible_with = constraint_linux_arm64
 )
 
 assemble_zip(
@@ -118,11 +118,11 @@ assemble_zip(
 )
 
 assemble_zip(
-    name = "assemble-mac-aarch64-zip",
-    output_filename = "typedb-console-mac-aarch64",
+    name = "assemble-mac-arm64-zip",
+    output_filename = "typedb-console-mac-arm64",
     targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
-    target_compatible_with = constraint_mac_aarch64
+    target_compatible_with = constraint_mac_arm64
 )
 
 assemble_zip(
@@ -144,10 +144,10 @@ deploy_artifact(
 )
 
 deploy_artifact(
-    name = "deploy-linux-aarch64-targz",
-    target = ":assemble-linux-aarch64-targz",
+    name = "deploy-linux-arm64-targz",
+    target = ":assemble-linux-arm64-targz",
     artifact_group = "vaticle_typedb_console",
-    artifact_name = "typedb-console-linux-aarch64-{version}.tar.gz",
+    artifact_name = "typedb-console-linux-arm64-{version}.tar.gz",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
@@ -164,10 +164,10 @@ deploy_artifact(
 )
 
 deploy_artifact(
-    name = "deploy-mac-aarch64-zip",
-    target = ":assemble-mac-aarch64-zip",
+    name = "deploy-mac-arm64-zip",
+    target = ":assemble-mac-arm64-zip",
     artifact_group = "vaticle_typedb_console",
-    artifact_name = "typedb-console-mac-aarch64-{version}.zip",
+    artifact_name = "typedb-console-mac-arm64-{version}.zip",
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
@@ -205,7 +205,7 @@ assemble_apt(
 )
 
 assemble_apt(
-    name = "assemble-linux-aarch64-apt",
+    name = "assemble-linux-arm64-apt",
     package_name = "typedb-console",
     maintainer = "Vaticle <community@vaticle.com>",
     description = "TypeDB (console)",
@@ -222,7 +222,7 @@ assemble_apt(
     empty_dirs = [
          "opt/typedb/core/console/lib/",
     ],
-    architecture = "aarch64",
+    architecture = "arm64",
 )
 
 deploy_apt(
@@ -233,8 +233,8 @@ deploy_apt(
 )
 
 deploy_apt(
-    name = "deploy-apt-aarch64",
-    target = ":assemble-linux-aarch64-apt",
+    name = "deploy-apt-arm64",
+    target = ":assemble-linux-arm64-apt",
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release'],
 )

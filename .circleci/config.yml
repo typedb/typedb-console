@@ -21,7 +21,7 @@ orbs:
   win: circleci/windows@2.0.0
 
 executors:
-  linux-aarch64:
+  linux-arm64:
     machine:
       image: ubuntu-2204:current
       resource_class: arm.medium
@@ -32,7 +32,7 @@ executors:
       image: ubuntu-2204:current
     working_directory: ~/typedb-console
 
-  mac-aarch64:
+  mac-arm64:
     macos:
       xcode: "14.2.0"
     resource_class: macos.m1.medium.gen1
@@ -76,8 +76,8 @@ jobs:
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
 
-  deploy-artifact-snapshot-linux-aarch64:
-    executor: linux-aarch64
+  deploy-artifact-snapshot-linux-arm64:
+    executor: linux-arm64
     steps:
       - checkout
       - install-bazel-linux:
@@ -86,7 +86,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-aarch64-targz -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
 
   deploy-artifact-snapshot-mac-x86_64:
     executor: mac-x86_64
@@ -99,8 +99,8 @@ jobs:
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-zip -- snapshot
 
-  deploy-artifact-snapshot-mac-aarch64:
-    executor: mac-aarch64
+  deploy-artifact-snapshot-mac-arm64:
+    executor: mac-arm64
     steps:
       - checkout
       - install-bazel-mac
@@ -108,7 +108,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-aarch64-zip -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
     executor:
@@ -132,8 +132,8 @@ jobs:
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-x86_64 -- snapshot
 
-  deploy-apt-snapshot-aarch64:
-    executor: linux-aarch64
+  deploy-apt-snapshot-arm64:
+    executor: linux-arm64
     steps:
       - checkout
       - install-bazel-linux:
@@ -142,7 +142,7 @@ jobs:
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-aarch64 -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-arm64 -- snapshot
 
   deploy-artifact-release-linux-x86_64:
     executor: linux-x86_64
@@ -162,8 +162,8 @@ jobs:
           root: ~/dist
           paths: ["./*"]
 
-  deploy-artifact-release-linux-aarch64:
-    executor: linux-aarch64
+  deploy-artifact-release-linux-arm64:
+    executor: linux-arm64
     steps:
       - checkout
       - install-bazel-linux:
@@ -172,10 +172,10 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-linux-aarch64-targz -- release
+          bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console-linux-aarch64.zip ~/dist/typedb-console-linux-aarch64.zip
+          cp bazel-bin/typedb-console-linux-arm64.zip ~/dist/typedb-console-linux-arm64.zip
       - persist_to_workspace:
           root: ~/dist
           paths: ["./*"]
@@ -197,8 +197,8 @@ jobs:
           root: ~/dist
           paths: ["./*"]
   
-  deploy-artifact-release-mac-aarch64:
-    executor: mac-aarch64
+  deploy-artifact-release-mac-arm64:
+    executor: mac-arm64
     steps:
       - checkout
       - install-bazel-mac
@@ -206,10 +206,10 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-mac-aarch64-zip -- release
+          bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console-mac-aarch64.zip ~/dist/typedb-console-mac-aarch64.zip
+          cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-mac-arm64.zip
       - persist_to_workspace:
           root: ~/dist
           paths: [ "./*" ] 
@@ -225,7 +225,7 @@ jobs:
       - run: .circleci\windows\deploy_release.bat
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console-mac-aarch64.zip ~/dist/typedb-console-windows-x86_64.zip
+          cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-windows-x86_64.zip
       - persist_to_workspace:
           root: ~/dist
           paths: [ "./*" ]
@@ -247,8 +247,8 @@ jobs:
           root: ~/dist
           paths: ["./*"]
   
-  deploy-apt-release-aarch64:
-    executor: linux-aarch64
+  deploy-apt-release-arm64:
+    executor: linux-arm64
     steps:
       - checkout
       - install-bazel-mac
@@ -256,10 +256,10 @@ jobs:
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-apt-aarch64 -- release
+          bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console__aarch64.deb ~/dist/typedb-console__aarch64.deb
+          cp bazel-bin/typedb-console__arm64.deb ~/dist/typedb-console__arm64.deb
       - persist_to_workspace:
           root: ~/dist
           paths: ["./*"]
@@ -295,7 +295,7 @@ workflows:
           filters:
             branches:
               only: [master, development, platform-specific-releases]
-      - deploy-artifact-snapshot-linux-aarch64:
+      - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
               only: [master, development, platform-specific-releases]
@@ -303,7 +303,7 @@ workflows:
           filters:
             branches:
               only: [master, development, platform-specific-releases]
-      - deploy-artifact-snapshot-mac-aarch64:
+      - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
               only: [master, development, platform-specific-releases]
@@ -315,7 +315,7 @@ workflows:
           filters:
             branches:
               only: [master, development]
-      - deploy-apt-snapshot-aarch64:
+      - deploy-apt-snapshot-arm64:
           filters:
             branches:
               only: [ master, development, platform-specific-releases ]
@@ -325,7 +325,7 @@ workflows:
           filters:
             branches:
               only: [release]
-      - deploy-artifact-release-linux-aarch64:
+      - deploy-artifact-release-linux-arm64:
           filters:
             branches:
               only: [release]
@@ -333,7 +333,7 @@ workflows:
           filters:
             branches:
               only: [release]
-      - deploy-artifact-release-mac-aarch64:
+      - deploy-artifact-release-mac-arm64:
           filters:
             branches:
               only: [release]
@@ -345,7 +345,7 @@ workflows:
           filters:
             branches:
               only: [release]
-      - deploy-apt-release-aarch64:
+      - deploy-apt-release-arm64:
           filters:
             branches:
               only: [release]
@@ -355,12 +355,12 @@ workflows:
               only: [release]
           requires:
             - deploy-artifact-release-linux-x86_64
-            - deploy-artifact-release-linux-aarch64
+            - deploy-artifact-release-linux-arm64
             - deploy-artifact-release-mac-x86_64
-            - deploy-artifact-release-mac-aarch64
+            - deploy-artifact-release-mac-arm64
             - deploy-artifact-release-windows-x86_64
             - deploy-apt-release-x86_64
-            - deploy-apt-release-aarch64
+            - deploy-apt-release-arm64
       - release-cleanup:
           filters:
             branches:

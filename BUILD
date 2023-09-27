@@ -202,6 +202,7 @@ assemble_apt(
          "opt/typedb/core/console/lib/",
     ],
     architecture = "x86_64",
+    target_compatible_with = constraint_linux_x86_64,
 )
 
 assemble_apt(
@@ -223,6 +224,7 @@ assemble_apt(
          "opt/typedb/core/console/lib/",
     ],
     architecture = "arm64",
+    target_compatible_with = constraint_linux_arm64,
 )
 
 deploy_apt(

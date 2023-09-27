@@ -59,10 +59,6 @@ commands:
     steps:
       - run: brew install bazelisk
 
-  install-maven-mac:
-    steps:
-      - run: brew install maven
-
 jobs:
   deploy-artifact-snapshot-linux-x86_64:
     executor: linux-x86_64

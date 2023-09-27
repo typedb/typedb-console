@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-workspace(name = "v")
+workspace(name = "vaticle_typedb_console")
 
 ################################
 # Load @vaticle_dependencies #

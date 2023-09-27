@@ -266,7 +266,7 @@ checkstyle_test(
         ".bazelversion",
         ".bazel-remote-cache.rc",
         ".bazel-cache-credential.json",
-        ".circleci/windows/git.patch",
+        ".circleci/windows/short_workspace.patch",
         "LICENSE",
         "VERSION",
     ] + glob(["*.md"]),

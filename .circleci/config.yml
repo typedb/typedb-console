@@ -220,7 +220,7 @@ jobs:
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\deploy_release.bat
       - persist_to_workspace:
-          root: ~/dist
+          root: dist
           paths: [ "./*" ]
 
   deploy-apt-release-x86_64:

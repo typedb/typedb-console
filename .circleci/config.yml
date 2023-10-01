@@ -153,7 +153,7 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console-linux-x86_64.zip ~/dist/typedb-console-linux-x86_64.zip
+          cp bazel-bin/typedb-console-linux-x86_64.tar.gz ~/dist/typedb-console-linux-x86_64.tar.gz
       - persist_to_workspace:
           root: ~/dist
           paths: ["./*"]
@@ -171,7 +171,7 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console-linux-arm64.zip ~/dist/typedb-console-linux-arm64.zip
+          cp bazel-bin/typedb-console-linux-arm64.tar.gz ~/dist/typedb-console-linux-arm64.tar.gz
       - persist_to_workspace:
           root: ~/dist
           paths: ["./*"]
@@ -219,9 +219,6 @@ jobs:
       - checkout
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\deploy_release.bat
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-windows-x86_64.zip
       - persist_to_workspace:
           root: ~/dist
           paths: [ "./*" ]
@@ -230,7 +227,6 @@ jobs:
     executor: linux-x86_64
     steps:
       - checkout
-      - install-bazel-mac
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -247,7 +243,6 @@ jobs:
     executor: linux-arm64
     steps:
       - checkout
-      - install-bazel-mac
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD

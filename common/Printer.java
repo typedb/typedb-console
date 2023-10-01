@@ -154,7 +154,7 @@ public class Printer {
     private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
         List<String> rolePlayerStrings = new ArrayList<>();
-        Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.getPlayersByRoleType(tx);
+        Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.getPlayers(tx);
         for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayer : rolePlayers.entrySet()) {
             RoleType role = rolePlayer.getKey();
             List<? extends Thing> things = rolePlayer.getValue();

@@ -227,6 +227,8 @@ jobs:
     executor: linux-x86_64
     steps:
       - checkout
+      - install-bazel-linux:
+          arch: amd64
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -243,6 +245,8 @@ jobs:
     executor: linux-arm64
     steps:
       - checkout
+      - install-bazel-linux:
+          arch: arm64
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD

@@ -309,7 +309,7 @@ workflows:
       - deploy-apt-snapshot-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, platform-specific-releases]
       - deploy-apt-snapshot-arm64:
           filters:
             branches:

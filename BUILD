@@ -201,7 +201,7 @@ assemble_apt(
     empty_dirs = [
          "opt/typedb/core/console/lib/",
     ],
-    architecture = "x86_64",
+    architecture = "amd64",
     target_compatible_with = constraint_linux_x86_64,
 )
 

@@ -236,7 +236,7 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 -- release
       - run: |
           mkdir -p ~/dist
-          cp bazel-bin/typedb-console__x86_64.deb ~/dist/typedb-console__x86_64.deb
+          cp bazel-bin/typedb-console__amd64.deb ~/dist/typedb-console__amd64.deb
       - persist_to_workspace:
           root: ~/dist
           paths: ["./*"]

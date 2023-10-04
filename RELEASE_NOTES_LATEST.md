@@ -1,8 +1,6 @@
 
 ## New Features
 
-- **Downgrade CI image used to build and release console, in order to lower the requirement of libc**
-
 
 ## Bugs Fixed
 
@@ -11,5 +9,8 @@
 
 
 ## Other Improvements
-
+- **Deploy apt amd64 with correct architecture tag**
+  
+  Use expected `apt` architecture tag `amd64` instead of `x86_64`.
+  
     

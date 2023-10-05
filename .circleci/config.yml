@@ -150,7 +150,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz -- release
+          bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-linux-x86_64.tar.gz ~/dist/typedb-console-linux-x86_64.tar.gz
@@ -168,7 +168,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz -- release
+          bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-linux-arm64.tar.gz ~/dist/typedb-console-linux-arm64.tar.gz
@@ -185,7 +185,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip -- release
+          bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-mac-x86_64.zip ~/dist/typedb-console-mac-x86_64.zip
@@ -202,7 +202,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip -- release
+          bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-mac-arm64.zip
@@ -233,7 +233,7 @@ jobs:
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 -- release
+          bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console__amd64.deb ~/dist/typedb-console__amd64.deb
@@ -251,7 +251,7 @@ jobs:
           export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 -- release
+          bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console__arm64.deb ~/dist/typedb-console__arm64.deb

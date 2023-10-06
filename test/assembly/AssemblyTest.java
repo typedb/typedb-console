@@ -34,7 +34,7 @@ public class AssemblyTest {
         TypeDBCoreRunner coreRunner = new TypeDBCoreRunner();
         try {
             coreRunner.start();
-            int status = consoleRunner.run("--command", "database create assembly-test-db");
+            int status = consoleRunner.run("--server", coreRunner.address(), "--command", "database create assembly-test-db");
             if (status != 0) {
                fail("Console command returned non-zero exit status: " + status);
             }

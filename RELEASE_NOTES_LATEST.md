@@ -3,16 +3,19 @@
 
 
 ## Bugs Fixed
-
-- **Deploy apt amd64 with correct architecture tag**
-
-  Use expected `apt` architecture tag `amd64` instead of `x86_64`.
-
-- **Fix github deployment of intel deb package**
+- **Set release compilation mode to optimized**
+  
+  We set the Bazel compilation mode for releases to `opt`.
+  
 
 ## Code Refactors
 
 
 ## Other Improvements
-  
+- **Use randomly chosen address/port in console tests**
+
+- **Fix test path**
+
+- **Add native assembly test reliant on Core artifact pulled through Driver**
+
     

@@ -154,7 +154,7 @@ vaticle_typeql()
 vaticle_typedb_protocol()
 
 # Load artifacts
-load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_artifact")
+load("@vaticle_typedb_driver//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_artifact")
 vaticle_typedb_artifact()
 
 # Load maven

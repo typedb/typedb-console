@@ -50,7 +50,7 @@ build:
       type: foreground
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/assembly:assembly --test_output=streamed
+        bazel test //test/assembly:test-assembly-native --test_output=streamed
 release:
   filter:
     owner: vaticle

@@ -3,19 +3,19 @@
 
 
 ## Bugs Fixed
-- **Set release compilation mode to optimized**
-  
-  We set the Bazel compilation mode for releases to `opt`.
-  
+
+- **Fix unpacking driver runtime files into working directory**
+
+Due to a bug in the Java driver, we unpacked the driver dynamic library into the current working directory, rather than into a temporary directory. 
+
+We update to the driver version with the fix.
+
+
+
 
 ## Code Refactors
 
 
 ## Other Improvements
-- **Use randomly chosen address/port in console tests**
-
-- **Fix test path**
-
-- **Add native assembly test reliant on Core artifact pulled through Driver**
 
     

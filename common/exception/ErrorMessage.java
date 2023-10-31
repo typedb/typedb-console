@@ -53,6 +53,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Internal extends ErrorMessage {
+        public static final Internal ILLEGAL_STATE =
+                new Internal(1, "Illegal internal state!");
         public static final Internal ILLEGAL_CAST =
                 new Internal(2, "Illegal casting operation from '%s' to '%s'.");
 

@@ -149,7 +149,7 @@ public class Printer {
 
         String content = orderedKeys.stream().map(key -> {
             StringBuilder sb = new StringBuilder("\"").append(key).append("\":");
-            var valueString = JSONDisplayString(jsonObject.get(key));
+            String valueString = JSONDisplayString(jsonObject.get(key));
             sb.append(" ").append(valueString);
             return sb.toString();
         }).collect(joining(singleLine ? ", " : ",\n"));

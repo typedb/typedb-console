@@ -718,10 +718,12 @@ public class TypeDBConsole {
         if (query instanceof TypeQLDefine) {
             tx.query().define(query.asDefine()).resolve();
             printer.info("Concepts have been defined");
+            printer.info("");
             hasUncommittedChanges = true;
         } else if (query instanceof TypeQLUndefine) {
             tx.query().undefine(query.asUndefine()).resolve();
             printer.info("Concepts have been undefined");
+            printer.info("");
             hasUncommittedChanges = true;
         } else if (query instanceof TypeQLInsert) {
             Stream<ConceptMap> result = tx.query().insert(query.asInsert());

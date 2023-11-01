@@ -150,10 +150,7 @@ public class TypeDBConsole {
         try {
             int exitCode = CLI.execute(args);
             if (exitCode == 0) {
-                if (CLI.isUsageHelpRequested()) {
-                    CLI.usage(CLI.getOut());
-                    System.exit(0);
-                } else if (CLI.isVersionHelpRequested()) {
+                if (CLI.isUsageHelpRequested() || CLI.isVersionHelpRequested()) {
                     System.exit(0);
                 } else {
                     return options;

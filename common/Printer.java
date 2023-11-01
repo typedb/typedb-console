@@ -86,7 +86,7 @@ public class Printer {
     }
 
     public void valueGroup(ValueGroup answer, TypeDBTransaction tx) {
-        out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value()));
+        out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value().orElse(null)));
     }
 
     private static String stringifyNumericValue(Value value) {

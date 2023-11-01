@@ -706,7 +706,7 @@ public class TypeDBConsole {
         } else if (query instanceof TypeQLGet) {
             Optional<ConceptMap> ignore = tx.query().get(query.asGet()).findFirst();
         } else if (query instanceof TypeQLGet.Aggregate) {
-            Value ignore = tx.query().get(query.asGetAggregate()).resolve();
+            Optional<Value> ignore = tx.query().get(query.asGetAggregate()).resolve();
         } else if (query instanceof TypeQLGet.Group) {
             Optional<ConceptMapGroup> ignore = tx.query().get(query.asGetGroup()).findFirst();
         } else if (query instanceof TypeQLGet.Group.Aggregate) {
@@ -759,7 +759,7 @@ public class TypeDBConsole {
             Stream<ConceptMap> result = tx.query().get(query.asGet());
             printCancellableResult(result, x -> printer.conceptMap(x, tx));
         } else if (query instanceof TypeQLGet.Aggregate) {
-            printer.value(tx.query().get(query.asGetAggregate()).resolve());
+            printer.value(tx.query().get(query.asGetAggregate()).resolve().orElse(null));
         } else if (query instanceof TypeQLGet.Group) {
             Stream<ConceptMapGroup> result = tx.query().get(query.asGetGroup());
             printCancellableResult(result, x -> printer.conceptMapGroup(x, tx));

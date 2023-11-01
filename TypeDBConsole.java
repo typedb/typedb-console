@@ -798,15 +798,19 @@ public class TypeDBConsole {
             prevHandler = terminal.handle(Terminal.Signal.INT, s -> answerPrintingJob.cancel(true));
             answerPrintingJob.get();
             Instant end = Instant.now();
-            printer.info("answers: " + counter[0] + ", total (with concept details) duration: " + Duration.between(start, end).toMillis() + " ms");
+            printer.info("");
+            printer.info("answers: " + counter[0] + ", total duration: " + Duration.between(start, end).toMillis() + " ms");
+            printer.info("");
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             throw (TypeDBDriverException) e.getCause();
         } catch (CancellationException e) {
             Instant end = Instant.now();
-            printer.info("answers: " + counter[0] + ", total (with concept details) duration: " + Duration.between(start, end).toMillis() + " ms");
+            printer.info("");
+            printer.info("answers: " + counter[0] + ", total duration: " + Duration.between(start, end).toMillis() + " ms");
             printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
+            printer.info("");
         } finally {
             if (prevHandler != null) terminal.handle(Terminal.Signal.INT, prevHandler);
         }

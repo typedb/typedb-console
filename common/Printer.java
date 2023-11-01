@@ -78,7 +78,7 @@ public class Printer {
     }
 
     public void json(JSON json) {
-        out.println(JSONDisplayString(json));
+        out.println(json.toString());
     }
 
     public void value(Value answer) {
@@ -117,48 +117,6 @@ public class Printer {
         if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
         else sb.append(" ").append(content).append(" ");
         sb.append("}");
-        return sb.toString();
-    }
-
-    private static String JSONDisplayString(JSON json) {
-        if (json.isBoolean()) return Boolean.toString(json.asBoolean());
-        else if (json.isNumber()) return Double.toString(json.asNumber());
-        else if (json.isString()) return '"' + json.asString() + '"';
-        else if (json.isArray()) {
-            String content = json.asArray().stream().map(Printer::JSONDisplayString).collect(joining(",\n"));
-
-            StringBuilder sb = new StringBuilder("[");
-            if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
-            else sb.append(" ").append(content).append(" ");
-            sb.append("]");
-
-            return sb.toString();
-        } else if (json.isObject()) {
-            return JSONObjectDisplayString(json.asObject());
-        } else throw new TypeDBConsoleException(ILLEGAL_STATE);
-    }
-
-    private static String JSONObjectDisplayString(Map<String, JSON> jsonObject) {
-        boolean singleLine = jsonObject.containsKey("root") || jsonObject.containsKey("value");
-
-        List<String> orderedKeys = jsonObject.keySet().stream().sorted((s1, s2) -> {
-            if (s1.equals("type")) return 1; // type always comes last
-            else if (s2.equals("type")) return -1;
-            else return s1.compareTo(s2);
-        }).collect(Collectors.toList());
-
-        String content = orderedKeys.stream().map(key -> {
-            StringBuilder sb = new StringBuilder("\"").append(key).append("\":");
-            String valueString = JSONDisplayString(jsonObject.get(key));
-            sb.append(" ").append(valueString);
-            return sb.toString();
-        }).collect(joining(singleLine ? ", " : ",\n"));
-
-        StringBuilder sb = new StringBuilder("{");
-        if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
-        else sb.append(" ").append(content).append(" ");
-        sb.append("}");
-
         return sb.toString();
     }
 

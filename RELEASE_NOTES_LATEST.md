@@ -1,21 +1,19 @@
 
 ## New Features
-
+- **Implement Fetch query**
+  
+  We update to the newest version of TypeDB Driver which supports Fetch queries.
+  
+  For more details on fetch queries, see https://github.com/vaticle/typeql/pull/300
+  
 
 ## Bugs Fixed
-
-- **Fix unpacking driver runtime files into working directory**
-
-Due to a bug in the Java driver, we unpacked the driver dynamic library into the current working directory, rather than into a temporary directory. 
-
-We update to the driver version with the fix.
-
-
 
 
 ## Code Refactors
 
 
 ## Other Improvements
+- **Add newline after define and undefine print status to match new streaming query formatting**
 
     

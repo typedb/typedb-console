@@ -20,8 +20,8 @@ package com.vaticle.typedb.console.common;
 import com.vaticle.typedb.driver.api.TypeDBTransaction;
 import com.vaticle.typedb.driver.api.answer.ConceptMap;
 import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
-import com.vaticle.typedb.driver.api.answer.Numeric;
-import com.vaticle.typedb.driver.api.answer.NumericGroup;
+import com.vaticle.typedb.driver.api.answer.JSON;
+import com.vaticle.typedb.driver.api.answer.ValueGroup;
 import com.vaticle.typedb.driver.api.concept.Concept;
 import com.vaticle.typedb.driver.api.concept.thing.Attribute;
 import com.vaticle.typedb.driver.api.concept.thing.Relation;
@@ -38,11 +38,13 @@ import org.jline.utils.AttributedStyle;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.ISA;
 import static java.util.stream.Collectors.joining;
 
@@ -75,12 +77,21 @@ public class Printer {
         out.println("}");
     }
 
-    public void numeric(Numeric answer) {
-        out.println(answer.asNumber());
+    public void json(JSON json) {
+        out.println(json.toString());
     }
 
-    public void numericGroup(NumericGroup answer, TypeDBTransaction tx) {
-        out.println(conceptDisplayString(answer.owner(), tx) + " => " + answer.numeric().asNumber());
+    public void value(Value answer) {
+        out.println(stringifyNumericValue(answer));
+    }
+
+    public void valueGroup(ValueGroup answer, TypeDBTransaction tx) {
+        out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value().orElse(null)));
+    }
+
+    private static String stringifyNumericValue(Value value) {
+        if (value == null) return "NaN";
+        else return value.toString();
     }
 
     public void databaseReplica(Database.Replica replica) {
@@ -146,9 +157,7 @@ public class Printer {
     }
 
     private String isaDisplayString(Thing thing) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(colorKeyword(ISA.toString())).append(" ").append(colorType(thing.getType().getLabel().scopedName()));
-        return sb.toString();
+        return colorKeyword(ISA.toString()) + " " + colorType(thing.getType().getLabel().scopedName());
     }
 
     private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
@@ -168,11 +177,7 @@ public class Printer {
     }
 
     private String iidDisplayString(Thing thing) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(colorKeyword(TypeQLToken.Constraint.IID.toString()))
-                .append(" ")
-                .append(thing.getIID());
-        return sb.toString();
+        return colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
     }
 
     private String typeDisplayString(Type type, TypeDBTransaction tx) {
@@ -183,7 +188,7 @@ public class Printer {
                 .append(colorType(type.getLabel().toString()));
 
         if (!type.isRoot()) {
-            Type superType = type.getSupertype(tx);
+            Type superType = type.getSupertype(tx).resolve();
             sb.append(" ")
                     .append(colorKeyword(TypeQLToken.Constraint.SUB.toString()))
                     .append(" ")

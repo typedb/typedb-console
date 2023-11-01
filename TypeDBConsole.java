@@ -154,7 +154,6 @@ public class TypeDBConsole {
                     CLI.usage(CLI.getOut());
                     System.exit(0);
                 } else if (CLI.isVersionHelpRequested()) {
-                    CLI.printVersionHelp(CLI.getOut());
                     System.exit(0);
                 } else {
                     return options;

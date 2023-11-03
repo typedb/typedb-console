@@ -21,7 +21,6 @@ load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
-load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
@@ -181,64 +180,6 @@ deploy_artifact(
     snapshot = deployment['artifact.snapshot'],
     release = deployment['artifact.release'],
     visibility = ["//visibility:public"],
-)
-
-assemble_apt(
-    name = "assemble-linux-x86_64-apt",
-    package_name = "typedb-console",
-    maintainer = "Vaticle <community@vaticle.com>",
-    description = "TypeDB (console)",
-    depends = [
-      "openjdk-11-jre",
-      "typedb-bin (>=%{@vaticle_typedb_common})"
-    ],
-    workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
-    files = {
-        "//conf/logback:logback.xml": "console/conf/logback.xml"
-    },
-    archives = [":console-deps-native"],
-    installation_dir = "/opt/typedb/core/",
-    empty_dirs = [
-         "opt/typedb/core/console/lib/",
-    ],
-    architecture = "amd64",
-    target_compatible_with = constraint_linux_x86_64,
-)
-
-assemble_apt(
-    name = "assemble-linux-arm64-apt",
-    package_name = "typedb-console",
-    maintainer = "Vaticle <community@vaticle.com>",
-    description = "TypeDB (console)",
-    depends = [
-      "openjdk-11-jre",
-      "typedb-bin (>=%{@vaticle_typedb_common})"
-    ],
-    workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
-    files = {
-        "//conf/logback:logback.xml": "console/conf/logback.xml"
-    },
-    archives = [":console-deps-native"],
-    installation_dir = "/opt/typedb/core/",
-    empty_dirs = [
-         "opt/typedb/core/console/lib/",
-    ],
-    architecture = "arm64",
-    target_compatible_with = constraint_linux_arm64,
-)
-
-deploy_apt(
-    name = "deploy-apt-x86_64",
-    target = ":assemble-linux-x86_64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release'],
-)
-
-deploy_apt(
-    name = "deploy-apt-arm64",
-    target = ":assemble-linux-arm64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release'],
 )
 
 release_validate_deps(

@@ -116,30 +116,6 @@ jobs:
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\deploy_snapshot.bat
 
-  deploy-apt-snapshot-x86_64:
-    executor: linux-x86_64
-    steps:
-      - checkout
-      - install-bazel-linux:
-          arch: amd64
-      - run: |
-          export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-x86_64 -- snapshot
-
-  deploy-apt-snapshot-arm64:
-    executor: linux-arm64
-    steps:
-      - checkout
-      - install-bazel-linux:
-          arch: arm64
-      - run: |
-          export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-arm64 -- snapshot
-
   deploy-artifact-release-linux-x86_64:
     executor: linux-x86_64
     steps:
@@ -223,42 +199,6 @@ jobs:
           root: dist
           paths: [ "./*" ]
 
-  deploy-apt-release-x86_64:
-    executor: linux-x86_64
-    steps:
-      - checkout
-      - install-bazel-linux:
-          arch: amd64
-      - run: |
-          export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console__amd64.deb ~/dist/typedb-console__amd64.deb
-      - persist_to_workspace:
-          root: ~/dist
-          paths: ["./*"]
-  
-  deploy-apt-release-arm64:
-    executor: linux-arm64
-    steps:
-      - checkout
-      - install-bazel-linux:
-          arch: arm64
-      - run: |
-          export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console__arm64.deb ~/dist/typedb-console__arm64.deb
-      - persist_to_workspace:
-          root: ~/dist
-          paths: ["./*"]
-
   deploy-github:
     executor: linux-x86_64
     steps:
@@ -306,14 +246,6 @@ workflows:
           filters:
             branches:
               only: master
-      - deploy-apt-snapshot-x86_64:
-          filters:
-            branches:
-              only: master
-      - deploy-apt-snapshot-arm64:
-          filters:
-            branches:
-              only: master
   release:
     jobs:
       - deploy-artifact-release-linux-x86_64:
@@ -336,14 +268,6 @@ workflows:
           filters:
             branches:
               only: [release]
-      - deploy-apt-release-x86_64:
-          filters:
-            branches:
-              only: [release]
-      - deploy-apt-release-arm64:
-          filters:
-            branches:
-              only: [release]
       - deploy-github:
           filters:
             branches:
@@ -354,8 +278,6 @@ workflows:
             - deploy-artifact-release-mac-x86_64
             - deploy-artifact-release-mac-arm64
             - deploy-artifact-release-windows-x86_64
-            - deploy-apt-release-x86_64
-            - deploy-apt-release-arm64
       - release-cleanup:
           filters:
             branches:

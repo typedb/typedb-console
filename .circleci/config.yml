@@ -67,6 +67,7 @@ jobs:
       - install-bazel-linux:
           arch: amd64
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -79,6 +80,7 @@ jobs:
       - install-bazel-linux:
           arch: arm64
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -90,6 +92,7 @@ jobs:
       - checkout
       - install-bazel-mac
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -101,6 +104,7 @@ jobs:
       - checkout
       - install-bazel-mac
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -123,6 +127,7 @@ jobs:
       - install-bazel-linux:
           arch: amd64
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -141,6 +146,7 @@ jobs:
       - install-bazel-linux:
           arch: arm64
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -158,6 +164,7 @@ jobs:
       - checkout
       - install-bazel-mac
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -175,6 +182,7 @@ jobs:
       - checkout
       - install-bazel-mac
       - run: |
+          ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh

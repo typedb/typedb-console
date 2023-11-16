@@ -1,6 +1,8 @@
 
 ## New Features
 
+- **Upgrade to the latest TypeDB Driver, which includes improved error messages**
+
 
 ## Bugs Fixed
 
@@ -9,6 +11,6 @@
 
 
 ## Other Improvements
-- **Remove APT deployment and targets**
+- **Add ulimits to mac and linux releases**
 
     

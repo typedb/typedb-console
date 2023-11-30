@@ -19,7 +19,7 @@ cd <your_typedb_console_dir>/
 
 You can provide several command arguments when running console in the terminal.
 
-- `--server=<address>` : TypeDB server address to which the console will connect to.
+- `--core=<address>` : TypeDB server address to which the console will connect to.
 - `--enterprise=<address>` : TypeDB Enterprise server address to which the console will connect to.
 - `--username=<username>` : TypeDB Enterprise username to connect with.
 - `--password` : Interactively enter password to connect to TypeDB Enterprise with.

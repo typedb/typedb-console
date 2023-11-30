@@ -457,8 +457,8 @@ public class TypeDBConsole {
     private TypeDBDriver createTypeDBDriver(CLIOptions options) {
         TypeDBDriver driver = null;
         try {
-            if (options.server() != null) {
-                driver = TypeDB.coreDriver(options.server());
+            if (options.core() != null) {
+                driver = TypeDB.coreDriver(options.core());
             } else {
                 String optEnterprise = options.enterprise();
                 if (optEnterprise != null) {
@@ -818,11 +818,11 @@ public class TypeDBConsole {
     private static class CLIOptions implements Runnable {
 
         @CommandLine.Option(
-                names = {"--server"},
-                description = "TypeDB address to which Console will connect to"
+                names = {"--core"},
+                description = "TypeDB Core address to which Console will connect to"
         )
         private @Nullable
-        String server;
+        String core;
 
         @CommandLine.Option(
                 names = {"--enterprise"},
@@ -884,8 +884,8 @@ public class TypeDBConsole {
         }
 
         private void validateOptions() {
-            if (server != null && enterprise != null) {
-                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--server' or '--enterprise' must be provided, but not both.");
+            if (core != null && enterprise != null) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either '--core' or '--enterprise' must be provided, but not both.");
             } else {
                 if (enterprise != null) validateEnterpriseOptions();
                 else validateServerOptions();
@@ -913,8 +913,8 @@ public class TypeDBConsole {
         }
 
         @Nullable
-        private String server() {
-            return server;
+        private String core() {
+            return core;
         }
 
         @Nullable

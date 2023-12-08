@@ -846,14 +846,14 @@ public class TypeDBConsole {
         String password;
 
         @CommandLine.Option(
-                names = {"--tls-enabled"},
+                names = {"--tls-enabled", "--encryption-enable"},
                 description = "Whether to connect to TypeDB Enterprise with TLS encryption"
         )
         private boolean tlsEnabled;
 
         @CommandLine.Option(
-                names = {"--tls-root-ca"},
-                description = "Path to the TLS root CA file"
+                names = {"--tls-root-ca", "--encryption-root-ca"},
+                description = "Path to the TLS encryption root CA file"
         )
         private @Nullable
         String tlsRootCA;

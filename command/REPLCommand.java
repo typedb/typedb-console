@@ -532,17 +532,17 @@ public interface REPLCommand {
 
         public static String token = "transaction-options";
 
-        static TypeDBOptions from(String[] optionTokens, boolean isEnterprise) {
-            if (isEnterprise) return parseEnterpriseOptions(optionTokens, new TypeDBOptions());
+        static TypeDBOptions from(String[] optionTokens, boolean isCloud) {
+            if (isCloud) return parseCloudOptions(optionTokens, new TypeDBOptions());
             else return parseCoreOptions(optionTokens, new TypeDBOptions());
         }
 
-        private static TypeDBOptions parseEnterpriseOptions(String[] optionTokens, TypeDBOptions options) {
+        private static TypeDBOptions parseCloudOptions(String[] optionTokens, TypeDBOptions options) {
             for (int i = 0; i < optionTokens.length; i += 2) {
                 String token = optionTokens[i];
                 String arg = optionTokens[i + 1];
                 assert token.charAt(0) == '-' && token.charAt(1) == '-';
-                Option<TypeDBOptions> option = Options.Enterprise.enterpriseOption(token.substring(2));
+                Option<TypeDBOptions> option = Options.Cloud.cloudOption(token.substring(2));
                 try {
                     options = option.build(options, arg);
                 } catch (IllegalArgumentException e) {
@@ -606,20 +606,20 @@ public interface REPLCommand {
             }
         }
 
-        static class Enterprise extends Core {
+        static class Cloud extends Core {
 
-            private static List<Option.Enterprise> options = withCoreOptions(
-                    Option.enterprise("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
+            private static List<Option.Cloud> options = withCoreOptions(
+                    Option.cloud("read-any-replica", Option.Arg.BOOLEAN, "Allow (possibly stale) reads from any replica", (opt, arg) -> opt.readAnyReplica((Boolean) arg))
             );
 
-            private static List<Option.Enterprise> withCoreOptions(Option.Enterprise... enterpriseOptions) {
-                List<Option.Enterprise> extendedOptions = new ArrayList<>();
-                Core.options.forEach(opt -> extendedOptions.add(opt.asEnterpriseOption()));
-                extendedOptions.addAll(Arrays.asList(enterpriseOptions));
+            private static List<Option.Cloud> withCoreOptions(Option.Cloud... cloudOptions) {
+                List<Option.Cloud> extendedOptions = new ArrayList<>();
+                Core.options.forEach(opt -> extendedOptions.add(opt.asCloudOption()));
+                extendedOptions.addAll(Arrays.asList(cloudOptions));
                 return extendedOptions;
             }
 
-            public static Option<TypeDBOptions> enterpriseOption(String token) throws IllegalArgumentException {
+            public static Option<TypeDBOptions> cloudOption(String token) throws IllegalArgumentException {
                 return from(token, options);
             }
 
@@ -646,8 +646,8 @@ public interface REPLCommand {
                 return new Option.Core(name, arg, description, builder);
             }
 
-            static Option.Enterprise enterprise(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
-                return new Option.Enterprise(name, arg, description, builder);
+            static Option.Cloud cloud(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+                return new Option.Cloud(name, arg, description, builder);
             }
 
             OPTIONS build(OPTIONS options, String arg) {
@@ -666,14 +666,14 @@ public interface REPLCommand {
                     super(name, arg, description, builder);
                 }
 
-                Option.Enterprise asEnterpriseOption() {
-                    return new Option.Enterprise(name, arg, description, (enterpriseOption, arg) -> builder.apply(enterpriseOption, arg));
+                Option.Cloud asCloudOption() {
+                    return new Option.Cloud(name, arg, description, (cloudOption, arg) -> builder.apply(cloudOption, arg));
                 }
             }
 
-            static class Enterprise extends Option<TypeDBOptions> {
+            static class Cloud extends Option<TypeDBOptions> {
 
-                private Enterprise(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+                private Cloud(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
                     super(name, arg, description, builder);
                 }
             }
@@ -700,7 +700,7 @@ public interface REPLCommand {
         }
     }
 
-    static String createHelpMenu(TypeDBDriver driver, boolean isEnterprise) {
+    static String createHelpMenu(TypeDBDriver driver, boolean isCloud) {
         List<Pair<String, String>> menu = new ArrayList<>();
         if (driver.users() != null) {
             menu.addAll(Arrays.asList(
@@ -717,12 +717,12 @@ public interface REPLCommand {
                 pair(Database.Delete.helpCommand, Database.Delete.description),
                 pair(Database.Schema.helpCommand, Database.Schema.description)));
 
-        if (isEnterprise) {
+        if (isCloud) {
             menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
         }
 
         menu.add(pair(Transaction.helpCommand, Transaction.description));
-        if (isEnterprise) menu.addAll(Options.Enterprise.helpMenu());
+        if (isCloud) menu.addAll(Options.Cloud.helpMenu());
         else menu.addAll(Options.Core.helpMenu());
 
         menu.addAll(Arrays.asList(
@@ -733,11 +733,11 @@ public interface REPLCommand {
         return Utils.createHelpMenu(menu);
     }
 
-    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isEnterprise) throws InterruptedException {
+    static REPLCommand readREPLCommand(LineReader reader, Printer printer, String prompt, boolean isCloud) throws InterruptedException {
         REPLCommand command = null;
         while (command == null) {
             String line = Utils.readNonEmptyLine(reader, prompt);
-            command = readREPLCommand(line, reader, isEnterprise);
+            command = readREPLCommand(line, reader, isCloud);
             if (command == null) {
                 printer.error("Unrecognised command, please check help menu");
             }
@@ -746,7 +746,7 @@ public interface REPLCommand {
         return command;
     }
 
-    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isEnterprise) {
+    static REPLCommand readREPLCommand(String line, @Nullable LineReader passwordReader, boolean isCloud) {
         REPLCommand command = null;
         String[] tokens = Utils.splitLineByWhitespace(line);
         if (tokens.length == 1 && tokens[0].equals(Exit.token)) {
@@ -795,7 +795,7 @@ public interface REPLCommand {
             TypeDBSession.Type sessionType = tokens[2].equals("schema") ? TypeDBSession.Type.SCHEMA : TypeDBSession.Type.DATA;
             TypeDBTransaction.Type transactionType = tokens[3].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.WRITE;
             TypeDBOptions options;
-            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isEnterprise);
+            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCloud);
             else options = new TypeDBOptions();
             command = new Transaction(database, sessionType, transactionType, options);
         }

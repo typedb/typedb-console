@@ -107,7 +107,6 @@ jobs:
           ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
@@ -167,7 +166,6 @@ jobs:
           ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
@@ -185,7 +183,6 @@ jobs:
           ulimit -n 100000
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist

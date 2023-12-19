@@ -51,6 +51,17 @@ build:
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:test-assembly-native --test_output=streamed
+    deploy-runner-maven-snapshot:
+      #      filter:
+      #        owner: vaticle
+      #        branch: master
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run --define version=$(git rev-parse HEAD) //test/runner:deploy-maven -- snapshot
+
 release:
   filter:
     owner: vaticle
@@ -76,3 +87,13 @@ release:
         git checkout -b release
         git push -f origin release
         echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
+    deploy-runner-maven-release:
+      #      filter:
+      #        owner: vaticle
+      #        branch: master
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run --define version=$(cat VERSION) //test/runner:deploy-maven -- release

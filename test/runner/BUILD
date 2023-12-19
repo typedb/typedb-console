@@ -32,7 +32,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     tags = [
-        "maven_coordinates=com.vaticle.typedb:typedb-runner:{pom_version}",
+        "maven_coordinates=com.vaticle.typedb:typedb-console-runner:{pom_version}",
     ],
 )
 

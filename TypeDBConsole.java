@@ -17,9 +17,15 @@
 
 package com.vaticle.typedb.console;
 
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.util.Java;
+import com.vaticle.typedb.console.command.REPLCommand;
+import com.vaticle.typedb.console.command.TransactionREPLCommand;
+import com.vaticle.typedb.console.common.Printer;
+import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typedb.driver.TypeDB;
-import com.vaticle.typedb.driver.api.TypeDBDriver;
 import com.vaticle.typedb.driver.api.TypeDBCredential;
+import com.vaticle.typedb.driver.api.TypeDBDriver;
 import com.vaticle.typedb.driver.api.TypeDBOptions;
 import com.vaticle.typedb.driver.api.TypeDBSession;
 import com.vaticle.typedb.driver.api.TypeDBTransaction;
@@ -31,23 +37,18 @@ import com.vaticle.typedb.driver.api.concept.value.Value;
 import com.vaticle.typedb.driver.api.database.Database;
 import com.vaticle.typedb.driver.api.user.User;
 import com.vaticle.typedb.driver.common.exception.TypeDBDriverException;
-import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.console.command.REPLCommand;
-import com.vaticle.typedb.console.command.TransactionREPLCommand;
-import com.vaticle.typedb.console.common.Printer;
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 import com.vaticle.typeql.lang.query.TypeQLFetch;
-import com.vaticle.typeql.lang.query.TypeQLInsert;
 import com.vaticle.typeql.lang.query.TypeQLGet;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
+import io.sentry.Sentry;
 import org.jline.builtins.Completers;
 import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
@@ -64,14 +65,19 @@ import picocli.CommandLine;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -92,6 +98,7 @@ import static org.jline.builtins.Completers.TreeCompleter.node;
 
 public class TypeDBConsole {
 
+    private static final String DISTRIBUTION_NAME = "TypeDB Console";
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
             "Copyright (C) 2022 Vaticle\n";
@@ -99,6 +106,7 @@ public class TypeDBConsole {
             Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
+    private static final String DIAGNOSTICS_REPORTING_URI = "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private static final Duration PASSWORD_EXPIRY_WARN = Duration.ofDays(7);
@@ -123,6 +131,7 @@ public class TypeDBConsole {
     public static void main(String[] args) {
         configureAndVerifyJavaVersion();
         CLIOptions options = parseCLIOptions(args);
+        configureDiagnostics(options.diagnosticsDisabled);
         TypeDBConsole console = new TypeDBConsole(new Printer(System.out, System.err));
         if (options.script() == null && options.commands() == null) {
             console.runREPLMode(options);
@@ -141,6 +150,31 @@ public class TypeDBConsole {
             LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
         } else if (majorVersion < 11) {
             throw TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+        }
+    }
+
+    private static void configureDiagnostics(boolean diagnosticsDisabled) {
+        Sentry.init(options -> {
+            options.setDsn(DIAGNOSTICS_REPORTING_URI);
+            options.setEnableTracing(true);
+            options.setSendDefaultPii(false);
+            options.setRelease(releaseName());
+        });
+        io.sentry.protocol.User user = new io.sentry.protocol.User();
+        user.setUsername(userID());
+        Sentry.setUser(user);
+    }
+
+    private static String releaseName() {
+        return DISTRIBUTION_NAME + "@" + Version.VERSION;
+    }
+
+    private static String userID() {
+        try {
+            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
+            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+        } catch (NoSuchAlgorithmException | IOException e) {
+            return "";
         }
     }
 
@@ -242,6 +276,7 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
+            Sentry.captureException(e);
         } finally {
             executorService.shutdownNow();
         }
@@ -872,6 +907,13 @@ public class TypeDBConsole {
         private @Nullable
         List<String> commands;
 
+
+        @CommandLine.Option(
+                names = {"--diagnostics-disabled"},
+                description = "Disable diagnostics reporting"
+        )
+        private boolean diagnosticsDisabled;
+
         @CommandLine.Spec
         CommandLine.Model.CommandSpec spec;
 
@@ -947,6 +989,10 @@ public class TypeDBConsole {
         @Nullable
         private List<String> commands() {
             return commands;
+        }
+
+        private boolean diagnosticsDisabled() {
+            return diagnosticsDisabled;
         }
     }
 }

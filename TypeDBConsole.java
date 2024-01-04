@@ -106,7 +106,7 @@ public class TypeDBConsole {
             Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-transaction-repl-history").toAbsolutePath();
-    private static final String DIAGNOSTICS_REPORTING_URI = "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
+    private static final String DIAGNOSTICS_REPORTING_URI = "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private static final Duration PASSWORD_EXPIRY_WARN = Duration.ofDays(7);
@@ -124,6 +124,7 @@ public class TypeDBConsole {
             terminal = TerminalBuilder.builder().signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException e) {
             System.err.println("Failed to initialise terminal: " + e.getMessage());
+            Sentry.captureException(e);
             System.exit(1);
         }
     }
@@ -149,7 +150,8 @@ public class TypeDBConsole {
         if (majorVersion == Java.UNKNOWN_VERSION) {
             LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
         } else if (majorVersion < 11) {
-            throw TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+            TypeDBConsoleException exception = TypeDBConsoleException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+            throw exception;
         }
     }
 
@@ -159,6 +161,8 @@ public class TypeDBConsole {
             options.setEnableTracing(true);
             options.setSendDefaultPii(false);
             options.setRelease(releaseName());
+            if (!diagnosticsDisabled) options.setEnabled(true);
+            else options.setEnabled(false);
         });
         io.sentry.protocol.User user = new io.sentry.protocol.User();
         user.setUsername(userID());
@@ -380,6 +384,7 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
+            Sentry.captureException(e);
         }
         return false;
     }
@@ -482,6 +487,7 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
+            Sentry.captureException(e);
             return false;
         } finally {
             executorService.shutdownNow();

@@ -54,11 +54,12 @@ java_library(
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:info_picocli_picocli",
         "@maven//:io_grpc_grpc_core",
         "@maven//:io_grpc_grpc_api",
+        "@maven//:io_sentry_sentry",
         "@maven//:org_jline_jline",
         "@maven//:org_jline_jline_terminal_jansi",
-        "@maven//:info_picocli_picocli",
         "@maven//:org_slf4j_slf4j_api",
     ],
     visibility = ["//visibility:public"],

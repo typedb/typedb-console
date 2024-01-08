@@ -18,7 +18,7 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.0.0
+  win: circleci/windows@5.0.0
 
 executors:
   linux-arm64:
@@ -54,7 +54,7 @@ commands:
       - run: |
           apt-get -y update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
-          apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file
+          apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -110,6 +110,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -186,6 +187,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -204,19 +206,22 @@ jobs:
       - install-bazel-linux:
           arch: amd64
       - run:
-          name: "Publish Draft Release on GitHub"
+          name: "Publish Release on GitHub"
           command: |
             wget https://github.com/tcnksm/ghr/releases/download/v0.12.1/ghr_v0.12.1_linux_amd64.tar.gz
             tar -xf ghr_v0.12.1_linux_amd64.tar.gz
             ghr_v0.12.1_linux_amd64/ghr -t ${REPO_GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB Console $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
-              -c ${CIRCLE_SHA1} -delete -draft $(cat VERSION) ~/dist/
+              -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
 
   release-cleanup:
     executor: linux-x86_64
     steps:
       - checkout
-      - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/vaticle/typedb-console.git $CIRCLE_BRANCH
+      - run: |
+          apt update -y
+          apt install -y git
+          git push --delete https://$REPO_GITHUB_TOKEN@github.com/vaticle/typedb-console.git $CIRCLE_BRANCH
 
 
 workflows:

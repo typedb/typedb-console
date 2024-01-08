@@ -18,7 +18,7 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@3.0.0
+  win: circleci/windows@2.0.0
 
 executors:
   linux-arm64:
@@ -110,7 +110,6 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
-      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -187,7 +186,6 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
-      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout

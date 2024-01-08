@@ -915,7 +915,7 @@ public class TypeDBConsole {
 
 
         @CommandLine.Option(
-                names = {"--diagnostics-disabled"},
+                names = {"--diagnostics-disable"},
                 description = "Disable diagnostics reporting"
         )
         private boolean diagnosticsDisabled;

@@ -33,6 +33,12 @@ executors:
     resource_class: large
     working_directory: ~/typedb-console
 
+  linux-x86_64-ubuntu-1804:
+    docker:
+      - image: ubuntu:22.04
+    resource_class: large
+    working_directory: ~/typedb-console
+
   mac-arm64:
     macos:
       xcode: "13.4.1"
@@ -46,7 +52,7 @@ executors:
 
 
 commands:
-  install-bazel-linux:
+  install-bazel-yum:
     parameters:
       arch:
         type: string
@@ -59,7 +65,20 @@ commands:
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-bazel-mac:
+  install-bazel-apt:
+    parameters:
+      arch:
+        type: string
+    steps:
+      - run: |
+          apt-get -y update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
+          apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
+          mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/baze
+
+  install-bazel-brew:
     steps:
       - run: brew install bazelisk
 
@@ -68,7 +87,7 @@ jobs:
     executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -79,7 +98,7 @@ jobs:
     executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -90,7 +109,7 @@ jobs:
     executor: mac-x86_64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -100,7 +119,7 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -121,7 +140,7 @@ jobs:
     executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -138,7 +157,7 @@ jobs:
     executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -155,7 +174,7 @@ jobs:
     executor: mac-x86_64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -171,7 +190,7 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -198,12 +217,12 @@ jobs:
           paths: [ "./*" ]
 
   deploy-github:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-ubuntu-1804
     steps:
       - attach_workspace:
           at: ~/dist
       - checkout
-      - install-bazel-linux:
+      - install-bazel-apt:
           arch: amd64
       - run:
           name: "Publish Release on GitHub"
@@ -215,7 +234,7 @@ jobs:
               -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
 
   release-cleanup:
-    executor: linux-x86_64-amazonlinux-2
+    executor: linux-x86_64-ubuntu-1804
     steps:
       - checkout
       - run: |

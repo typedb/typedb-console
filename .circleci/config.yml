@@ -18,18 +18,18 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.0.0
+  win: circleci/windows@5.0.0
 
 executors:
-  linux-arm64:
+  linux-arm64-amazonlinux-2:
     docker:
-      - image: ubuntu:18.04
+      - image: amazonlinux:2
     resource_class: arm.large
     working_directory: ~/typedb-console
 
-  linux-x86_64:
+  linux-x86_64-amazonlinux-2:
     docker:
-      - image: ubuntu:18.04
+      - image: amazonlinux:2
     resource_class: large
     working_directory: ~/typedb-console
 
@@ -52,9 +52,9 @@ commands:
         type: string
     steps:
       - run: |
-          apt-get -y update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
-          apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
+          amazon-linux-extras install python3.8 -y
+          yum install -y git tar java-1.8.0-openjdk gcc gcc-c++ file lsof which procps
+          ln -s /usr/bin/python3.8 /usr/bin/python3
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -65,7 +65,7 @@ commands:
 
 jobs:
   deploy-artifact-snapshot-linux-x86_64:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
       - install-bazel-linux:
@@ -76,7 +76,7 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
 
   deploy-artifact-snapshot-linux-arm64:
-    executor: linux-arm64
+    executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
       - install-bazel-linux:
@@ -110,6 +110,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -117,7 +118,7 @@ jobs:
       - run: .circleci\windows\deploy_snapshot.bat
 
   deploy-artifact-release-linux-x86_64:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
       - install-bazel-linux:
@@ -134,7 +135,7 @@ jobs:
           paths: ["./*"]
 
   deploy-artifact-release-linux-arm64:
-    executor: linux-arm64
+    executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
       - install-bazel-linux:
@@ -186,6 +187,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -196,7 +198,7 @@ jobs:
           paths: [ "./*" ]
 
   deploy-github:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - attach_workspace:
           at: ~/dist
@@ -213,7 +215,7 @@ jobs:
               -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
 
   release-cleanup:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
       - run: |
@@ -228,23 +230,23 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: master
+              only: [master, reconfigure-circleci-executors]
       - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
-              only: master
+              only: [master, reconfigure-circleci-executors]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: master
+              only: [master, reconfigure-circleci-executors]
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
-              only: master
+              only: [master, reconfigure-circleci-executors]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: master
+              only: [master, reconfigure-circleci-executors]
 
   release:
     jobs:

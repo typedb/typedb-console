@@ -67,6 +67,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -176,7 +177,9 @@ public class TypeDBConsole {
     private static String userID() {
         try {
             byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+            byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
+            byte[] truncatedHash = Arrays.copyOfRange(macHash, 0, 8);
+            return String.format("%X", ByteBuffer.wrap(truncatedHash).getLong());
         } catch (NoSuchAlgorithmException | IOException e) {
             return "";
         }

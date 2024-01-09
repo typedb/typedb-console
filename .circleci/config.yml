@@ -18,18 +18,24 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.0.0
+  win: circleci/windows@5.0.0
 
 executors:
-  linux-arm64:
+  linux-arm64-amazonlinux-2:
     docker:
-      - image: ubuntu:18.04
+      - image: amazonlinux:2
     resource_class: arm.large
     working_directory: ~/typedb-console
 
-  linux-x86_64:
+  linux-x86_64-amazonlinux-2:
     docker:
-      - image: ubuntu:18.04
+      - image: amazonlinux:2
+    resource_class: large
+    working_directory: ~/typedb-console
+
+  linux-x86_64-ubuntu-1804:
+    docker:
+      - image: ubuntu:22.04
     resource_class: large
     working_directory: ~/typedb-console
 
@@ -46,7 +52,20 @@ executors:
 
 
 commands:
-  install-bazel-linux:
+  install-bazel-yum:
+    parameters:
+      arch:
+        type: string
+    steps:
+      - run: |
+          amazon-linux-extras install python3.8 -y
+          yum install -y git tar java-1.8.0-openjdk gcc gcc-c++ file lsof which procps
+          ln -s /usr/bin/python3.8 /usr/bin/python3
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
+          mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
+
+  install-bazel-apt:
     parameters:
       arch:
         type: string
@@ -57,18 +76,18 @@ commands:
           apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/baze
 
-  install-bazel-mac:
+  install-bazel-brew:
     steps:
       - run: brew install bazelisk
 
 jobs:
   deploy-artifact-snapshot-linux-x86_64:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -76,10 +95,10 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
 
   deploy-artifact-snapshot-linux-arm64:
-    executor: linux-arm64
+    executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -90,7 +109,7 @@ jobs:
     executor: mac-x86_64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -100,7 +119,7 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -110,6 +129,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -117,10 +137,10 @@ jobs:
       - run: .circleci\windows\deploy_snapshot.bat
 
   deploy-artifact-release-linux-x86_64:
-    executor: linux-x86_64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -134,10 +154,10 @@ jobs:
           paths: ["./*"]
 
   deploy-artifact-release-linux-arm64:
-    executor: linux-arm64
+    executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-yum:
           arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -154,7 +174,7 @@ jobs:
     executor: mac-x86_64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -170,7 +190,7 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-brew
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
@@ -186,6 +206,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
+      size: large
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -196,12 +217,12 @@ jobs:
           paths: [ "./*" ]
 
   deploy-github:
-    executor: linux-x86_64
+    executor: linux-x86_64-ubuntu-1804
     steps:
       - attach_workspace:
           at: ~/dist
       - checkout
-      - install-bazel-linux:
+      - install-bazel-apt:
           arch: amd64
       - run:
           name: "Publish Release on GitHub"
@@ -213,7 +234,7 @@ jobs:
               -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
 
   release-cleanup:
-    executor: linux-x86_64
+    executor: linux-x86_64-ubuntu-1804
     steps:
       - checkout
       - run: |
@@ -228,23 +249,23 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: master
+              only: [master]
       - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
-              only: master
+              only: [master]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: master
+              only: [master]
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
-              only: master
+              only: [master]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: master
+              only: [master]
 
   release:
     jobs:

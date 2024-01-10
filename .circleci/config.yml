@@ -33,7 +33,7 @@ executors:
     resource_class: large
     working_directory: ~/typedb-console
 
-  linux-x86_64-ubuntu-1804:
+  linux-x86_64-ubuntu-2204:
     docker:
       - image: ubuntu:22.04
     resource_class: large
@@ -217,7 +217,7 @@ jobs:
           paths: [ "./*" ]
 
   deploy-github:
-    executor: linux-x86_64-ubuntu-1804
+    executor: linux-x86_64-ubuntu-2204
     steps:
       - attach_workspace:
           at: ~/dist
@@ -234,7 +234,7 @@ jobs:
               -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
 
   release-cleanup:
-    executor: linux-x86_64-ubuntu-1804
+    executor: linux-x86_64-ubuntu-2204
     steps:
       - checkout
       - run: |

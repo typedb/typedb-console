@@ -76,7 +76,7 @@ commands:
           apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/baze
+          chmod a+x /usr/local/bin/bazel
 
   install-bazel-brew:
     steps:

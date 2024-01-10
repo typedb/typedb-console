@@ -76,7 +76,7 @@ commands:
           apt-get -y install curl build-essential git python3 python3-pip default-jre lsof cmake file wget
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/baze
+          chmod a+x /usr/local/bin/bazel
 
   install-bazel-brew:
     steps:
@@ -92,7 +92,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
+          bazel build --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
 
   deploy-artifact-snapshot-linux-arm64:
     executor: linux-arm64-amazonlinux-2
@@ -103,7 +103,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
+          bazel build --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
 
   deploy-artifact-snapshot-mac-x86_64:
     executor: mac-x86_64
@@ -113,7 +113,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-zip -- snapshot
+          bazel build --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-zip -- snapshot
 
   deploy-artifact-snapshot-mac-arm64:
     executor: mac-arm64
@@ -123,7 +123,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
+          bazel build --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
     executor:
@@ -145,7 +145,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz --compilation_mode=opt -- release
+          bazel build --define version=$(cat VERSION) //:deploy-linux-x86_64-targz --compilation_mode=opt
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-linux-x86_64.tar.gz ~/dist/typedb-console-linux-x86_64.tar.gz
@@ -162,7 +162,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt -- release
+          bazel build --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-linux-arm64.tar.gz ~/dist/typedb-console-linux-arm64.tar.gz
@@ -178,7 +178,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt -- release
+          bazel build --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-mac-x86_64.zip ~/dist/typedb-console-mac-x86_64.zip
@@ -194,7 +194,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
-          bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
+          bazel build --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt
       - run: |
           mkdir -p ~/dist
           cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-mac-arm64.zip

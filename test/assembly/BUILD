@@ -28,7 +28,6 @@ typedb_java_test(
         "//test/runner:typedb-console-runner",
         "@maven//:com_vaticle_typedb_typedb_runner",
     ],
-    classpath_resources = ["//test/runner:logback"],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "@vaticle_typedb_artifact_linux-arm64//file",
         "@vaticle_bazel_distribution//platform:is_linux_x86_64": "@vaticle_typedb_artifact_linux-x86_64//file",

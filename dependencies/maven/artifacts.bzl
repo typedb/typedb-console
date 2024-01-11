@@ -27,6 +27,6 @@ artifacts = [
   "org.slf4j:slf4j-api"
 ]
 
-internal_artifacts = {
+vaticle_artifacts = {
     'com.vaticle.typedb:typedb-runner': '4f185802db0304803a082dbd7be3bbb951e0fec4',
 }

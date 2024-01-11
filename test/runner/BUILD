@@ -41,8 +41,8 @@ assemble_maven(
     target = ":typedb-console-runner",
     workspace_refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     version_overrides = version(artifacts_org = artifacts, artifacts_repo={}),
-    project_name = "TypeDB Core Runner",
-    project_description = "TypeDB Runner classes and tools",
+    project_name = "TypeDB Console Runner",
+    project_description = "TypeDB Console Runner classes and tools",
 )
 
 deploy_maven(

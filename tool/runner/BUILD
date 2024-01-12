@@ -25,7 +25,6 @@ java_library(
     name = "typedb-console-runner",
     srcs = glob(["*.java"]),
     deps = [
-        "@vaticle_typedb_common//:common",
         "@maven//:info_picocli_picocli",
         "@maven//:org_zeroturnaround_zt_exec",
         "@maven//:org_slf4j_slf4j_api",

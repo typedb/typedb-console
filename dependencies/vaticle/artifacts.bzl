@@ -15,14 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-artifacts = [
-  "com.google.code.findbugs:jsr305",
-  "info.picocli:picocli",
-  "io.grpc:grpc-core",
-  "io.grpc:grpc-api",
-  "io.sentry:sentry",
-  "org.jline:jline",
-  "org.jline:jline-terminal-jansi",
-  "org.hamcrest:hamcrest-library",
-  "org.slf4j:slf4j-api"
-]
+maven_artifacts = {
+    'com.vaticle.typedb:typedb-runner': '4f185802db0304803a082dbd7be3bbb951e0fec4',
+}
+

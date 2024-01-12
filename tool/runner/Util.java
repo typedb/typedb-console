@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.console.test.runner;
+package com.vaticle.typedb.console.tool.runner;
 
 import org.zeroturnaround.exec.ProcessExecutor;
 import picocli.CommandLine;

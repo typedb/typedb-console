@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.console.test.runner;
+package com.vaticle.typedb.console.tool.runner;
 
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
@@ -28,8 +28,8 @@ import java.util.concurrent.TimeoutException;
 
 import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.console.test.runner.Util.getConsoleArchiveFile;
-import static com.vaticle.typedb.console.test.runner.Util.unarchive;
+import static com.vaticle.typedb.console.tool.runner.Util.getConsoleArchiveFile;
+import static com.vaticle.typedb.console.tool.runner.Util.unarchive;
 
 public class TypeDBConsoleRunner {
 

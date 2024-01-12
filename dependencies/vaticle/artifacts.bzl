@@ -16,6 +16,6 @@
 #
 
 maven_artifacts = {
-    'com.vaticle.typedb:typedb-runner': '4f185802db0304803a082dbd7be3bbb951e0fec4',
+    'com.vaticle.typedb:typedb-runner': 'ebc529c21f18462502b785850d7b9a4cdfe3b384',
 }
 

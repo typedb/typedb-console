@@ -64,7 +64,7 @@ build:
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //test/runner:deploy-maven -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //tool/runner:deploy-maven -- snapshot
 
 release:
   filter:
@@ -100,4 +100,4 @@ release:
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD
-        bazel run --define version=$(cat VERSION) //test/runner:deploy-maven -- release
+        bazel run --define version=$(cat VERSION) //tool/runner:deploy-maven -- release

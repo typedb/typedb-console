@@ -56,11 +56,11 @@ build:
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:test-assembly-native --test_output=streamed
     deploy-runner-maven-snapshot:
-      filter:
-        owner: vaticle
-        branch: master
+#      filter:
+#        owner: vaticle
+#        branch: master
       image: vaticle-ubuntu-22.04
-      dependencies: [build]
+#      dependencies: [build]
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD

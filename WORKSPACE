@@ -55,8 +55,8 @@ load("@rules_antlr//antlr:lang.bzl", "JAVA")
 load("@rules_antlr//antlr:repositories.bzl", "rules_antlr_dependencies")
 rules_antlr_dependencies(antlr_version, JAVA)
 
-# Load //builder/grpc
-load("@vaticle_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
+# Load //builder/proto_grpc
+load("@vaticle_dependencies//builder/proto_grpc:deps.bzl", grpc_deps = "deps")
 grpc_deps()
 
 load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
@@ -173,6 +173,7 @@ load("@vaticle_typedb_common//dependencies/maven:artifacts.bzl", vaticle_typedb_
 load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
 load("@vaticle_typedb_driver//dependencies/maven:artifacts.bzl", vaticle_typedb_driver_artifacts = "artifacts")
 load("//dependencies/maven:artifacts.bzl", vaticle_typedb_console_artifacts = "artifacts")
+load("//dependencies/vaticle:artifacts.bzl", vaticle_typedb_console_vaticle_maven_artifacts = "maven_artifacts")
 
 ###############
 # Load @maven #
@@ -187,6 +188,7 @@ maven(
     vaticle_dependencies_tool_maven_artifacts +
     io_grpc_artifacts,
     generate_compat_repositories = True,
+    internal_artifacts = vaticle_typedb_console_vaticle_maven_artifacts,
 )
 
 load("@maven//:compat.bzl", "compat_repositories")

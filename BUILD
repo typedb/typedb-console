@@ -96,7 +96,7 @@ pkg_tar(
 assemble_targz(
     name = "assemble-linux-x86_64-targz",
     output_filename = "typedb-console-linux-x86_64",
-    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = [":console-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_x86_64,
 )
@@ -104,7 +104,7 @@ assemble_targz(
 assemble_targz(
     name = "assemble-linux-arm64-targz",
     output_filename = "typedb-console-linux-arm64",
-    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = [":console-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_arm64
 )
@@ -112,7 +112,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
     output_filename = "typedb-console-mac-x86_64",
-    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = [":console-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_x86_64
 )
@@ -120,7 +120,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-mac-arm64-zip",
     output_filename = "typedb-console-mac-arm64",
-    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = [":console-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_arm64
 )
@@ -128,7 +128,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-x86_64-zip",
     output_filename = "typedb-console-windows-x86_64",
-    targets = [":console-artifact-native", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    targets = [":console-artifact-native", "//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_win_x86_64
 )

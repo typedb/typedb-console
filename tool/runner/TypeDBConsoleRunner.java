@@ -23,11 +23,11 @@ import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import static com.vaticle.typedb.common.collection.Collections.concatToList;
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.console.tool.runner.Util.getConsoleArchiveFile;
 import static com.vaticle.typedb.console.tool.runner.Util.unarchive;
 
@@ -60,7 +60,9 @@ public class TypeDBConsoleRunner {
     }
 
     private List<String> command(String... options) {
-        List<String> cmd = concatToList(list("console"), list(options));
+        List<String> cmd = new ArrayList<>();
+        cmd.add("console");
+        cmd.addAll(Arrays.asList(options));
         return Util.typeDBCommand(cmd);
     }
 

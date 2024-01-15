@@ -43,6 +43,7 @@ public class TypeDBConsoleRunner {
         System.out.println(name() + " distribution archive extracted.");
         executor = new ProcessExecutor()
                 .directory(distribution.toFile())
+                .environment("JAVA_HOME", System.getProperty("java.home"))
                 .redirectOutput(System.out)
                 .redirectError(System.err)
                 .readOutput(true)

@@ -136,50 +136,50 @@ assemble_zip(
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
-    artifact_group = "vaticle_typedb_console",
+    artifact_group = "typedb-console-linux-x86_64",
     artifact_name = "typedb-console-linux-x86_64-{version}.tar.gz",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
     name = "deploy-linux-arm64-targz",
     target = ":assemble-linux-arm64-targz",
-    artifact_group = "vaticle_typedb_console",
+    artifact_group = "typedb-console-linux-arm64",
     artifact_name = "typedb-console-linux-arm64-{version}.tar.gz",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
     name = "deploy-mac-x86_64-zip",
     target = ":assemble-mac-x86_64-zip",
-    artifact_group = "vaticle_typedb_console",
+    artifact_group = "typedb-console-mac-x86_64",
     artifact_name = "typedb-console-mac-x86_64-{version}.zip",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
     name = "deploy-mac-arm64-zip",
     target = ":assemble-mac-arm64-zip",
-    artifact_group = "vaticle_typedb_console",
+    artifact_group = "typedb-console-mac-arm64",
     artifact_name = "typedb-console-mac-arm64-{version}.zip",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
     name = "deploy-windows-x86_64-zip",
     target = ":assemble-windows-x86_64-zip",
-    artifact_group = "vaticle_typedb_console",
+    artifact_group = "typedb-console-windows-x86_64",
     artifact_name = "typedb-console-windows-x86_64-{version}.zip",
-    snapshot = deployment['artifact.snapshot'],
-    release = deployment['artifact.release'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
 )
 

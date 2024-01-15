@@ -90,8 +90,8 @@ jobs:
       - install-bazel-yum:
           arch: amd64
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
 
   deploy-artifact-snapshot-linux-arm64:
@@ -101,8 +101,8 @@ jobs:
       - install-bazel-yum:
           arch: arm64
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
 
   deploy-artifact-snapshot-mac-x86_64:
@@ -111,8 +111,8 @@ jobs:
       - checkout
       - install-bazel-brew
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-zip -- snapshot
 
   deploy-artifact-snapshot-mac-arm64:
@@ -121,8 +121,8 @@ jobs:
       - checkout
       - install-bazel-brew
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
@@ -143,8 +143,8 @@ jobs:
       - install-bazel-yum:
           arch: amd64
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
@@ -160,8 +160,8 @@ jobs:
       - install-bazel-yum:
           arch: arm64
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
@@ -176,8 +176,8 @@ jobs:
       - checkout
       - install-bazel-brew
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist
@@ -192,8 +192,8 @@ jobs:
       - checkout
       - install-bazel-brew
       - run: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
       - run: |
           mkdir -p ~/dist

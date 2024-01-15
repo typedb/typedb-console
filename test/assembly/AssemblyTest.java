@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.tool.runner.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.fail;
@@ -31,7 +33,9 @@ public class AssemblyTest {
     @Test
     public void test_console_command() throws IOException, InterruptedException, TimeoutException {
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
-        TypeDBCoreRunner coreRunner = new TypeDBCoreRunner();
+        Map<String, String> coreOptions = new HashMap<>();
+        coreOptions.put("--diagnostics.reporting.enable", "false");
+        TypeDBCoreRunner coreRunner = new TypeDBCoreRunner(coreOptions);
         try {
             coreRunner.start();
             int status = consoleRunner.run("--core", coreRunner.address(), "--command", "database create assembly-test-db");

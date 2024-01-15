@@ -119,17 +119,6 @@ unuseddeps_deps()
 load("@vaticle_dependencies//tool/sonarcloud:deps.bzl", "sonarcloud_dependencies")
 sonarcloud_dependencies()
 
-# Load //tool/docs
-load("@vaticle_dependencies//tool/docs:python_deps.bzl", docs_deps = "deps")
-docs_deps()
-load("@vaticle_dependencies_tool_docs//:requirements.bzl", install_doc_deps = "install_deps")
-install_doc_deps()
-
-load("@vaticle_dependencies//tool/docs:java_deps.bzl", java_doc_deps = "deps")
-java_doc_deps()
-load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
-google_common_workspace_rules()
-
 ######################################
 # Load @vaticle_bazel_distribution #
 ######################################
@@ -151,11 +140,17 @@ github_deps()
 load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
 pip_deps()
 
-# Load @vaticle_bazel_distribution_cloudsmith
-load("@vaticle_bazel_distribution//common/cloudsmith:deps.bzl", cloudsmith_deps = "deps")
-cloudsmith_deps()
-load("@vaticle_bazel_distribution_cloudsmith//:requirements.bzl", install_cloudsmith_deps = "install_deps")
-install_cloudsmith_deps()
+# Load @vaticle_bazel_distribution_uploader
+load("@vaticle_bazel_distribution//common/uploader:deps.bzl", uploader_deps = "deps")
+uploader_deps()
+load("@vaticle_bazel_distribution_uploader//:requirements.bzl", install_uploader_deps = "install_deps")
+install_uploader_deps()
+
+# Load //docs
+load("@vaticle_bazel_distribution//docs:java/deps.bzl", java_doc_deps = "deps")
+java_doc_deps()
+load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
+google_common_workspace_rules()
 
 ################################
 # Load @vaticle dependencies #

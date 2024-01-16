@@ -173,8 +173,8 @@ vaticle_typedb_artifact()
 load("@vaticle_typedb_common//dependencies/maven:artifacts.bzl", vaticle_typedb_common_artifacts = "artifacts")
 load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
 load("@vaticle_typedb_driver//dependencies/maven:artifacts.bzl", vaticle_typedb_driver_artifacts = "artifacts")
+load("@vaticle_typedb_driver//dependencies/vaticle:artifacts.bzl", vaticle_typedb_vaticle_maven_artifacts = "maven_artifacts")
 load("//dependencies/maven:artifacts.bzl", vaticle_typedb_console_artifacts = "artifacts")
-load("//dependencies/vaticle:artifacts.bzl", vaticle_typedb_console_vaticle_maven_artifacts = "maven_artifacts")
 
 ###############
 # Load @maven #
@@ -189,7 +189,7 @@ maven(
     vaticle_dependencies_tool_maven_artifacts +
     io_grpc_artifacts,
     generate_compat_repositories = True,
-    internal_artifacts = vaticle_typedb_console_vaticle_maven_artifacts,
+    internal_artifacts = vaticle_typedb_vaticle_maven_artifacts,
 )
 
 load("@maven//:compat.bzl", "compat_repositories")

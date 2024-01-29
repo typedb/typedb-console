@@ -19,7 +19,6 @@ config:
   version-candidate: VERSION
   dependencies:
     dependencies: [build]
-    typedb-common: [build, release]
     typedb-driver: [build, release]
 
 build:

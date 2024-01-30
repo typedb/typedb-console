@@ -208,7 +208,7 @@ jobs:
     executor: linux-x86_64-ubuntu-2204
     steps:
       - checkout
-      - install-bazel-linux:
+      - install-bazel-apt:
           arch: amd64
       - run:
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN

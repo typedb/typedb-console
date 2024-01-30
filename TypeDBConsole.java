@@ -156,10 +156,12 @@ public class TypeDBConsole {
         }
     }
 
+    /**
+     * We initialise diagnostics in the default set-up which will only report uncaught exceptions.
+     */
     private static void configureDiagnostics(boolean diagnosticsDisabled) {
         Sentry.init(options -> {
             options.setDsn(DIAGNOSTICS_REPORTING_URI);
-            options.setEnableTracing(true);
             options.setSendDefaultPii(false);
             options.setRelease(releaseName());
             if (!diagnosticsDisabled) options.setEnabled(true);
@@ -283,7 +285,6 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
-            Sentry.captureException(e);
         } finally {
             executorService.shutdownNow();
         }
@@ -387,7 +388,6 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
-            Sentry.captureException(e);
         }
         return false;
     }
@@ -490,7 +490,6 @@ public class TypeDBConsole {
             }
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
-            Sentry.captureException(e);
             return false;
         } finally {
             executorService.shutdownNow();

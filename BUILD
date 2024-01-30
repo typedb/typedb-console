@@ -50,7 +50,7 @@ java_library(
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/query",
         "@vaticle_typeql//java/pattern",
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -187,7 +187,6 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
-        "@vaticle_typedb_common",
         "@vaticle_typedb_driver",
         "@vaticle_typeql",
     ],
@@ -231,5 +230,6 @@ filegroup(
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",
         "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/release/notes:validate",
+        "@vaticle_dependencies//tool/sync:dependencies",
     ],
 )

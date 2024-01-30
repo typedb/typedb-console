@@ -146,12 +146,6 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-linux-x86_64-targz --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console-linux-x86_64.tar.gz ~/dist/typedb-console-linux-x86_64.tar.gz
-      - persist_to_workspace:
-          root: ~/dist
-          paths: ["./*"]
 
   deploy-artifact-release-linux-arm64:
     executor: linux-arm64-amazonlinux-2
@@ -163,13 +157,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console-linux-arm64.tar.gz ~/dist/typedb-console-linux-arm64.tar.gz
-      - persist_to_workspace:
-          root: ~/dist
-          paths: ["./*"]
-    
+
   deploy-artifact-release-mac-x86_64:
     executor: mac-x86_64
     steps:
@@ -179,13 +167,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console-mac-x86_64.zip ~/dist/typedb-console-mac-x86_64.zip
-      - persist_to_workspace:
-          root: ~/dist
-          paths: ["./*"]
-  
+
   deploy-artifact-release-mac-arm64:
     executor: mac-arm64
     steps:
@@ -195,13 +177,7 @@ jobs:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
-      - run: |
-          mkdir -p ~/dist
-          cp bazel-bin/typedb-console-mac-arm64.zip ~/dist/typedb-console-mac-arm64.zip
-      - persist_to_workspace:
-          root: ~/dist
-          paths: [ "./*" ] 
-          
+
   deploy-artifact-release-windows-x86_64:
     executor:
       name: win/default
@@ -212,26 +188,31 @@ jobs:
       - checkout
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\deploy_release.bat
-      - persist_to_workspace:
-          root: dist
-          paths: [ "./*" ]
 
   deploy-github:
     executor: linux-x86_64-ubuntu-2204
     steps:
-      - attach_workspace:
-          at: ~/dist
       - checkout
       - install-bazel-apt:
           arch: amd64
       - run:
           name: "Publish Release on GitHub"
           command: |
-            wget https://github.com/tcnksm/ghr/releases/download/v0.12.1/ghr_v0.12.1_linux_amd64.tar.gz
-            tar -xf ghr_v0.12.1_linux_amd64.tar.gz
-            ghr_v0.12.1_linux_amd64/ghr -t ${REPO_GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} \
+            wget https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
+            tar -xf ghr_v0.16.2_linux_amd64.tar.gz
+            ghr_v0.16.2_linux_amd64/ghr -t ${REPO_GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB Console $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
-              -c ${CIRCLE_SHA1} -delete  $(cat VERSION) ~/dist/
+              -c ${CIRCLE_SHA1} -delete $(cat VERSION)
+
+  sync-dependencies:
+    executor: linux-x86_64-ubuntu-2204
+    steps:
+      - checkout
+      - install-bazel-apt:
+          arch: amd64
+      - run:
+          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
+          bazel run @vaticle_dependencies//tool/sync:dependencies -- --source ${CIRCLE_PROJECT_REPONAME}@$(cat VERSION)
 
   release-cleanup:
     executor: linux-x86_64-ubuntu-2204
@@ -249,23 +230,23 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [master]
+              only: [master, development]
       - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
-              only: [master]
+              only: [master, development]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [master]
+              only: [master, development]
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
-              only: [master]
+              only: [master, development]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [master]
+              only: [master, development]
 
   release:
     jobs:
@@ -299,9 +280,15 @@ workflows:
             - deploy-artifact-release-mac-x86_64
             - deploy-artifact-release-mac-arm64
             - deploy-artifact-release-windows-x86_64
-      - release-cleanup:
+      - sync-dependencies:
           filters:
             branches:
               only: [release]
           requires:
             - deploy-github
+      - release-cleanup:
+          filters:
+            branches:
+              only: [release]
+          requires:
+            - sync-dependencies

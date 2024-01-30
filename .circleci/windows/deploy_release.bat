@@ -27,6 +27,3 @@ SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
 SET /p VER=<VERSION
 bazel --output_user_root=C:/b run --verbose_failures --define version=%VER% //:deploy-windows-x86_64-zip --compilation_mode=opt -- release
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
-
-MD dist
-COPY bazel-bin\typedb-console-windows-x86_64.zip dist\typedb-console-windows-x86_64.zip

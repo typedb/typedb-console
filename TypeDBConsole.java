@@ -182,7 +182,7 @@ public class TypeDBConsole {
             byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
             byte[] truncatedHash = Arrays.copyOfRange(macHash, 0, 8);
             return String.format("%X", ByteBuffer.wrap(truncatedHash).getLong());
-        } catch (NoSuchAlgorithmException | IOException e) {
+        } catch (NoSuchAlgorithmException | IOException | NullPointerException e) {
             return "";
         }
     }

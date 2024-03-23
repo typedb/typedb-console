@@ -34,7 +34,8 @@ public class AssemblyTest {
     public void test_console_command() throws IOException, InterruptedException, TimeoutException {
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
         Map<String, String> coreOptions = new HashMap<>();
-        coreOptions.put("--diagnostics.reporting.enable", "false");
+        coreOptions.put("--diagnostics.reporting.errors", "false");
+        coreOptions.put("--diagnostics.monitoring.enable", "false");
         TypeDBCoreRunner coreRunner = new TypeDBCoreRunner(coreOptions);
         try {
             coreRunner.start();

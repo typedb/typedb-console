@@ -1,6 +1,6 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:2.27.0-rc0
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:2.27.0
 
 
 ## New Features
@@ -11,5 +11,5 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 ## Code Refactors
 
 ## Other Improvements
-- **Fix null ptr in diagnostics user-id generation**
 
+- **Fix null pointer in diagnostics user-id generation**

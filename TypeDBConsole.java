@@ -496,7 +496,7 @@ public class TypeDBConsole {
                 String[] optCloud = options.cloud();
                 if (Arrays.stream(optCloud).anyMatch(address -> address.contains("="))) {
                     Map<String, String> addressTranslation = Arrays.stream(optCloud).map(address -> address.split("=", 2))
-                            .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[parts.length - 1])); // --cloud=A=B,C becomes { A: B, C: C }
+                            .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[1]));
                     driver = TypeDB.cloudDriver(addressTranslation, createTypeDBCredential(options));
                 } else {
                     driver = TypeDB.cloudDriver(set(optCloud), createTypeDBCredential(options));
@@ -949,12 +949,16 @@ public class TypeDBConsole {
         }
 
         private void validateCloudOptions() {
+            assert cloud != null;
             if (username == null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cloud'");
             if (password == null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cloud'");
             if (!tlsEnabled && tlsRootCA != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
+            if (Arrays.stream(cloud).map(address -> address.contains("=")).distinct().count() != 1) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either all or none of the parameters supplied with '--cloud' must provide translation.");
+            }
         }
 
         @Nullable

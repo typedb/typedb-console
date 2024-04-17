@@ -3,6 +3,9 @@
 @maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
 @maven//:com_electronwill_night_config_core_3_6_5
 @maven//:com_electronwill_night_config_toml_3_6_5
+@maven//:com_fasterxml_jackson_core_jackson_annotations_2_16_0
+@maven//:com_fasterxml_jackson_core_jackson_core_2_16_0
+@maven//:com_fasterxml_jackson_core_jackson_databind_2_16_0
 @maven//:com_google_android_annotations_4_1_1_4
 @maven//:com_google_api_grpc_proto_google_common_protos_2_9_0
 @maven//:com_google_auth_google_auth_library_credentials_1_6_0
@@ -25,9 +28,10 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
-@maven//:com_vaticle_typedb_typedb_cloud_runner_0_0_0_2c96925694c196be3c898aa3ffc0f56ccc84f400
+@maven//:com_vaticle_typedb_typedb_cloud_runner_0_0_0_81def47a63eacbd51934e63ba842b06116643c15
 @maven//:com_vaticle_typedb_typedb_runner_0_0_0_fee8e9c5a8c17a58b4639b91e23458e715e0d3a3
-@maven//:commons_codec_commons_codec_1_11
+@maven//:com_vdurmont_semver4j_3_1_0
+@maven//:commons_codec_commons_codec_1_13
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2
 @maven//:info_picocli_picocli_4_6_1
@@ -97,10 +101,9 @@
 @maven//:io_sentry_sentry_7_1_0
 @maven//:javax_annotation_javax_annotation_api_1_3_2
 @maven//:junit_junit_4_12
-@maven//:net_bytebuddy_byte_buddy_1_10_5
-@maven//:net_bytebuddy_byte_buddy_agent_1_10_5
 @maven//:net_jcip_jcip_annotations_1_0
 @maven//:org_antlr_antlr4_runtime_4_8
+@maven//:org_apache_commons_commons_lang3_3_9
 @maven//:org_apache_httpcomponents_httpclient_4_5_11
 @maven//:org_apache_httpcomponents_httpcore_4_4_13
 @maven//:org_apache_tomcat_annotations_api_6_0_53
@@ -117,8 +120,7 @@
 @maven//:org_jline_jline_terminal_3_17_1
 @maven//:org_jline_jline_terminal_jansi_3_17_1
 @maven//:org_jsoup_jsoup_1_16_1
-@maven//:org_mockito_mockito_core_3_2_4
-@maven//:org_objenesis_objenesis_2_6
+@maven//:org_kohsuke_github_api_1_101
 @maven//:org_slf4j_jcl_over_slf4j_2_0_0
 @maven//:org_slf4j_log4j_over_slf4j_2_0_0
 @maven//:org_slf4j_slf4j_api_2_0_0

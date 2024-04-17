@@ -85,7 +85,7 @@ public class Printer {
 
     public void databaseReplica(Database.Replica replica) {
         String s = "{ " +
-                colorJsonKey("address: ") + replica.address() + ";" +
+                colorJsonKey(" server: ") + replica.server() + ";" +
                 colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
                 colorJsonKey(" term: ") + replica.term() +
                 " }";

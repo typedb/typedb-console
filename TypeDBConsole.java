@@ -1,18 +1,7 @@
 /*
- * Copyright (C) 2022 Vaticle
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
 package com.vaticle.typedb.console;
@@ -78,9 +67,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -95,6 +84,7 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.jline.builtins.Completers.TreeCompleter.node;
 
 public class TypeDBConsole {
@@ -102,7 +92,7 @@ public class TypeDBConsole {
     private static final String DISTRIBUTION_NAME = "TypeDB Console";
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
-            "Copyright (C) 2022 Vaticle\n";
+            "Copyright (C) Vaticle\n";
     private static final Path COMMAND_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =
@@ -498,28 +488,33 @@ public class TypeDBConsole {
     }
 
     private TypeDBDriver createTypeDBDriver(CLIOptions options) {
-        TypeDBDriver driver = null;
         try {
+            TypeDBDriver driver;
             if (options.core() != null) {
                 driver = TypeDB.coreDriver(options.core());
-            } else {
-                String optCloud = options.cloud();
-                if (optCloud != null) {
-                    driver = TypeDB.cloudDriver(set(optCloud.split(",")), createTypeDBCredential(options));
-                    Optional<Duration> passwordExpiry = driver.users().get(options.username)
-                            .passwordExpirySeconds().map(Duration::ofSeconds);
-                    if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
-                        printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
-                    }
+            } else if (options.cloud() != null) {
+                String[] optCloud = options.cloud();
+                if (Arrays.stream(optCloud).anyMatch(address -> address.contains("="))) {
+                    Map<String, String> addressTranslation = Arrays.stream(optCloud).map(address -> address.split("=", 2))
+                            .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[1]));
+                    driver = TypeDB.cloudDriver(addressTranslation, createTypeDBCredential(options));
                 } else {
-                    driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS);
+                    driver = TypeDB.cloudDriver(set(optCloud), createTypeDBCredential(options));
                 }
+                Optional<Duration> passwordExpiry = driver.users().get(options.username)
+                        .passwordExpirySeconds().map(Duration::ofSeconds);
+                if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
+                    printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
+                }
+            } else {
+                driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS);
             }
+            return driver;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
             System.exit(1);
+            return null; // unreachable, but needed to satisfy the compiler
         }
-        return driver;
     }
 
     private TypeDBCredential createTypeDBCredential(CLIOptions options) {
@@ -869,10 +864,11 @@ public class TypeDBConsole {
 
         @CommandLine.Option(
                 names = {"--cloud"},
-                description = "TypeDB Cloud address to which Console will connect to"
+                description = "TypeDB Cloud address(es) to which Console will connect to, or Cloud address translation 'configured-url=actual-url'",
+                split = ","
         )
         private @Nullable
-        String cloud;
+        String[] cloud;
 
         @CommandLine.Option(names = {"--username"}, description = "Username")
         private @Nullable
@@ -953,12 +949,16 @@ public class TypeDBConsole {
         }
 
         private void validateCloudOptions() {
+            assert cloud != null;
             if (username == null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cloud'");
             if (password == null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cloud'");
             if (!tlsEnabled && tlsRootCA != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
+            if (Arrays.stream(cloud).map(address -> address.contains("=")).distinct().count() != 1) {
+                throw new CommandLine.ParameterException(spec.commandLine(), "Either all or none of the parameters supplied with '--cloud' must provide translation.");
+            }
         }
 
         @Nullable
@@ -967,7 +967,7 @@ public class TypeDBConsole {
         }
 
         @Nullable
-        private String cloud() {
+        private String[] cloud() {
             return cloud;
         }
 

@@ -24,6 +24,7 @@ public class AssemblyTest {
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
         Map<String, String> coreOptions = new HashMap<>();
         coreOptions.put("--diagnostics.reporting.errors", "false");
+        coreOptions.put("--diagnostics.reporting.statistics", "false");
         coreOptions.put("--diagnostics.monitoring.enable", "false");
         TypeDBCoreRunner coreRunner = new TypeDBCoreRunner(coreOptions);
         try {

@@ -28,8 +28,8 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
-@maven//:com_vaticle_typedb_typedb_cloud_runner_0_0_0_81def47a63eacbd51934e63ba842b06116643c15
-@maven//:com_vaticle_typedb_typedb_runner_0_0_0_fee8e9c5a8c17a58b4639b91e23458e715e0d3a3
+@maven//:com_vaticle_typedb_typedb_cloud_runner_2_28_0
+@maven//:com_vaticle_typedb_typedb_runner_2_28_0
 @maven//:com_vdurmont_semver4j_3_1_0
 @maven//:commons_codec_commons_codec_1_13
 @maven//:commons_io_commons_io_2_3
@@ -125,5 +125,5 @@
 @maven//:org_slf4j_log4j_over_slf4j_2_0_0
 @maven//:org_slf4j_slf4j_api_2_0_0
 @maven//:org_slf4j_slf4j_simple_2_0_0
-@maven//:org_yaml_snakeyaml_1_25
+@maven//:org_yaml_snakeyaml_2_2
 @maven//:org_zeroturnaround_zt_exec_1_10

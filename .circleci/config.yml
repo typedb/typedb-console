@@ -37,6 +37,11 @@ executors:
       xcode: "13.4.1"
     working_directory: ~/typedb-console
 
+  win-x86_64:
+    resource_class: windows.xlarge
+    machine:
+      image: windows-server-2022-gui:2024.01.1
+    shell: cmd.exe
 
 commands:
   install-bazel-yum:
@@ -113,10 +118,7 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
-    executor:
-      name: win/default
-      shell: cmd.exe
-      size: large
+    executor: win-x86_64
     working_directory: ~/typedb-driver
     steps:
       - checkout
@@ -166,10 +168,7 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip --compilation_mode=opt -- release
 
   deploy-artifact-release-windows-x86_64:
-    executor:
-      name: win/default
-      shell: cmd.exe
-      size: large
+    executor: win-x86_64
     working_directory: ~/typedb-driver
     steps:
       - checkout

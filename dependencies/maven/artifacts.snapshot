@@ -125,5 +125,5 @@
 @maven//:org_slf4j_log4j_over_slf4j_2_0_0
 @maven//:org_slf4j_slf4j_api_2_0_0
 @maven//:org_slf4j_slf4j_simple_2_0_0
-@maven//:org_yaml_snakeyaml_1_25
+@maven//:org_yaml_snakeyaml_2_2
 @maven//:org_zeroturnaround_zt_exec_1_10

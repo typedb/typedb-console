@@ -101,7 +101,6 @@ public class TypeDBConsole {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBConsole.class);
 
     private static final Duration PASSWORD_EXPIRY_WARN = Duration.ofDays(7);
-    private static final int ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
 
     private final Printer printer;
     private ExecutorService executorService;
@@ -338,7 +337,6 @@ public class TypeDBConsole {
         if (isCloud && options.readAnyReplica().isPresent() && options.readAnyReplica().get()) {
             promptBuilder.append("[any-replica]");
         }
-        options.transactionTimeoutMillis(ONE_HOUR_IN_MILLIS);
         try (TypeDBSession session = driver.session(database, sessionType, options);
              TypeDBTransaction tx = session.transaction(transactionType, options)) {
             hasUncommittedChanges = false;

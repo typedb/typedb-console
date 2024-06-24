@@ -66,13 +66,16 @@ commands:
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-bazel-brew:
+  install-bazel-mac:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
-      - run: brew install bazelisk
-
-  install-brew-rosetta:
-    steps:
-      - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: |
+          brew install python@3.8
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
+          sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
 jobs:
   deploy-artifact-snapshot-linux-x86_64:
@@ -102,8 +105,8 @@ jobs:
     steps:
       - checkout
       - macos/install-rosetta
-      - install-brew-rosetta
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -113,7 +116,8 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -154,8 +158,8 @@ jobs:
     steps:
       - checkout
       - macos/install-rosetta
-      - install-brew-rosetta
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -165,7 +169,8 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD

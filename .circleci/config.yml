@@ -237,7 +237,7 @@ workflows:
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, password-update-variant]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:

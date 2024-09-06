@@ -225,15 +225,15 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, password-update-variant]
       - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, password-update-variant]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, password-update-variant]
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
@@ -241,7 +241,7 @@ workflows:
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [master, development]
+              only: [master, development, password-update-variant]
 
   release:
     jobs:

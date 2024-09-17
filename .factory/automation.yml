@@ -44,7 +44,7 @@ build:
     deploy-runner-maven-snapshot:
       filter:
         owner: vaticle
-        branch: [master, development, password-update-variant]
+        branch: [master, development]
       image: vaticle-ubuntu-22.04
       dependencies: [build]
       command: |

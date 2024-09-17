@@ -419,7 +419,7 @@ public class TypeDBConsole {
                         if (passwordUpdateSuccessful) {
                             printer.info("Please login again with your updated password.");
                             break;
-                        }
+                        } else return false;
                     } else if (command.isUserDelete()) {
                         boolean success = runUserDelete(driver, isCloud, command.asUserDelete().user());
                         if (!success) return false;

@@ -409,6 +409,17 @@ public class TypeDBConsole {
                     } else if (command.isUserCreate()) {
                         boolean success = runUserCreate(driver, isCloud, command.asUserCreate().user(), command.asUserCreate().password());
                         if (!success) return false;
+                    } else if (command.isUserPasswordUpdate()) {
+                        REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                        boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                                isCloud,
+                                options.username,
+                                userPasswordUpdate.passwordOld(),
+                                userPasswordUpdate.passwordNew());
+                        if (passwordUpdateSuccessful) {
+                            printer.info("Please login again with your updated password.");
+                            break;
+                        } else return false;
                     } else if (command.isUserDelete()) {
                         boolean success = runUserDelete(driver, isCloud, command.asUserDelete().user());
                         if (!success) return false;

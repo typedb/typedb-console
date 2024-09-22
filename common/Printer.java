@@ -7,8 +7,6 @@
 package com.vaticle.typedb.console.common;
 
 import com.vaticle.typedb.driver.api.TypeDBTransaction;
-import com.vaticle.typedb.driver.api.answer.ConceptMap;
-import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.driver.api.answer.JSON;
 import com.vaticle.typedb.driver.api.answer.ValueGroup;
 import com.vaticle.typedb.driver.api.concept.Concept;
@@ -20,21 +18,16 @@ import com.vaticle.typedb.driver.api.concept.type.Type;
 import com.vaticle.typedb.driver.api.concept.value.Value;
 import com.vaticle.typedb.driver.api.database.Database;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.ISA;
 import static java.util.stream.Collectors.joining;
 
 public class Printer {
@@ -54,16 +47,8 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptMap(ConceptMap conceptMap, TypeDBTransaction tx) {
-        out.println(conceptMapDisplayString(conceptMap, tx));
-    }
-
-    public void conceptMapGroup(ConceptMapGroup answer, TypeDBTransaction tx) {
-        out.println(conceptDisplayString(answer.owner(), tx) + " => {");
-        for (ConceptMap conceptMap : answer.conceptMaps().collect(Collectors.toList())) {
-            out.println(indent(conceptMapDisplayString(conceptMap, tx)));
-        }
-        out.println("}");
+    public void conceptRow(ConceptRow conceptRow, TypeDBTransaction tx) {
+        out.println(conceptRowDisplayString(conceptRow, tx));
     }
 
     public void json(JSON json) {
@@ -92,14 +77,14 @@ public class Printer {
         out.println(s);
     }
 
-    private String conceptMapDisplayString(ConceptMap conceptMap, TypeDBTransaction tx) {
-        String content = conceptMap.variables()
-                .map(key -> {
-                    Concept value = conceptMap.get(key);
+    private String conceptRowDisplayString(ConceptRow conceptRow, TypeDBTransaction tx) {
+        String content = conceptRow.header()
+                .map(columnName -> {
+                    Concept value = conceptRow.get(columnName);
                     if (value.isValue()) {
-                        return TypeQLToken.Char.QUESTION_MARK + key + " = " + conceptDisplayString(value.asValue(), tx) + ";";
+                        return "?" + key + " = " + conceptDisplayString(value.asValue(), tx) + ";";
                     } else {
-                        return TypeQLToken.Char.$ + key + " " + conceptDisplayString(value, tx) + ";";
+                        return "$" + key + " " + conceptDisplayString(value, tx) + ";";
                     }
                 }).collect(joining("\n"));
         StringBuilder sb = new StringBuilder("{");
@@ -142,11 +127,11 @@ public class Printer {
         else if (value.isString()) rawValue = value.asString();
         else if (value.isDateTime()) rawValue = value.asDateTime();
         else throw new TypeDBConsoleException(ILLEGAL_CAST);
-        return com.vaticle.typeql.lang.common.util.Strings.valueToString(rawValue);
+        return rawValue.toString();
     }
 
     private String isaDisplayString(Thing thing) {
-        return colorKeyword(ISA.toString()) + " " + colorType(thing.getType().getLabel().scopedName());
+        return colorKeyword("isa") + " " + colorType(thing.getType().getLabel().scopedName());
     }
 
     private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
@@ -157,7 +142,7 @@ public class Printer {
             RoleType role = rolePlayer.getKey();
             List<? extends Thing> things = rolePlayer.getValue();
             for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel().name()) + ": " + colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
+                String rolePlayerString = colorType(role.getLabel().name()) + ": " + colorKeyword("IID") + " " + thing.getIID();
                 rolePlayerStrings.add(rolePlayerString);
             }
         }
@@ -166,20 +151,20 @@ public class Printer {
     }
 
     private String iidDisplayString(Thing thing) {
-        return colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
+        return colorKeyword("IID") + " " + thing.getIID();
     }
 
     private String typeDisplayString(Type type, TypeDBTransaction tx) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(colorKeyword(TypeQLToken.Constraint.TYPE.toString()))
+        sb.append(colorKeyword("type"))
                 .append(" ")
                 .append(colorType(type.getLabel().toString()));
 
         if (!type.isRoot()) {
             Type superType = type.getSupertype(tx).resolve();
             sb.append(" ")
-                    .append(colorKeyword(TypeQLToken.Constraint.SUB.toString()))
+                    .append(colorKeyword("sub"))
                     .append(" ")
                     .append(colorType(superType.getLabel().scopedName()));
         }
@@ -187,7 +172,7 @@ public class Printer {
     }
 
     private String attributeDisplayString(Attribute attribute) {
-        return com.vaticle.typeql.lang.common.util.Strings.valueToString(attribute.getValue());
+        return attribute.getValue().toString();
     }
 
     private String colorKeyword(String s) {

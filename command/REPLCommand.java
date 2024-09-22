@@ -8,7 +8,6 @@ package com.vaticle.typedb.console.command;
 
 import com.vaticle.typedb.driver.api.TypeDBDriver;
 import com.vaticle.typedb.driver.api.TypeDBOptions;
-import com.vaticle.typedb.driver.api.TypeDBSession;
 import com.vaticle.typedb.driver.api.TypeDBTransaction;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Printer;
@@ -478,23 +477,17 @@ public interface REPLCommand {
         private static final String description = "Start a transaction to database <db> with schema or data session, with read or write transaction";
 
         private final String database;
-        private final TypeDBSession.Type sessionType;
         private final TypeDBTransaction.Type transactionType;
         private final TypeDBOptions options;
 
-        public Transaction(String database, TypeDBSession.Type sessionType, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
+        public Transaction(String database, TypeDBTransaction.Type transactionType, TypeDBOptions options) {
             this.database = database;
-            this.sessionType = sessionType;
             this.transactionType = transactionType;
             this.options = options;
         }
 
         public String database() {
             return database;
-        }
-
-        public TypeDBSession.Type sessionType() {
-            return sessionType;
         }
 
         public TypeDBTransaction.Type transactionType() {
@@ -785,15 +778,14 @@ public interface REPLCommand {
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Replicas.token)) {
             String database = tokens[2];
             command = new Database.Replicas(database);
-        } else if (tokens.length >= 4 && tokens[0].equals(Transaction.token) &&
-                (tokens[2].equals("schema") || tokens[2].equals("data")) && (tokens[3].equals("read") || tokens[3].equals("write"))) {
+        } else if (tokens.length >= 3 && tokens[0].equals(Transaction.token) &&
+                (tokens[2].equals("write") || tokens[2].equals("read") || tokens[2].equals("schema"))) {
             String database = tokens[1];
-            TypeDBSession.Type sessionType = tokens[2].equals("schema") ? TypeDBSession.Type.SCHEMA : TypeDBSession.Type.DATA;
-            TypeDBTransaction.Type transactionType = tokens[3].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.WRITE;
+            TypeDBTransaction.Type transactionType = tokens[2].equals("write") ? TypeDBTransaction.Type.WRITE : tokens[2].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.SCHEMA;
             TypeDBOptions options;
-            if (tokens.length > 4) options = Options.from(Arrays.copyOfRange(tokens, 4, tokens.length), isCloud);
+            if (tokens.length > 3) options = Options.from(Arrays.copyOfRange(tokens, 3, tokens.length), isCloud);
             else options = new TypeDBOptions();
-            command = new Transaction(database, sessionType, transactionType, options);
+            command = new Transaction(database, transactionType, options);
         }
         return command;
     }

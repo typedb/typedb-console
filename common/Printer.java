@@ -7,25 +7,22 @@
 package com.vaticle.typedb.console.common;
 
 import com.vaticle.typedb.driver.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.answer.ConceptRow;
 import com.vaticle.typedb.driver.api.answer.JSON;
 import com.vaticle.typedb.driver.api.answer.ValueGroup;
 import com.vaticle.typedb.driver.api.concept.Concept;
 import com.vaticle.typedb.driver.api.concept.thing.Attribute;
+import com.vaticle.typedb.driver.api.concept.thing.Entity;
 import com.vaticle.typedb.driver.api.concept.thing.Relation;
 import com.vaticle.typedb.driver.api.concept.thing.Thing;
-import com.vaticle.typedb.driver.api.concept.type.RoleType;
 import com.vaticle.typedb.driver.api.concept.type.Type;
 import com.vaticle.typedb.driver.api.concept.value.Value;
-import com.vaticle.typedb.driver.api.database.Database;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.joining;
@@ -45,6 +42,10 @@ public class Printer {
 
     public void error(String s) {
         err.println(colorError(s));
+    }
+
+    public void ok() {
+        out.println("OK");
     }
 
     public void conceptRow(ConceptRow conceptRow, TypeDBTransaction tx) {
@@ -68,23 +69,23 @@ public class Printer {
         else return value.toString();
     }
 
-    public void databaseReplica(Database.Replica replica) {
-        String s = "{ " +
-                colorJsonKey(" server: ") + replica.server() + ";" +
-                colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
-                colorJsonKey(" term: ") + replica.term() +
-                " }";
-        out.println(s);
-    }
+//    public void databaseReplica(Database.Replica replica) {
+//        String s = "{ " +
+//                colorJsonKey(" server: ") + replica.server() + ";" +
+//                colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
+//                colorJsonKey(" term: ") + replica.term() +
+//                " }";
+//        out.println(s);
+//    }
 
     private String conceptRowDisplayString(ConceptRow conceptRow, TypeDBTransaction tx) {
         String content = conceptRow.header()
                 .map(columnName -> {
                     Concept value = conceptRow.get(columnName);
                     if (value.isValue()) {
-                        return "?" + key + " = " + conceptDisplayString(value.asValue(), tx) + ";";
+                        return "?" + columnName + " = " + conceptDisplayString(value.asValue(), tx) + ";";
                     } else {
-                        return "$" + key + " " + conceptDisplayString(value, tx) + ";";
+                        return "$" + columnName + " " + conceptDisplayString(value, tx) + ";";
                     }
                 }).collect(joining("\n"));
         StringBuilder sb = new StringBuilder("{");
@@ -102,17 +103,18 @@ public class Printer {
         if (concept.isValue()) return valueDisplayString(concept.asValue());
 
         StringBuilder sb = new StringBuilder();
-        if (concept instanceof Attribute) {
-            sb.append(attributeDisplayString(concept.asThing().asAttribute()));
-        } else if (concept instanceof Type) {
+        if (concept.isType()) {
             sb.append(typeDisplayString(concept.asType(), tx));
-        } else {
-            sb.append(iidDisplayString(concept.asThing()));
         }
-        if (concept instanceof Relation) {
-            sb.append(" ").append(relationDisplayString(concept.asThing().asRelation(), tx));
+        else if (concept.isAttribute()) {
+            sb.append(attributeDisplayString(concept.asAttribute()));
+        } else if (concept.isEntity()) {
+            sb.append(entityDisplayKeyString(concept.asEntity()));
+        } else if (concept.isRelation()) {
+            sb.append(relationDisplayKeyString(concept.asRelation()));
         }
-        if (concept instanceof Thing) {
+
+        if (concept.isThing()) {
             sb.append(" ").append(isaDisplayString(concept.asThing()));
         }
 
@@ -123,9 +125,14 @@ public class Printer {
         Object rawValue;
         if (value.isLong()) rawValue = value.asLong();
         else if (value.isDouble()) rawValue = value.asDouble();
+        else if (value.isDecimal()) rawValue = value.asDecimal();
         else if (value.isBoolean()) rawValue = value.asBoolean();
         else if (value.isString()) rawValue = value.asString();
-        else if (value.isDateTime()) rawValue = value.asDateTime();
+        else if (value.isDate()) rawValue = value.asDate();
+        else if (value.isDatetime()) rawValue = value.asDatetime();
+        else if (value.isDatetimeTZ()) rawValue = value.asDatetimeTZ();
+        else if (value.isDuration()) rawValue = value.asDuration();
+        else if (value.isStruct()) rawValue = "Structs are not supported in console now";
         else throw new TypeDBConsoleException(ILLEGAL_CAST);
         return rawValue.toString();
     }
@@ -134,24 +141,12 @@ public class Printer {
         return colorKeyword("isa") + " " + colorType(thing.getType().getLabel().scopedName());
     }
 
-    private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
-        StringBuilder sb = new StringBuilder();
-        List<String> rolePlayerStrings = new ArrayList<>();
-        Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.getPlayers(tx);
-        for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayer : rolePlayers.entrySet()) {
-            RoleType role = rolePlayer.getKey();
-            List<? extends Thing> things = rolePlayer.getValue();
-            for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel().name()) + ": " + colorKeyword("IID") + " " + thing.getIID();
-                rolePlayerStrings.add(rolePlayerString);
-            }
-        }
-        sb.append("(").append(String.join(", ", rolePlayerStrings)).append(")");
-        return sb.toString();
+    private String entityDisplayKeyString(Entity entity) {
+        return colorKeyword("IID") + " " + entity.getIID();
     }
 
-    private String iidDisplayString(Thing thing) {
-        return colorKeyword("IID") + " " + thing.getIID();
+    private String relationDisplayKeyString(Relation relation) {
+        return colorKeyword("IID") + " " + relation.getIID();
     }
 
     private String typeDisplayString(Type type, TypeDBTransaction tx) {
@@ -161,13 +156,6 @@ public class Printer {
                 .append(" ")
                 .append(colorType(type.getLabel().toString()));
 
-        if (!type.isRoot()) {
-            Type superType = type.getSupertype(tx).resolve();
-            sb.append(" ")
-                    .append(colorKeyword("sub"))
-                    .append(" ")
-                    .append(colorType(superType.getLabel().scopedName()));
-        }
         return sb.toString();
     }
 

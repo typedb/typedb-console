@@ -12,8 +12,12 @@ def vaticle_dependencies():
     )
 
 def vaticle_typedb_driver():
-    git_repository(
+    native.local_repository(
         name = "vaticle_typedb_driver",
-        remote = "https://github.com/vaticle/typedb-driver",
-        commit = "c75330e84bb5d5b3a5451baac691d55cc4d971c5",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_driver
+        path = "../typedb-driver",
     )
+#    git_repository(
+#        name = "vaticle_typedb_driver",
+#        remote = "https://github.com/vaticle/typedb-driver",
+#        commit = "c75330e84bb5d5b3a5451baac691d55cc4d971c5",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_driver
+#    )

@@ -149,7 +149,8 @@ google_common_workspace_rules()
 load("//dependencies/vaticle:repositories.bzl", "vaticle_typedb_driver")
 vaticle_typedb_driver()
 
-load("@vaticle_typedb_driver//dependencies/vaticle:repositories.bzl", "vaticle_typedb_protocol")
+load("@vaticle_typedb_driver//dependencies/vaticle:repositories.bzl", "vaticle_typedb_protocol", "vaticle_typeql")
+vaticle_typeql()
 vaticle_typedb_protocol()
 
 # Load artifacts
@@ -157,6 +158,7 @@ load("@vaticle_typedb_driver//dependencies/vaticle:artifacts.bzl", "vaticle_type
 vaticle_typedb_artifact()
 
 # Load maven
+load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
 load("@vaticle_typedb_driver//dependencies/maven:artifacts.bzl", vaticle_typedb_driver_artifacts = "artifacts")
 load("@vaticle_typedb_driver//dependencies/vaticle:artifacts.bzl", vaticle_typedb_vaticle_maven_artifacts = "maven_artifacts")
 load("//dependencies/maven:artifacts.bzl", vaticle_typedb_console_artifacts = "artifacts")
@@ -167,6 +169,7 @@ load("//dependencies/maven:artifacts.bzl", vaticle_typedb_console_artifacts = "a
 
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 maven(
+    vaticle_typeql_artifacts +
     vaticle_typedb_driver_artifacts +
     vaticle_typedb_console_artifacts +
     vaticle_dependencies_tool_maven_artifacts +

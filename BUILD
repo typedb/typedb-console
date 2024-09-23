@@ -33,6 +33,11 @@ java_library(
         "@vaticle_typedb_driver//java:driver-java",
         "@vaticle_typedb_driver//java/api",
         "@vaticle_typedb_driver//java/common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java/pattern",
+        "@vaticle_typeql//common/java:common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -115,66 +120,66 @@ assemble_zip(
     target_compatible_with = constraint_win_x86_64
 )
 
-#deploy_artifact(
-#    name = "deploy-linux-x86_64-targz",
-#    target = ":assemble-linux-x86_64-targz",
-#    artifact_group = "typedb-console-linux-x86_64",
-#    artifact_name = "typedb-console-linux-x86_64-{version}.tar.gz",
-#    snapshot = deployment['artifact']['snapshot']['upload'],
-#    release = deployment['artifact']['release']['upload'],
-#    visibility = ["//visibility:public"],
-#)
-#
-#deploy_artifact(
-#    name = "deploy-linux-arm64-targz",
-#    target = ":assemble-linux-arm64-targz",
-#    artifact_group = "typedb-console-linux-arm64",
-#    artifact_name = "typedb-console-linux-arm64-{version}.tar.gz",
-#    snapshot = deployment['artifact']['snapshot']['upload'],
-#    release = deployment['artifact']['release']['upload'],
-#    visibility = ["//visibility:public"],
-#)
-#
-#deploy_artifact(
-#    name = "deploy-mac-x86_64-zip",
-#    target = ":assemble-mac-x86_64-zip",
-#    artifact_group = "typedb-console-mac-x86_64",
-#    artifact_name = "typedb-console-mac-x86_64-{version}.zip",
-#    snapshot = deployment['artifact']['snapshot']['upload'],
-#    release = deployment['artifact']['release']['upload'],
-#    visibility = ["//visibility:public"],
-#)
-#
-#deploy_artifact(
-#    name = "deploy-mac-arm64-zip",
-#    target = ":assemble-mac-arm64-zip",
-#    artifact_group = "typedb-console-mac-arm64",
-#    artifact_name = "typedb-console-mac-arm64-{version}.zip",
-#    snapshot = deployment['artifact']['snapshot']['upload'],
-#    release = deployment['artifact']['release']['upload'],
-#    visibility = ["//visibility:public"],
-#)
-#
-#deploy_artifact(
-#    name = "deploy-windows-x86_64-zip",
-#    target = ":assemble-windows-x86_64-zip",
-#    artifact_group = "typedb-console-windows-x86_64",
-#    artifact_name = "typedb-console-windows-x86_64-{version}.zip",
-#    snapshot = deployment['artifact']['snapshot']['upload'],
-#    release = deployment['artifact']['release']['upload'],
-#    visibility = ["//visibility:public"],
-#)
+deploy_artifact(
+    name = "deploy-linux-x86_64-targz",
+    target = ":assemble-linux-x86_64-targz",
+    artifact_group = "typedb-console-linux-x86_64",
+    artifact_name = "typedb-console-linux-x86_64-{version}.tar.gz",
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
+    visibility = ["//visibility:public"],
+)
 
-#release_validate_deps(
-#    name = "release-validate-deps",
-#    refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
-#    tagged_deps = [
-#        "@vaticle_typedb_driver",
-#        "@vaticle_typeql",
-#    ],
-#    tags = ["manual"], # in order for bazel test //... to not fail
-#    version_file = "VERSION",
-#)
+deploy_artifact(
+    name = "deploy-linux-arm64-targz",
+    target = ":assemble-linux-arm64-targz",
+    artifact_group = "typedb-console-linux-arm64",
+    artifact_name = "typedb-console-linux-arm64-{version}.tar.gz",
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
+    visibility = ["//visibility:public"],
+)
+
+deploy_artifact(
+    name = "deploy-mac-x86_64-zip",
+    target = ":assemble-mac-x86_64-zip",
+    artifact_group = "typedb-console-mac-x86_64",
+    artifact_name = "typedb-console-mac-x86_64-{version}.zip",
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
+    visibility = ["//visibility:public"],
+)
+
+deploy_artifact(
+    name = "deploy-mac-arm64-zip",
+    target = ":assemble-mac-arm64-zip",
+    artifact_group = "typedb-console-mac-arm64",
+    artifact_name = "typedb-console-mac-arm64-{version}.zip",
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
+    visibility = ["//visibility:public"],
+)
+
+deploy_artifact(
+    name = "deploy-windows-x86_64-zip",
+    target = ":assemble-windows-x86_64-zip",
+    artifact_group = "typedb-console-windows-x86_64",
+    artifact_name = "typedb-console-windows-x86_64-{version}.zip",
+    snapshot = deployment['artifact']['snapshot']['upload'],
+    release = deployment['artifact']['release']['upload'],
+    visibility = ["//visibility:public"],
+)
+
+release_validate_deps(
+    name = "release-validate-deps",
+    refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
+    tagged_deps = [
+        "@vaticle_typedb_driver",
+        "@vaticle_typeql",
+    ],
+    tags = ["manual"], # in order for bazel test //... to not fail
+    version_file = "VERSION",
+)
 
 checkstyle_test(
     name = "checkstyle",

@@ -23,11 +23,18 @@ import org.jline.utils.AttributedStyle;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.joining;
 
 public class Printer {
+    private static final int TABLE_DASHES = 4;
+
     private final PrintStream out;
     private final PrintStream err;
 
@@ -44,12 +51,8 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void ok() {
-        out.println("OK");
-    }
-
-    public void conceptRow(ConceptRow conceptRow, TypeDBTransaction tx) {
-        out.println(conceptRowDisplayString(conceptRow, tx));
+    public void conceptRow(ConceptRow conceptRow, TypeDBTransaction tx, boolean first) {
+        out.println(conceptRowDisplayString(conceptRow, tx, first));
     }
 
     public void json(JSON json) {
@@ -78,20 +81,30 @@ public class Printer {
 //        out.println(s);
 //    }
 
-    private String conceptRowDisplayString(ConceptRow conceptRow, TypeDBTransaction tx) {
-        String content = conceptRow.header()
+    private String conceptRowDisplayString(ConceptRow conceptRow, TypeDBTransaction tx, boolean first) {
+        List<String> header = conceptRow.header().collect(Collectors.toList());
+        if (header.isEmpty()) {
+            return "\n";
+        }
+
+        int columnsWidth = header.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
+        StringBuilder sb = new StringBuilder();
+
+        if (first) {
+            sb.append(indent("-".repeat(TABLE_DASHES + columnsWidth)));
+            sb.append("\n");
+        }
+
+        String content = header
+                .stream()
                 .map(columnName -> {
-                    Concept value = conceptRow.get(columnName);
-                    if (value.isValue()) {
-                        return "?" + columnName + " = " + conceptDisplayString(value.asValue(), tx) + ";";
-                    } else {
-                        return "$" + columnName + " " + conceptDisplayString(value, tx) + ";";
-                    }
+                    Concept concept = conceptRow.get(columnName);
+                    return columnName + " ".repeat(columnsWidth - columnName.length() + 1) + "| " + conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx);
                 }).collect(joining("\n"));
-        StringBuilder sb = new StringBuilder("{");
-        if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
-        else sb.append(" ").append(content).append(" ");
-        sb.append("}");
+
+        sb.append(indent(content));
+        sb.append("\n");
+        sb.append(indent("-".repeat(TABLE_DASHES + columnsWidth)));
         return sb.toString();
     }
 

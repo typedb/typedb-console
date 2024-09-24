@@ -51,14 +51,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -720,14 +719,16 @@ public class TypeDBConsole {
         printer.info("Query executed successfully");
         if (answer.isOk()) {
             hasUncommittedChanges = true;
-            printer.ok();
-        } else if (answer.isConceptRowsStream()) {
+        } else if (answer.isConceptRows()) {
             hasUncommittedChanges = true;
-            Stream<ConceptRow> resultRows = answer.asConceptRowsStream().rows();
-            printCancellableResult(resultRows, row -> {
-                printer.conceptRow(row, tx);
+            Stream<ConceptRow> resultRows = answer.asConceptRows().stream();
+            List<ConceptRow> collected = resultRows.collect(toList());
+            AtomicBoolean first = new AtomicBoolean(true);
+            printCancellableResult(collected.stream(), row -> {
+                printer.conceptRow(row, tx, first.get());
+                first.set(false);
             });
-//        } else if (answer.isConceptTreesStream()) { // Unsupported!
+//        } else if (answer.isConceptTrees()) { // Unsupported!
 
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + queryString);

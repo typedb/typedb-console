@@ -113,7 +113,7 @@ database delete test
 ```
 
 You will see the following output:
-
+# TODO: Update the output!
 ```
 > ./typedb console --script=script                                                                                                                                                                                                                    73.830s
 + database create test

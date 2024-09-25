@@ -20,12 +20,7 @@ cd <your_typedb_console_dir>/
 You can provide several command arguments when running console in the terminal.
 
 - `--core=<address>` : TypeDB server address to which the console will connect to.
-- `--cloud=<address>` : TypeDB Cloud server address to which the console will connect to.
-- `--username=<username>` : TypeDB Cloud username to connect with.
-- `--password` : Interactively enter password to connect to TypeDB Cloud with.
 - `--script=<script>` : Run commands in the script file in non-interactive mode.
-- `--tls-enabled`: Enable TLS for connecting to TypeDB Cloud.
-- `--tls-root-ca`: Path to root CA certificate for TLS encryption.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
@@ -53,16 +48,10 @@ Console also offers command completion, accessible with a `tab` keypress.
   > database delete my-typedb-database
   Database 'my-typedb-database' deleted
   ```
-- `database schema <db>` : Print the schema of a database with name `<db>` on the server. For example:
+- `transaction <db> read|write|schema` : Start a `read`, `write`, or `schema` transaction to database `<db>`. For example:
   ```
-  > database schema my-typedb-database
-  define
-  person sub entity;
-  ```
-- `transaction <db> schema|data read|write` : Start a transaction to database `<db>` with session type `schema` or `data`, and transaction type `write` or `read`. For example:
-  ```
-  > transaction my-typedb-database schema write
-  my-typedb-database::schema::write>
+  > transaction my-typedb-database schema
+  my-typedb-database::schema>
   ```
   This will then take you to the transaction-level interface, i.e. the second-level REPL.
 - `help` : Print help menu
@@ -73,30 +62,30 @@ Console also offers command completion, accessible with a `tab` keypress.
 
 - `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you hit enter twice. For example:
   ```
-  my-typedb-database::schema::write> define
-                                     name sub attribute, value string;
-                                     person sub entity, owns name;
+  my-typedb-database::schema> define
+                              attribute name, value string;
+                              entity person, owns name;
 
-  Concepts have been defined
+  Success
   ```
 - `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. For example:
   ```
-  my-typedb-database::schema::write> source ./schema.gql
+  my-typedb-database::schema> source ./schema.tql
   Concepts have been defined
   ```
 - `commit` : Commit the transaction changes and close transaction. For example:
   ```
-  my-typedb-database::schema::write> commit
+  my-typedb-database::schema> commit
   Transaction changes committed
   ```
 - `rollback` : Will remove any uncommitted changes you've made in the transaction, while leaving transaction open. For example:
   ```
-  my-typedb-database::schema::write> rollback
-  Rolled back to the beginning of the transaction
+  my-typedb-database::schema> rollback
+  Transaction changes have rolled back, i.e. erased, and not committed
   ```
 - `close` : Close the transaction without committing changes, and takes you back to the database-level interface, i.e. first-level REPL. For example:
   ```
-  my-typedb-database::schema::write> close
+  my-typedb-database::schema> close
   Transaction closed without committing changes
   ```
 - `help` : Print this help menu
@@ -111,13 +100,13 @@ For example given the following command script file:
 
 ```
 database create test
-transaction test schema write
-    define person sub entity;
+transaction test schema 
+    define entity person;
     commit
-transaction test data write
+transaction test write
     insert $x isa person;
     commit
-transaction test data read
+transaction test read
     match $x isa person;
     close
 database delete test
@@ -129,9 +118,9 @@ You will see the following output:
 > ./typedb console --script=script                                                                                                                                                                                                                    73.830s
 + database create test
 Database 'test' created
-+ transaction test schema write
-++ define person sub entity;
-Concepts have been defined
++ transaction test schema
+++ define entity person;
+Success
 ++ commit
 Transaction changes committed
 + transaction test data write

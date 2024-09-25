@@ -36,7 +36,7 @@ public class Printer {
 
     public static final String QUERY_SUCCESS = "Success";
     public static final String QUERY_COMPILATION_SUCCESS = "Completed validation and compilation...";
-    public static final String QUERY_WRITE_SUCCESS = "Completed writes...";
+    public static final String QUERY_WRITE_SUCCESS = "Finished writes";
     public static final String QUERY_STREAMING_ANSWERS = "Streaming answers...";
     public static final String TOTAL_ANSWERS = "Total answers: ";
 
@@ -98,7 +98,7 @@ public class Printer {
 
         if (queryType.isWrite()) {
             sb.append(QUERY_WRITE_SUCCESS);
-            sb.append("\n");
+            sb.append(". ");
         }
 
         assert !queryType.isSchema(); // expected to return another type of answer

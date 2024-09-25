@@ -35,12 +35,13 @@ build:
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
-    test-assembly:
-      image: vaticle-ubuntu-22.04
-      type: foreground
-      command: |
-        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/assembly:test-assembly-native --test_output=streamed
+#    TODO: Cannot be run without a running 3.0 server
+#    test-assembly:
+#      image: vaticle-ubuntu-22.04
+#      type: foreground
+#      command: |
+#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //test/assembly:test-assembly-native --test_output=streamed
     deploy-runner-maven-snapshot:
       filter:
         owner: vaticle

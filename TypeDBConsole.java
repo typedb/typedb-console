@@ -671,12 +671,12 @@ public class TypeDBConsole {
 
     private void runRollback(TypeDBTransaction tx) {
         tx.rollback();
-        printer.info("Transaction changes have rolled back, i.e. erased, and not committed.");
+        printer.info("Transaction changes have rolled back, i.e. erased, and not committed");
     }
 
     private void runClose(TypeDBTransaction tx) {
         tx.close();
-        if (tx.getType().isWrite()) printer.info("Transaction closed without committing changes");
+        if (tx.getType().isWrite() || tx.getType().isSchema()) printer.info("Transaction closed without committing changes");
         else printer.info("Transaction closed");
     }
 

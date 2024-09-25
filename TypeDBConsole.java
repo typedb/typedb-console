@@ -46,7 +46,6 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -61,11 +60,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.console.Version.VERSION;
+import static com.vaticle.typedb.console.common.Printer.QUERY_SUCCESS;
+import static com.vaticle.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
+import static com.vaticle.typedb.console.common.Printer.TOTAL_ANSWERS;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.jline.builtins.Completers.TreeCompleter.node;
 
 public class TypeDBConsole {
@@ -86,7 +86,6 @@ public class TypeDBConsole {
     private final Printer printer;
     private ExecutorService executorService;
     private Terminal terminal;
-    private boolean hasUncommittedChanges = false;
 
     private TypeDBConsole(Printer printer) {
         this.printer = printer;
@@ -318,11 +317,10 @@ public class TypeDBConsole {
 //            promptBuilder.append("[any-replica]");
 //        }
         try (TypeDBTransaction tx = driver.transaction(database, transactionType/*, options*/)) {
-            hasUncommittedChanges = false;
             while (true) {
                 Either<TransactionREPLCommand, String> command;
                 try {
-                    String prompt = hasUncommittedChanges ? promptBuilder + "*> " : promptBuilder + "> ";
+                    String prompt = promptBuilder + "> ";
                     command = TransactionREPLCommand.readCommand(reader, prompt);
                 } catch (InterruptedException e) {
                     break;
@@ -346,8 +344,7 @@ public class TypeDBConsole {
                         runClose(tx);
                         break;
                     } else if (replCommand.isSource()) {
-                        RunQueriesResult result = runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
-                        hasUncommittedChanges = result.hasChanges();
+                        runSource(tx, replCommand.asSource().file(), replCommand.asSource().printAnswers());
                     } else if (replCommand.isQuery()) {
                         runQueriesPrintAnswers(tx, replCommand.asQuery().query());
                     }
@@ -679,7 +676,7 @@ public class TypeDBConsole {
 
     private void runClose(TypeDBTransaction tx) {
         tx.close();
-        if (tx.type().isWrite()) printer.info("Transaction closed without committing changes");
+        if (tx.getType().isWrite()) printer.info("Transaction closed without committing changes");
         else printer.info("Transaction closed");
     }
 
@@ -697,38 +694,33 @@ public class TypeDBConsole {
     private RunQueriesResult runQueries(TypeDBTransaction tx, String queryString) {
         if (queryString.isBlank()) return RunQueriesResult.error();
         runQuery(tx, queryString);
-        boolean hasChanges = true; // TODO: Remove this feature as we don't parse the query?
-        return new RunQueriesResult(true, hasChanges);
+        return new RunQueriesResult(true);
     }
 
     private RunQueriesResult runQueriesPrintAnswers(TypeDBTransaction tx, String queryString) {
         if (queryString.isBlank()) return RunQueriesResult.error();
         runQueryPrintAnswers(tx, queryString);
-        boolean hasChanges = true; // TODO: Remove this feature as we don't parse the query?
-        return new RunQueriesResult(true, hasChanges);
+        return new RunQueriesResult(true);
     }
 
     @SuppressWarnings("CheckReturnValue")
     private void runQuery(TypeDBTransaction tx, String queryString) {
         tx.query(queryString).resolve();
-        printer.info("Query executed successfully");
+        printer.info(QUERY_WRITE_SUCCESS);
     }
 
     private void runQueryPrintAnswers(TypeDBTransaction tx, String queryString) {
         QueryAnswer answer = tx.query(queryString).resolve();
-        printer.info("Query executed successfully");
         if (answer.isOk()) {
-            hasUncommittedChanges = true;
+            printer.info(QUERY_SUCCESS);
         } else if (answer.isConceptRows()) {
-            hasUncommittedChanges = true;
             Stream<ConceptRow> resultRows = answer.asConceptRows().stream();
-            List<ConceptRow> collected = resultRows.collect(toList());
             AtomicBoolean first = new AtomicBoolean(true);
-            printCancellableResult(collected.stream(), row -> {
+            printCancellableResult(resultRows, row -> {
                 printer.conceptRow(row, tx, first.get());
                 first.set(false);
             });
-//        } else if (answer.isConceptTrees()) { // Unsupported!
+//        } else if (answer.isConceptTrees()) { // TODO: Currently unsupported!
 
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + queryString);
@@ -737,7 +729,6 @@ public class TypeDBConsole {
 
     private <T> void printCancellableResult(Stream<T> results, Consumer<T> printFn) {
         long[] counter = new long[]{0};
-        Instant start = Instant.now();
         Terminal.SignalHandler prevHandler = null;
         try {
             Iterator<T> iterator = results.iterator();
@@ -749,19 +740,16 @@ public class TypeDBConsole {
             });
             prevHandler = terminal.handle(Terminal.Signal.INT, s -> answerPrintingJob.cancel(true));
             answerPrintingJob.get();
-            Instant end = Instant.now();
             printer.info("");
-            printer.info("answers: " + counter[0] + ", total duration: " + Duration.between(start, end).toMillis() + " ms");
+            printer.info("Finished. " + TOTAL_ANSWERS + counter[0]);
             printer.info("");
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             throw (TypeDBDriverException) e.getCause();
         } catch (CancellationException e) {
-            Instant end = Instant.now();
             printer.info("");
-            printer.info("answers: " + counter[0] + ", total duration: " + Duration.between(start, end).toMillis() + " ms");
-            printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side.");
+            printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side. " + TOTAL_ANSWERS + counter[0]);
             printer.info("");
         } finally {
             if (prevHandler != null) terminal.handle(Terminal.Signal.INT, prevHandler);
@@ -778,38 +766,38 @@ public class TypeDBConsole {
         private @Nullable
         String core;
 
-        @CommandLine.Option(
-                names = {"--cloud"},
-                description = "TypeDB Cloud address(es) to which Console will connect to, or Cloud address translation 'configured-url=actual-url'",
-                split = ","
-        )
+        //        @CommandLine.Option(
+//                names = {"--cloud"},
+//                description = "TypeDB Cloud address(es) to which Console will connect to, or Cloud address translation 'configured-url=actual-url'",
+//                split = ","
+//        )
         private @Nullable
         String[] cloud;
 
-        @CommandLine.Option(names = {"--username"}, description = "Username")
+        //        @CommandLine.Option(names = {"--username"}, description = "Username")
         private @Nullable
         String username;
 
-        @CommandLine.Option(
-                names = {"--password"},
-                description = "Password",
-                prompt = "Password: ",
-                interactive = true,
-                arity = "0..1"
-        )
+        //        @CommandLine.Option(
+//                names = {"--password"},
+//                description = "Password",
+//                prompt = "Password: ",
+//                interactive = true,
+//                arity = "0..1"
+//        )
         private @Nullable
         String password;
 
-        @CommandLine.Option(
-                names = {"--tls-enabled", "--encryption-enable"},
-                description = "Whether to connect to TypeDB Cloud with TLS encryption"
-        )
+        //        @CommandLine.Option(
+//                names = {"--tls-enabled", "--encryption-enable"},
+//                description = "Whether to connect to TypeDB Cloud with TLS encryption"
+//        )
         private boolean tlsEnabled;
 
-        @CommandLine.Option(
-                names = {"--tls-root-ca", "--encryption-root-ca"},
-                description = "Path to the TLS encryption root CA file"
-        )
+        //        @CommandLine.Option(
+//                names = {"--tls-root-ca", "--encryption-root-ca"},
+//                description = "Path to the TLS encryption root CA file"
+//        )
         private @Nullable
         String tlsRootCA;
 

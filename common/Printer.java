@@ -6,38 +6,42 @@
 
 package com.vaticle.typedb.console.common;
 
-import com.vaticle.typedb.driver.api.TypeDBTransaction;
-import com.vaticle.typedb.driver.api.answer.ConceptMap;
-import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
+import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
+import com.vaticle.typedb.driver.api.QueryType;
+import com.vaticle.typedb.driver.api.Transaction;
+import com.vaticle.typedb.driver.api.answer.ConceptRow;
 import com.vaticle.typedb.driver.api.answer.JSON;
 import com.vaticle.typedb.driver.api.answer.ValueGroup;
 import com.vaticle.typedb.driver.api.concept.Concept;
 import com.vaticle.typedb.driver.api.concept.thing.Attribute;
+import com.vaticle.typedb.driver.api.concept.thing.Entity;
 import com.vaticle.typedb.driver.api.concept.thing.Relation;
 import com.vaticle.typedb.driver.api.concept.thing.Thing;
-import com.vaticle.typedb.driver.api.concept.type.RoleType;
 import com.vaticle.typedb.driver.api.concept.type.Type;
 import com.vaticle.typedb.driver.api.concept.value.Value;
-import com.vaticle.typedb.driver.api.database.Database;
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.ISA;
 import static java.util.stream.Collectors.joining;
 
 public class Printer {
+    private static final int TABLE_DASHES = 7;
+
+    public static final String QUERY_SUCCESS = "Success";
+    public static final String QUERY_COMPILATION_SUCCESS = "Finished validation and compilation...";
+    public static final String QUERY_WRITE_SUCCESS = "Finished writes";
+    public static final String QUERY_STREAMING_ANSWERS = "Streaming answers...";
+    public static final String TOTAL_ANSWERS = "Total answers: ";
+    private static final String TABLE_INDENT = "   ";
+    private static final String CONTENT_INDENT = "    ";
+
     private final PrintStream out;
     private final PrintStream err;
 
@@ -54,16 +58,13 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptMap(ConceptMap conceptMap, TypeDBTransaction tx) {
-        out.println(conceptMapDisplayString(conceptMap, tx));
-    }
-
-    public void conceptMapGroup(ConceptMapGroup answer, TypeDBTransaction tx) {
-        out.println(conceptDisplayString(answer.owner(), tx) + " => {");
-        for (ConceptMap conceptMap : answer.conceptMaps().collect(Collectors.toList())) {
-            out.println(indent(conceptMapDisplayString(conceptMap, tx)));
+    public void conceptRow(ConceptRow conceptRow, Transaction tx, boolean first) {
+        List<String> columnNames = conceptRow.columnNames().collect(Collectors.toList());
+        int columnsWidth = columnNames.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
+        if (first) {
+            out.println(conceptRowDisplayStringHeader(conceptRow.getQueryType(), columnsWidth));
         }
-        out.println("}");
+        out.println(conceptRowDisplayString(conceptRow, columnNames, columnsWidth, tx));
     }
 
     public void json(JSON json) {
@@ -74,7 +75,7 @@ public class Printer {
         out.println(stringifyNumericValue(answer));
     }
 
-    public void valueGroup(ValueGroup answer, TypeDBTransaction tx) {
+    public void valueGroup(ValueGroup answer, Transaction tx) {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value().orElse(null)));
     }
 
@@ -83,51 +84,78 @@ public class Printer {
         else return value.toString();
     }
 
-    public void databaseReplica(Database.Replica replica) {
-        String s = "{ " +
-                colorJsonKey(" server: ") + replica.server() + ";" +
-                colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
-                colorJsonKey(" term: ") + replica.term() +
-                " }";
-        out.println(s);
-    }
+//    public void databaseReplica(Database.Replica replica) {
+//        String s = "{ " +
+//                colorJsonKey(" server: ") + replica.server() + ";" +
+//                colorJsonKey(" role: ") + (replica.isPrimary() ? "primary" : "secondary") + ";" +
+//                colorJsonKey(" term: ") + replica.term() +
+//                " }";
+//        out.println(s);
+//    }
 
-    private String conceptMapDisplayString(ConceptMap conceptMap, TypeDBTransaction tx) {
-        String content = conceptMap.variables()
-                .map(key -> {
-                    Concept value = conceptMap.get(key);
-                    if (value.isValue()) {
-                        return TypeQLToken.Char.QUESTION_MARK + key + " = " + conceptDisplayString(value.asValue(), tx) + ";";
-                    } else {
-                        return TypeQLToken.Char.$ + key + " " + conceptDisplayString(value, tx) + ";";
-                    }
-                }).collect(joining("\n"));
-        StringBuilder sb = new StringBuilder("{");
-        if (content.lines().count() > 1) sb.append("\n").append(indent(content)).append("\n");
-        else sb.append(" ").append(content).append(" ");
-        sb.append("}");
+    private String conceptRowDisplayStringHeader(QueryType queryType, int columnsWidth) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(QUERY_COMPILATION_SUCCESS);
+        sb.append("\n");
+
+        if (queryType.isWrite()) {
+            sb.append(QUERY_WRITE_SUCCESS);
+            sb.append(". ");
+        }
+
+        assert !queryType.isSchema(); // expected to return another type of answer
+        sb.append(QUERY_STREAMING_ANSWERS);
+        sb.append("\n\n");
+
+        if (columnsWidth != 0) {
+            sb.append(lineDashSeparator(columnsWidth));
+        }
+
         return sb.toString();
     }
 
-    private static String indent(String string) {
-        return Arrays.stream(string.split("\n")).map(s -> "    " + s).collect(joining("\n"));
+    private String conceptRowDisplayString(ConceptRow conceptRow, List<String> columnNames, int columnsWidth, Transaction tx) {
+        String content = columnNames
+                .stream()
+                .map(columnName -> {
+                    Concept concept = conceptRow.get(columnName);
+                    StringBuilder sb = new StringBuilder("$");
+                    sb.append(columnName);
+                    sb.append(" ".repeat(columnsWidth - columnName.length() + 1));
+                    sb.append("| ");
+                    sb.append(conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx));
+                    return sb.toString();
+                }).collect(joining("\n"));
+
+        StringBuilder sb = new StringBuilder(indent(CONTENT_INDENT, content));
+        sb.append("\n");
+        sb.append(lineDashSeparator(columnsWidth));
+        return sb.toString();
     }
 
-    private String conceptDisplayString(Concept concept, TypeDBTransaction tx) {
+    private static String indent(String indent, String string) {
+        return Arrays.stream(string.split("\n")).map(s -> indent + s).collect(joining("\n"));
+    }
+
+    private static String lineDashSeparator(int additionalDashesNum) {
+        return indent(TABLE_INDENT, "-".repeat(TABLE_DASHES + additionalDashesNum));
+    }
+
+    private String conceptDisplayString(Concept concept, Transaction tx) {
         if (concept.isValue()) return valueDisplayString(concept.asValue());
 
         StringBuilder sb = new StringBuilder();
-        if (concept instanceof Attribute) {
-            sb.append(attributeDisplayString(concept.asThing().asAttribute()));
-        } else if (concept instanceof Type) {
+        if (concept.isType()) {
             sb.append(typeDisplayString(concept.asType(), tx));
-        } else {
-            sb.append(iidDisplayString(concept.asThing()));
+        } else if (concept.isAttribute()) {
+            sb.append(attributeDisplayString(concept.asAttribute()));
+        } else if (concept.isEntity()) {
+            sb.append(entityDisplayKeyString(concept.asEntity()));
+        } else if (concept.isRelation()) {
+            sb.append(relationDisplayKeyString(concept.asRelation()));
         }
-        if (concept instanceof Relation) {
-            sb.append(" ").append(relationDisplayString(concept.asThing().asRelation(), tx));
-        }
-        if (concept instanceof Thing) {
+
+        if (concept.isThing()) {
             sb.append(" ").append(isaDisplayString(concept.asThing()));
         }
 
@@ -138,56 +166,42 @@ public class Printer {
         Object rawValue;
         if (value.isLong()) rawValue = value.asLong();
         else if (value.isDouble()) rawValue = value.asDouble();
+        else if (value.isDecimal()) rawValue = value.asDecimal();
         else if (value.isBoolean()) rawValue = value.asBoolean();
         else if (value.isString()) rawValue = value.asString();
-        else if (value.isDateTime()) rawValue = value.asDateTime();
+        else if (value.isDate()) rawValue = value.asDate();
+        else if (value.isDatetime()) rawValue = value.asDatetime();
+        else if (value.isDatetimeTZ()) rawValue = value.asDatetimeTZ();
+        else if (value.isDuration()) rawValue = value.asDuration();
+        else if (value.isStruct()) rawValue = "Structs are not supported in console now";
         else throw new TypeDBConsoleException(ILLEGAL_CAST);
-        return com.vaticle.typeql.lang.common.util.Strings.valueToString(rawValue);
+        return rawValue.toString();
     }
 
     private String isaDisplayString(Thing thing) {
-        return colorKeyword(ISA.toString()) + " " + colorType(thing.getType().getLabel().scopedName());
+        return colorKeyword("isa") + " " + colorType(thing.getType().getLabel().scopedName());
     }
 
-    private String relationDisplayString(Relation relation, TypeDBTransaction tx) {
-        StringBuilder sb = new StringBuilder();
-        List<String> rolePlayerStrings = new ArrayList<>();
-        Map<? extends RoleType, ? extends List<? extends Thing>> rolePlayers = relation.getPlayers(tx);
-        for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayer : rolePlayers.entrySet()) {
-            RoleType role = rolePlayer.getKey();
-            List<? extends Thing> things = rolePlayer.getValue();
-            for (Thing thing : things) {
-                String rolePlayerString = colorType(role.getLabel().name()) + ": " + colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
-                rolePlayerStrings.add(rolePlayerString);
-            }
-        }
-        sb.append("(").append(String.join(", ", rolePlayerStrings)).append(")");
-        return sb.toString();
+    private String entityDisplayKeyString(Entity entity) {
+        return colorKeyword("iid") + " " + entity.getIID();
     }
 
-    private String iidDisplayString(Thing thing) {
-        return colorKeyword(TypeQLToken.Constraint.IID.toString()) + " " + thing.getIID();
+    private String relationDisplayKeyString(Relation relation) {
+        return colorKeyword("iid") + " " + relation.getIID();
     }
 
-    private String typeDisplayString(Type type, TypeDBTransaction tx) {
+    private String typeDisplayString(Type type, Transaction tx) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(colorKeyword(TypeQLToken.Constraint.TYPE.toString()))
+        sb.append(colorKeyword("type"))
                 .append(" ")
                 .append(colorType(type.getLabel().toString()));
 
-        if (!type.isRoot()) {
-            Type superType = type.getSupertype(tx).resolve();
-            sb.append(" ")
-                    .append(colorKeyword(TypeQLToken.Constraint.SUB.toString()))
-                    .append(" ")
-                    .append(colorType(superType.getLabel().scopedName()));
-        }
         return sb.toString();
     }
 
     private String attributeDisplayString(Attribute attribute) {
-        return com.vaticle.typeql.lang.common.util.Strings.valueToString(attribute.getValue());
+        return attribute.getValue().toString();
     }
 
     private String colorKeyword(String s) {

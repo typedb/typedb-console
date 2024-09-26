@@ -13,7 +13,7 @@ typedb_java_test(
     srcs = ["AssemblyTest.java"],
     deps = [
         "//tool/runner:typedb-console-runner",
-        "@maven//:com_vaticle_typedb_typedb_runner",
+#        "@maven//:com_vaticle_typedb_typedb_runner",
     ],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "@vaticle_typedb_artifact_linux-arm64//file",

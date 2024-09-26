@@ -7,7 +7,7 @@
 package com.vaticle.typedb.console.test.assembly;
 
 import com.vaticle.typedb.console.tool.runner.TypeDBConsoleRunner;
-import com.vaticle.typedb.core.tool.runner.TypeDBCoreRunner;
+//import com.vaticle.typedb.core.tool.runner.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;

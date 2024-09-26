@@ -32,13 +32,15 @@ import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.
 import static java.util.stream.Collectors.joining;
 
 public class Printer {
-    private static final int TABLE_DASHES = 6;
+    private static final int TABLE_DASHES = 7;
 
     public static final String QUERY_SUCCESS = "Success";
     public static final String QUERY_COMPILATION_SUCCESS = "Finished validation and compilation...";
     public static final String QUERY_WRITE_SUCCESS = "Finished writes";
     public static final String QUERY_STREAMING_ANSWERS = "Streaming answers...";
     public static final String TOTAL_ANSWERS = "Total answers: ";
+    private static final String TABLE_INDENT = "   ";
+    private static final String CONTENT_INDENT = "    ";
 
     private final PrintStream out;
     private final PrintStream err;
@@ -125,18 +127,18 @@ public class Printer {
                     return sb.toString();
                 }).collect(joining("\n"));
 
-        StringBuilder sb = new StringBuilder(indent(content));
+        StringBuilder sb = new StringBuilder(indent(CONTENT_INDENT, content));
         sb.append("\n");
         sb.append(lineDashSeparator(columnsWidth));
         return sb.toString();
     }
 
-    private static String indent(String string) {
-        return Arrays.stream(string.split("\n")).map(s -> "    " + s).collect(joining("\n"));
+    private static String indent(String indent, String string) {
+        return Arrays.stream(string.split("\n")).map(s -> indent + s).collect(joining("\n"));
     }
 
     private static String lineDashSeparator(int additionalDashesNum) {
-        return indent("-".repeat(TABLE_DASHES + additionalDashesNum));
+        return indent(TABLE_INDENT, "-".repeat(TABLE_DASHES + additionalDashesNum));
     }
 
     private String conceptDisplayString(Concept concept, Transaction tx) {

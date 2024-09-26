@@ -10,8 +10,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.console.common.Printer;
 import com.vaticle.typedb.console.common.Utils;
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typedb.driver.api.TypeDBDriver;
-import com.vaticle.typedb.driver.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.Driver;
 import org.jline.reader.LineReader;
 
 import javax.annotation.Nullable;
@@ -21,6 +20,9 @@ import java.util.List;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.driver.api.Transaction.Type.READ;
+import static com.vaticle.typedb.driver.api.Transaction.Type.SCHEMA;
+import static com.vaticle.typedb.driver.api.Transaction.Type.WRITE;
 
 public interface REPLCommand {
 
@@ -474,10 +476,10 @@ public interface REPLCommand {
         private static final String description = "Start a read, write, or schema transaction to database <db>";
 
         private final String database;
-        private final TypeDBTransaction.Type transactionType;
-//        private final TypeDBOptions options;
+        private final com.vaticle.typedb.driver.api.Transaction.Type transactionType;
+//        private final Options options;
 
-        public Transaction(String database, TypeDBTransaction.Type transactionType/*, TypeDBOptions options*/) {
+        public Transaction(String database, com.vaticle.typedb.driver.api.Transaction.Type transactionType/*, Options options*/) {
             this.database = database;
             this.transactionType = transactionType;
 //            this.options = options;
@@ -487,11 +489,11 @@ public interface REPLCommand {
             return database;
         }
 
-        public TypeDBTransaction.Type transactionType() {
+        public com.vaticle.typedb.driver.api.Transaction.Type transactionType() {
             return transactionType;
         }
 
-//        public TypeDBOptions options() {
+//        public Options options() {
 //            return options;
 //        }
 
@@ -511,17 +513,17 @@ public interface REPLCommand {
 //
 //        public static String token = "transaction-options";
 //
-//        static TypeDBOptions from(String[] optionTokens, boolean isCloud) {
-////            if (isCloud) return parseCloudOptions(optionTokens, new TypeDBOptions()); else
-//            return parseCoreOptions(optionTokens, new TypeDBOptions());
+//        static Options from(String[] optionTokens, boolean isCloud) {
+////            if (isCloud) return parseCloudOptions(optionTokens, new Options()); else
+//            return parseCoreOptions(optionTokens, new Options());
 //        }
 //
-//        private static TypeDBOptions parseCloudOptions(String[] optionTokens, TypeDBOptions options) {
+//        private static Options parseCloudOptions(String[] optionTokens, Options options) {
 //            for (int i = 0; i < optionTokens.length; i += 2) {
 //                String token = optionTokens[i];
 //                String arg = optionTokens[i + 1];
 //                assert token.charAt(0) == '-' && token.charAt(1) == '-';
-//                Option<TypeDBOptions> option = Options.Cloud.cloudOption(token.substring(2));
+//                Option<Options> option = Options.Cloud.cloudOption(token.substring(2));
 //                try {
 //                    options = option.build(options, arg);
 //                } catch (IllegalArgumentException e) {
@@ -531,12 +533,12 @@ public interface REPLCommand {
 //            return options;
 //        }
 //
-//        private static TypeDBOptions parseCoreOptions(String[] optionTokens, TypeDBOptions options) {
+//        private static Options parseCoreOptions(String[] optionTokens, Options options) {
 //            for (int i = 0; i < optionTokens.length; i += 2) {
 //                String token = optionTokens[i];
 //                String arg = optionTokens[i + 1];
 //                assert token.charAt(0) == '-' && token.charAt(1) == '-';
-//                Option<TypeDBOptions> option = Options.Core.coreOption(token.substring(2));
+//                Option<Options> option = Options.Core.coreOption(token.substring(2));
 //                try {
 //                    options = option.build(options, arg);
 //                } catch (IllegalArgumentException e) {
@@ -556,7 +558,7 @@ public interface REPLCommand {
 //                    Option.core("schema-lock-acquire-timeout", Option.Arg.INTEGER, "Acquire exclusive schema session timeout (ms)", (opt, arg) -> opt.schemaLockAcquireTimeoutMillis((Integer) arg))
 //            );
 //
-//            public static Option<TypeDBOptions> coreOption(String token) throws IllegalArgumentException {
+//            public static Option<Options> coreOption(String token) throws IllegalArgumentException {
 //                return from(token, options);
 //            }
 //
@@ -564,17 +566,17 @@ public interface REPLCommand {
 //                return helpMenu(options);
 //            }
 //
-//            static <OPT extends TypeDBOptions> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
+//            static <OPT extends Options> Option<OPT> from(String token, List<? extends Option<OPT>> options) {
 //                for (Option<OPT> option : options) {
 //                    if (option.name().equals(token)) return option;
 //                }
 //                throw new IllegalArgumentException(String.format("Unrecognized Option '%s'", token));
 //            }
 //
-//            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends TypeDBOptions>> options) {
+//            static List<Pair<String, String>> helpMenu(List<? extends Option<? extends Options>> options) {
 //                List<Pair<String, String>> optionsMenu = new ArrayList<>();
 //                optionsMenu.add(pair("transaction-options", "Transaction options"));
-//                for (Option<? extends TypeDBOptions> option : options) {
+//                for (Option<? extends Options> option : options) {
 //                    optionsMenu.add(pair("--" + option.name() + " " + option.arg().readableString(), option.description()));
 //                }
 //                return optionsMenu;
@@ -594,7 +596,7 @@ public interface REPLCommand {
 //                return extendedOptions;
 //            }
 //
-//            public static Option<TypeDBOptions> cloudOption(String token) throws IllegalArgumentException {
+//            public static Option<Options> cloudOption(String token) throws IllegalArgumentException {
 //                return from(token, options);
 //            }
 //
@@ -603,7 +605,7 @@ public interface REPLCommand {
 //            }
 //        }
 //
-//        static abstract class Option<OPTIONS extends TypeDBOptions> {
+//        static abstract class Option<OPTIONS extends Options> {
 //
 //            final String name;
 //            final Arg arg;
@@ -617,11 +619,11 @@ public interface REPLCommand {
 //                this.builder = builder;
 //            }
 //
-//            static Option.Core core(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+//            static Option.Core core(String name, Arg arg, String description, BiFunction<Options, Object, Options> builder) {
 //                return new Option.Core(name, arg, description, builder);
 //            }
 //
-//            static Option.Cloud cloud(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+//            static Option.Cloud cloud(String name, Arg arg, String description, BiFunction<Options, Object, Options> builder) {
 //                return new Option.Cloud(name, arg, description, builder);
 //            }
 //
@@ -635,9 +637,9 @@ public interface REPLCommand {
 //
 //            public String description() { return description; }
 //
-//            static class Core extends Option<TypeDBOptions> {
+//            static class Core extends Option<Options> {
 //
-//                private Core(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+//                private Core(String name, Arg arg, String description, BiFunction<Options, Object, Options> builder) {
 //                    super(name, arg, description, builder);
 //                }
 //
@@ -646,9 +648,9 @@ public interface REPLCommand {
 //                }
 //            }
 //
-//            static class Cloud extends Option<TypeDBOptions> {
+//            static class Cloud extends Option<Options> {
 //
-//                private Cloud(String name, Arg arg, String description, BiFunction<TypeDBOptions, Object, TypeDBOptions> builder) {
+//                private Cloud(String name, Arg arg, String description, BiFunction<Options, Object, Options> builder) {
 //                    super(name, arg, description, builder);
 //                }
 //            }
@@ -675,7 +677,7 @@ public interface REPLCommand {
 //        }
 //    }
 
-    static String createHelpMenu(TypeDBDriver driver, boolean isCloud) {
+    static String createHelpMenu(Driver driver, boolean isCloud) {
         //        if (driver.users() != null) {
 //            menu.addAll(Arrays.asList(
 //                    pair(User.List.helpCommand, User.List.description),
@@ -773,10 +775,10 @@ public interface REPLCommand {
         } else if (tokens.length >= 3 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("write") || tokens[2].equals("read") || tokens[2].equals("schema"))) {
             String database = tokens[1];
-            TypeDBTransaction.Type transactionType = tokens[2].equals("write") ? TypeDBTransaction.Type.WRITE : tokens[2].equals("read") ? TypeDBTransaction.Type.READ : TypeDBTransaction.Type.SCHEMA;
-//            TypeDBOptions options;
+            com.vaticle.typedb.driver.api.Transaction.Type transactionType = tokens[2].equals("write") ? WRITE : tokens[2].equals("read") ? READ : SCHEMA;
+//            Options options;
 //            if (tokens.length > 3) options = Options.from(Arrays.copyOfRange(tokens, 3, tokens.length), isCloud);
-//            else options = new TypeDBOptions();
+//            else options = new Options();
             command = new Transaction(database, transactionType/*, options*/);
         }
         return command;

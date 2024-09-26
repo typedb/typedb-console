@@ -7,8 +7,8 @@
 package com.vaticle.typedb.console.common;
 
 import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typedb.driver.api.TypeDBQueryType;
-import com.vaticle.typedb.driver.api.TypeDBTransaction;
+import com.vaticle.typedb.driver.api.QueryType;
+import com.vaticle.typedb.driver.api.Transaction;
 import com.vaticle.typedb.driver.api.answer.ConceptRow;
 import com.vaticle.typedb.driver.api.answer.JSON;
 import com.vaticle.typedb.driver.api.answer.ValueGroup;
@@ -32,10 +32,10 @@ import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.
 import static java.util.stream.Collectors.joining;
 
 public class Printer {
-    private static final int TABLE_DASHES = 4;
+    private static final int TABLE_DASHES = 6;
 
     public static final String QUERY_SUCCESS = "Success";
-    public static final String QUERY_COMPILATION_SUCCESS = "Completed validation and compilation...";
+    public static final String QUERY_COMPILATION_SUCCESS = "Finished validation and compilation...";
     public static final String QUERY_WRITE_SUCCESS = "Finished writes";
     public static final String QUERY_STREAMING_ANSWERS = "Streaming answers...";
     public static final String TOTAL_ANSWERS = "Total answers: ";
@@ -56,7 +56,7 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptRow(ConceptRow conceptRow, TypeDBTransaction tx, boolean first) {
+    public void conceptRow(ConceptRow conceptRow, Transaction tx, boolean first) {
         List<String> columnNames = conceptRow.columnNames().collect(Collectors.toList());
         int columnsWidth = columnNames.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
         if (first) {
@@ -73,7 +73,7 @@ public class Printer {
         out.println(stringifyNumericValue(answer));
     }
 
-    public void valueGroup(ValueGroup answer, TypeDBTransaction tx) {
+    public void valueGroup(ValueGroup answer, Transaction tx) {
         out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value().orElse(null)));
     }
 
@@ -91,7 +91,7 @@ public class Printer {
 //        out.println(s);
 //    }
 
-    private String conceptRowDisplayStringHeader(TypeDBQueryType queryType, int columnsWidth) {
+    private String conceptRowDisplayStringHeader(QueryType queryType, int columnsWidth) {
         StringBuilder sb = new StringBuilder();
         sb.append(QUERY_COMPILATION_SUCCESS);
         sb.append("\n");
@@ -112,12 +112,17 @@ public class Printer {
         return sb.toString();
     }
 
-    private String conceptRowDisplayString(ConceptRow conceptRow, List<String> columnNames, int columnsWidth, TypeDBTransaction tx) {
+    private String conceptRowDisplayString(ConceptRow conceptRow, List<String> columnNames, int columnsWidth, Transaction tx) {
         String content = columnNames
                 .stream()
                 .map(columnName -> {
                     Concept concept = conceptRow.get(columnName);
-                    return columnName + " ".repeat(columnsWidth - columnName.length() + 1) + "| " + conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx);
+                    StringBuilder sb = new StringBuilder("$");
+                    sb.append(columnName);
+                    sb.append(" ".repeat(columnsWidth - columnName.length() + 1));
+                    sb.append("| ");
+                    sb.append(conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx));
+                    return sb.toString();
                 }).collect(joining("\n"));
 
         StringBuilder sb = new StringBuilder(indent(content));
@@ -134,7 +139,7 @@ public class Printer {
         return indent("-".repeat(TABLE_DASHES + additionalDashesNum));
     }
 
-    private String conceptDisplayString(Concept concept, TypeDBTransaction tx) {
+    private String conceptDisplayString(Concept concept, Transaction tx) {
         if (concept.isValue()) return valueDisplayString(concept.asValue());
 
         StringBuilder sb = new StringBuilder();
@@ -183,7 +188,7 @@ public class Printer {
         return colorKeyword("iid") + " " + relation.getIID();
     }
 
-    private String typeDisplayString(Type type, TypeDBTransaction tx) {
+    private String typeDisplayString(Type type, Transaction tx) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(colorKeyword("type"))

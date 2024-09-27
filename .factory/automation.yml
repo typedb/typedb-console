@@ -11,7 +11,7 @@ config:
 build:
   quality:
     filter:
-      owner: vaticle
+      owner: typedb
       branch: [master, development, "3.0"]
     dependency-analysis:
       image: vaticle-ubuntu-22.04
@@ -44,7 +44,7 @@ build:
 #        bazel test //test/assembly:test-assembly-native --test_output=streamed
     deploy-runner-maven-snapshot:
       filter:
-        owner: vaticle
+        owner: typedb
         branch: [master, development, "3.0"]
       image: vaticle-ubuntu-22.04
       dependencies: [build]
@@ -55,7 +55,7 @@ build:
     sync-dependencies:
       image: vaticle-ubuntu-22.04
       filter:
-        owner: vaticle
+        owner: typedb
         branch: [master, development]
         # TODO: Uncomment when active
 #      dependencies: [test-assembly]
@@ -65,8 +65,8 @@ build:
 
 release:
   filter:
-    owner: vaticle
-    branch: [master, 3.0]
+    owner: typedb
+    branch: [master, "3.0"]
   validation:
     validate-dependencies:
       image: vaticle-ubuntu-22.04
@@ -90,7 +90,7 @@ release:
         echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
     deploy-runner-maven-release:
       filter:
-        owner: vaticle
+        owner: typedb
         branch: [master, 3.0]
       image: vaticle-ubuntu-22.04
       command: |

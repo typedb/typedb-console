@@ -183,7 +183,7 @@ checkstyle_test(
         ".factory/*",
         "command/*",
         "common/*",
-        "common/exception/*",
+        "common/**/*",
     ]),
     exclude = [
         ".bazelversion",

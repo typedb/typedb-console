@@ -114,7 +114,7 @@ database delete test
 
 You will see the following output:
 ```
-typedb console --script=script      
+./typedb console --script=script      
 + database create test
 Database 'test' created
 + transaction test schema

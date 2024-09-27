@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.common.exception;
+package com.typedb.console.common.exception;
 
-import com.vaticle.typedb.common.exception.ErrorMessage;
+import com.typedb.driver.common.exception.ErrorMessage;
 
 public class TypeDBConsoleException extends RuntimeException {
 

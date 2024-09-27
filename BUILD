@@ -33,11 +33,6 @@ java_library(
         "@vaticle_typedb_driver//java:driver-java",
         "@vaticle_typedb_driver//java/api",
         "@vaticle_typedb_driver//java/common",
-        "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/common:common",
-        "@vaticle_typeql//java/query",
-        "@vaticle_typeql//java/pattern",
-        "@vaticle_typeql//common/java:common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -55,7 +50,7 @@ java_library(
 
 java_binary(
     name = "console-binary-native",
-    main_class = "com.vaticle.typedb.console.TypeDBConsole",
+    main_class = "com.typedb.console.TypeDBConsole",
     runtime_deps = [":console-native"],
     visibility = ["//:__pkg__"],
     # If running the console binary directly, include the following logback to reduce noise
@@ -175,7 +170,6 @@ release_validate_deps(
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
         "@vaticle_typedb_driver",
-        "@vaticle_typeql",
     ],
     tags = ["manual"], # in order for bazel test //... to not fail
     version_file = "VERSION",

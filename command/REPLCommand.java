@@ -4,13 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.command;
+package com.typedb.console.command;
 
-import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.console.common.Printer;
-import com.vaticle.typedb.console.common.Utils;
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typedb.driver.api.Driver;
+import com.typedb.driver.common.collection.Pair;
+import com.typedb.console.common.Printer;
+import com.typedb.console.common.util.Utils;
+import com.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.driver.api.Driver;
 import org.jline.reader.LineReader;
 
 import javax.annotation.Nullable;
@@ -18,11 +18,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.driver.api.Transaction.Type.READ;
-import static com.vaticle.typedb.driver.api.Transaction.Type.SCHEMA;
-import static com.vaticle.typedb.driver.api.Transaction.Type.WRITE;
+import static com.typedb.driver.common.collection.Collections.pair;
+import static com.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.typedb.driver.api.Transaction.Type.READ;
+import static com.typedb.driver.api.Transaction.Type.SCHEMA;
+import static com.typedb.driver.api.Transaction.Type.WRITE;
 
 public interface REPLCommand {
 
@@ -476,10 +476,10 @@ public interface REPLCommand {
         private static final String description = "Start a read, write, or schema transaction to database <db>";
 
         private final String database;
-        private final com.vaticle.typedb.driver.api.Transaction.Type transactionType;
+        private final com.typedb.driver.api.Transaction.Type transactionType;
 //        private final Options options;
 
-        public Transaction(String database, com.vaticle.typedb.driver.api.Transaction.Type transactionType/*, Options options*/) {
+        public Transaction(String database, com.typedb.driver.api.Transaction.Type transactionType/*, Options options*/) {
             this.database = database;
             this.transactionType = transactionType;
 //            this.options = options;
@@ -489,7 +489,7 @@ public interface REPLCommand {
             return database;
         }
 
-        public com.vaticle.typedb.driver.api.Transaction.Type transactionType() {
+        public com.typedb.driver.api.Transaction.Type transactionType() {
             return transactionType;
         }
 
@@ -775,7 +775,7 @@ public interface REPLCommand {
         } else if (tokens.length >= 3 && tokens[0].equals(Transaction.token) &&
                 (tokens[2].equals("write") || tokens[2].equals("read") || tokens[2].equals("schema"))) {
             String database = tokens[1];
-            com.vaticle.typedb.driver.api.Transaction.Type transactionType = tokens[2].equals("write") ? WRITE : tokens[2].equals("read") ? READ : SCHEMA;
+            com.typedb.driver.api.Transaction.Type transactionType = tokens[2].equals("write") ? WRITE : tokens[2].equals("read") ? READ : SCHEMA;
 //            Options options;
 //            if (tokens.length > 3) options = Options.from(Arrays.copyOfRange(tokens, 3, tokens.length), isCloud);
 //            else options = new Options();

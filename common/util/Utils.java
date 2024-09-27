@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.common;
+package com.typedb.console.common.util;
 
-import com.vaticle.typedb.common.collection.Pair;
+import com.typedb.driver.common.collection.Pair;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;

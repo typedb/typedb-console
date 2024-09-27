@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.test.assembly;
+package com.typedb.console.test.assembly;
 
-import com.vaticle.typedb.console.tool.runner.TypeDBConsoleRunner;
-//import com.vaticle.typedb.core.tool.runner.TypeDBCoreRunner;
+import com.typedb.console.tool.runner.TypeDBConsoleRunner;
+//import com.typedb.core.tool.runner.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;

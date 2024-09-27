@@ -100,7 +100,6 @@
 @maven//:javax_annotation_javax_annotation_api_1_3_2
 @maven//:junit_junit_4_12
 @maven//:net_jcip_jcip_annotations_1_0
-@maven//:org_antlr_antlr4_runtime_4_8
 @maven//:org_apache_commons_commons_lang3_3_9
 @maven//:org_apache_httpcomponents_httpclient_4_5_13
 @maven//:org_apache_httpcomponents_httpcore_4_4_15
@@ -123,5 +122,4 @@
 @maven//:org_slf4j_log4j_over_slf4j_2_0_0
 @maven//:org_slf4j_slf4j_api_2_0_0
 @maven//:org_slf4j_slf4j_simple_2_0_0
-@maven//:org_yaml_snakeyaml_2_2
 @maven//:org_zeroturnaround_zt_exec_1_10

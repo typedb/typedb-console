@@ -1,20 +1,20 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:2.28.4
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.0.0-alpha-3
 
 
 ## New Features
+- **Introduce TypeDB 3.0-alpha Console**
+  Reimagine TypeDB Console for the upcoming 3.0 release of TypeDB. This alpha version of the client lets you interact with the updated server, try out the new, even more elegant version of TypeQL, and get used to the new output format for data queries.
+  Learn more about TypeDB 3.0 features here: https://typedb.com/blog/typedb-3-roadmap
+
 
 ## Bugs Fixed
-- **Remove hard-coded value for transaction timeout**
-  Removes a hard-coded value for transaction timeout, which prevented the user's setting from taking effect.
+
 
 ## Code Refactors
 
-## Other Improvements
-- **Bump dependencies for rules-python & pin CircleCI windows executor**
-  Bump dependencies for rules-python update. This fixes an error on windows builds in CircleCI.
-  We also pin the image used for Windows builds  on CircleCI to prevent updates from breaking the pipeline.
 
-- **Turn off statistics reporting in CI**
-  We turn off the statistics reporting in our CI builds not to send non-real diagnostics data.
+## Other Improvements
+
+    

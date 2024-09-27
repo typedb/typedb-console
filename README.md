@@ -71,7 +71,7 @@ Console also offers command completion, accessible with a `tab` keypress.
 - `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. For example:
   ```
   my-typedb-database::schema> source ./schema.tql
-  Concepts have been defined
+  Finished writes
   ```
 - `commit` : Commit the transaction changes and close transaction. For example:
   ```
@@ -113,9 +113,8 @@ database delete test
 ```
 
 You will see the following output:
-# TODO: Update the output!
 ```
-> ./typedb console --script=script                                                                                                                                                                                                                    73.830s
+typedb console --script=script      
 + database create test
 Database 'test' created
 + transaction test schema
@@ -123,18 +122,30 @@ Database 'test' created
 Success
 ++ commit
 Transaction changes committed
-+ transaction test data write
++ transaction test write
 ++ insert $x isa person;
-{ $x iid 0x966e80017fffffffffffffff isa person; }
-answers: 1, duration: 87 ms
+Finished validation and compilation...
+Finished writes. Streaming answers...
+
+   --------
+    $x | iid 0x1e00000000000000000000 isa person
+   --------
+
+Finished. Total answers: 1
 ++ commit
 Transaction changes committed
-+ transaction test data read
++ transaction test read
 ++ match $x isa person;
-{ $x iid 0x966e80018000000000000000 isa person; }
-answers: 1, duration: 25 ms
+Finished validation and compilation...
+Streaming answers...
+
+   --------
+    $x | iid 0x1e00000000000000000000 isa person
+   --------
+
+Finished. Total answers: 1
 ++ close
-Transaction closed without committing changes
+Transaction closed
 + database delete test
 Database 'test' deleted
 ```

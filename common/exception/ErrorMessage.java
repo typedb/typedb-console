@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.common.exception;
+package com.typedb.console.common.exception;
 
-public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.ErrorMessage {
+public abstract class ErrorMessage extends com.typedb.driver.common.exception.ErrorMessage {
 
     private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
         super(codePrefix, codeNumber, messagePrefix, messageBody);

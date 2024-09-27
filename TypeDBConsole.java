@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console;
+package com.typedb.console;
 
-import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.console.command.REPLCommand;
-import com.vaticle.typedb.console.command.TransactionREPLCommand;
-import com.vaticle.typedb.console.common.Printer;
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typedb.driver.TypeDB;
-import com.vaticle.typedb.driver.api.Driver;
-import com.vaticle.typedb.driver.api.Transaction;
-import com.vaticle.typedb.driver.api.answer.ConceptRow;
-import com.vaticle.typedb.driver.api.answer.QueryAnswer;
-import com.vaticle.typedb.driver.api.database.Database;
-import com.vaticle.typedb.driver.common.exception.TypeDBDriverException;
+import com.typedb.console.common.Either;
+import com.typedb.console.common.util.Java;
+import com.typedb.console.command.REPLCommand;
+import com.typedb.console.command.TransactionREPLCommand;
+import com.typedb.console.common.Printer;
+import com.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.driver.TypeDB;
+import com.typedb.driver.api.Driver;
+import com.typedb.driver.api.Transaction;
+import com.typedb.driver.api.answer.ConceptRow;
+import com.typedb.driver.api.answer.QueryAnswer;
+import com.typedb.driver.api.database.Database;
+import com.typedb.driver.common.exception.TypeDBDriverException;
 import io.sentry.Sentry;
 import org.jline.builtins.Completers;
 import org.jline.reader.Candidate;
@@ -60,11 +60,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.console.Version.VERSION;
-import static com.vaticle.typedb.console.common.Printer.QUERY_SUCCESS;
-import static com.vaticle.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
-import static com.vaticle.typedb.console.common.Printer.TOTAL_ANSWERS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
+import static com.typedb.console.Version.VERSION;
+import static com.typedb.console.common.Printer.QUERY_SUCCESS;
+import static com.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
+import static com.typedb.console.common.Printer.TOTAL_ANSWERS;
+import static com.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
 import static org.jline.builtins.Completers.TreeCompleter.node;
 

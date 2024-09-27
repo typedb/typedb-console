@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.common;
+package com.typedb.console.common;
 
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
-import com.vaticle.typedb.driver.api.QueryType;
-import com.vaticle.typedb.driver.api.Transaction;
-import com.vaticle.typedb.driver.api.answer.ConceptRow;
-import com.vaticle.typedb.driver.api.answer.JSON;
-import com.vaticle.typedb.driver.api.answer.ValueGroup;
-import com.vaticle.typedb.driver.api.concept.Concept;
-import com.vaticle.typedb.driver.api.concept.thing.Attribute;
-import com.vaticle.typedb.driver.api.concept.thing.Entity;
-import com.vaticle.typedb.driver.api.concept.thing.Relation;
-import com.vaticle.typedb.driver.api.concept.thing.Thing;
-import com.vaticle.typedb.driver.api.concept.type.Type;
-import com.vaticle.typedb.driver.api.concept.value.Value;
+import com.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.driver.api.QueryType;
+import com.typedb.driver.api.Transaction;
+import com.typedb.driver.api.answer.ConceptRow;
+import com.typedb.driver.api.answer.JSON;
+import com.typedb.driver.api.answer.ValueGroup;
+import com.typedb.driver.api.concept.Concept;
+import com.typedb.driver.api.concept.thing.Attribute;
+import com.typedb.driver.api.concept.thing.Entity;
+import com.typedb.driver.api.concept.thing.Relation;
+import com.typedb.driver.api.concept.thing.Thing;
+import com.typedb.driver.api.concept.type.Type;
+import com.typedb.driver.api.concept.value.Value;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -28,7 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.joining;
 
 public class Printer {

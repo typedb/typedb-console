@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console;
+package com.typedb.console;
 
 public class RunQueriesResult {
     private final boolean success;

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.tool.runner;
+package com.typedb.console.tool.runner;
 
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import static com.vaticle.typedb.console.tool.runner.Util.getConsoleArchiveFile;
-import static com.vaticle.typedb.console.tool.runner.Util.unarchive;
+import static com.typedb.console.tool.runner.Util.getConsoleArchiveFile;
+import static com.typedb.console.tool.runner.Util.unarchive;
 
 public class TypeDBConsoleRunner {
 

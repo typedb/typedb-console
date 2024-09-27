@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.tool.runner;
+package com.typedb.console.tool.runner;
 
 import org.zeroturnaround.exec.ProcessExecutor;
 import picocli.CommandLine;

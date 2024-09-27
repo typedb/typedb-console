@@ -9,7 +9,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "typedb_java_test")
 
 typedb_java_test(
     name = "test-assembly-native",
-    test_class = "com.vaticle.typedb.console.test.assembly.AssemblyTest",
+    test_class = "com.typedb.console.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
     deps = [
         "//tool/runner:typedb-console-runner",

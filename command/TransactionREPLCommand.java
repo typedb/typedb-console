@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.vaticle.typedb.console.command;
+package com.typedb.console.command;
 
-import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.console.common.Utils;
-import com.vaticle.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.console.common.Either;
+import com.typedb.driver.common.collection.Pair;
+import com.typedb.console.common.util.Utils;
+import com.typedb.console.common.exception.TypeDBConsoleException;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
@@ -19,17 +19,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_OPTIONAL_ARG;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
-import static com.vaticle.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
+import static com.typedb.driver.common.collection.Collections.pair;
+import static com.typedb.driver.common.collection.Collections.set;
+import static com.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLEAR_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_CLOSE_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_COMMIT_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_EXIT_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_HELP_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_OPTIONAL_ARG;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_ROLLBACK_ARGS;
+import static com.typedb.console.common.exception.ErrorMessage.TransactionRepl.INVALID_SOURCE_ARGS;
 
 public interface TransactionREPLCommand {
 

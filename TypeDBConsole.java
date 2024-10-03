@@ -73,7 +73,7 @@ public class TypeDBConsole {
     private static final String DISTRIBUTION_NAME = "TypeDB Console";
     private static final String COPYRIGHT = "\n" +
             "Welcome to TypeDB Console. You are now in TypeDB Wonderland!\n" +
-            "Copyright (C) TypeDB\n";
+            "Copyright (C) Vaticle\n";
     private static final Path COMMAND_HISTORY_FILE =
             Paths.get(System.getProperty("user.home"), ".typedb-console-repl-history").toAbsolutePath();
     private static final Path TRANSACTION_HISTORY_FILE =

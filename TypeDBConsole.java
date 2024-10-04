@@ -22,9 +22,9 @@ import com.vaticle.typedb.driver.api.answer.ConceptMap;
 import com.vaticle.typedb.driver.api.answer.ConceptMapGroup;
 import com.vaticle.typedb.driver.api.answer.JSON;
 import com.vaticle.typedb.driver.api.answer.ValueGroup;
-import com.vaticle.typedb.driver.api.concept.value.Value;
 import com.vaticle.typedb.driver.api.database.Database;
 import com.vaticle.typedb.driver.api.user.User;
+import com.vaticle.typedb.driver.common.Promise;
 import com.vaticle.typedb.driver.common.exception.TypeDBDriverException;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -65,18 +65,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -719,7 +709,8 @@ public class TypeDBConsole {
     private RunQueriesResult runQueries(TypeDBTransaction tx, String queryString) {
         Optional<List<TypeQLQuery>> queries = parseQueries(queryString);
         if (queries.isEmpty()) return RunQueriesResult.error();
-        queries.get().forEach(query -> runQuery(tx, query));
+        List<Runnable> promiseResolvers = queries.get().stream().map(query -> runQuery(tx, query)).collect(toList());
+        promiseResolvers.forEach(Runnable::run);
         boolean hasChanges = queries.get().stream().anyMatch(query -> query.type() == TypeQLArg.QueryType.WRITE);
         return new RunQueriesResult(true, hasChanges);
     }
@@ -733,32 +724,46 @@ public class TypeDBConsole {
     }
 
     @SuppressWarnings("CheckReturnValue")
-    private void runQuery(TypeDBTransaction tx, TypeQLQuery query) {
+    private Runnable runQuery(TypeDBTransaction tx, TypeQLQuery query) {
         if (query instanceof TypeQLDefine) {
             tx.query().define(query.asDefine()).resolve();
             printer.info("Concepts have been defined");
+            return () -> {};
         } else if (query instanceof TypeQLUndefine) {
             tx.query().undefine(query.asUndefine()).resolve();
             printer.info("Concepts have been undefined");
+            return () -> {};
         } else if (query instanceof TypeQLInsert) {
-            Optional<ConceptMap> ignore = tx.query().insert(query.asInsert()).findFirst();
+            return findFirstMayThrow(tx.query().insert(query.asInsert()));
         } else if (query instanceof TypeQLDelete) {
-            tx.query().delete(query.asDelete()).resolve();
+            return resolvePromiseMayThrow(tx.query().delete(query.asDelete()));
         } else if (query instanceof TypeQLUpdate) {
-            Optional<ConceptMap> ignore = tx.query().update(query.asUpdate()).findFirst();
+            return findFirstMayThrow(tx.query().update(query.asUpdate()));
         } else if (query instanceof TypeQLGet) {
-            Optional<ConceptMap> ignore = tx.query().get(query.asGet()).findFirst();
+            return findFirstMayThrow(tx.query().get(query.asGet()));
         } else if (query instanceof TypeQLGet.Aggregate) {
-            Optional<Value> ignore = tx.query().get(query.asGetAggregate()).resolve();
+            return resolvePromiseMayThrow(tx.query().get(query.asGetAggregate()));
         } else if (query instanceof TypeQLGet.Group) {
-            Optional<ConceptMapGroup> ignore = tx.query().get(query.asGetGroup()).findFirst();
+            return findFirstMayThrow(tx.query().get(query.asGetGroup()));
         } else if (query instanceof TypeQLGet.Group.Aggregate) {
-            Optional<ValueGroup> ignore = tx.query().get(query.asGetGroupAggregate()).findFirst();
+            return findFirstMayThrow(tx.query().get(query.asGetGroupAggregate()));
         } else if (query instanceof TypeQLFetch) {
-            Optional<JSON> ignore = tx.query().fetch(query.asFetch()).findFirst();
+            return findFirstMayThrow(tx.query().fetch(query.asFetch()));
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + query);
         }
+    }
+
+    private Runnable findFirstMayThrow(Stream<?> stream) {
+        return () -> {
+            Optional<?> ignore = stream.findFirst();
+        };
+    }
+
+    private Runnable resolvePromiseMayThrow(Promise<?> promise) {
+        return () -> {
+            Object ignore = promise.resolve();
+        };
     }
 
     private void runQueryPrintAnswers(TypeDBTransaction tx, TypeQLQuery query) {

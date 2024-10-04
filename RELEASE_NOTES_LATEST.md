@@ -1,20 +1,29 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:2.28.4
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:2.28.6
 
 
 ## New Features
+  
+- **Directly specify password in the 'password-update' command**
+  
+  It is now possible to invoke `password-update` command and specify the password together, instead of having to supply them in the following prompt. This new variant makes it possible to call it non-interactively.
+   
 
 ## Bugs Fixed
-- **Remove hard-coded value for transaction timeout**
-  Removes a hard-coded value for transaction timeout, which prevented the user's setting from taking effect.
+
 
 ## Code Refactors
 
-## Other Improvements
-- **Bump dependencies for rules-python & pin CircleCI windows executor**
-  Bump dependencies for rules-python update. This fixes an error on windows builds in CircleCI.
-  We also pin the image used for Windows builds  on CircleCI to prevent updates from breaking the pipeline.
 
-- **Turn off statistics reporting in CI**
-  We turn off the statistics reporting in our CI builds not to send non-real diagnostics data.
+## Other Improvements
+- **Migrate CircleCI mac jobs to arm64 executors**
+  Migrates the  CircleCI mac jobs to arm64 executors
+  
+  
+- **//tool/sync:dependencies vaticle/typedb-driver@c75330e**
+
+
+- **TypeQL queries executed via source command are asynchronous**
+  TypeQL files executed via source command are asynchronous
+  

@@ -6,6 +6,7 @@ version: 2.1
 
 orbs:
   win: circleci/windows@5.0.0
+  macos: circleci/macos@2.4.0
 
 executors:
   linux-arm64-amazonlinux-2:
@@ -30,11 +31,6 @@ executors:
     macos:
       xcode: "13.4.1"
     resource_class: macos.m1.medium.gen1
-    working_directory: ~/typedb-console
-
-  mac-x86_64:
-    macos:
-      xcode: "13.4.1"
     working_directory: ~/typedb-console
 
   win-x86_64:
@@ -70,9 +66,16 @@ commands:
           mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-bazel-brew:
+  install-bazel-mac:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
-      - run: brew install bazelisk
+      - run: |
+          brew install python@3.8
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
+          sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
 jobs:
   deploy-artifact-snapshot-linux-x86_64:
@@ -98,10 +101,12 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
 
   deploy-artifact-snapshot-mac-x86_64:
-    executor: mac-x86_64
+    executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - macos/install-rosetta
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -111,7 +116,8 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -148,10 +154,12 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-linux-arm64-targz --compilation_mode=opt -- release
 
   deploy-artifact-release-mac-x86_64:
-    executor: mac-x86_64
+    executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - macos/install-rosetta
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
@@ -161,7 +169,8 @@ jobs:
     executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-brew
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD

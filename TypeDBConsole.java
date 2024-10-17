@@ -6,12 +6,12 @@
 
 package com.typedb.console;
 
-import com.typedb.console.common.Either;
-import com.typedb.console.common.util.Java;
 import com.typedb.console.command.REPLCommand;
 import com.typedb.console.command.TransactionREPLCommand;
+import com.typedb.console.common.Either;
 import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
 import com.typedb.driver.api.Driver;
 import com.typedb.driver.api.Transaction;

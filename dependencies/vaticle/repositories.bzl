@@ -15,5 +15,5 @@ def vaticle_typedb_driver():
     git_repository(
         name = "vaticle_typedb_driver",
         remote = "https://github.com/typedb/typedb-driver",
-        tag = "3.0.0-alpha-4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_driver
+        commit = "32152553cea3e8af6e1ef616ea626693d76e6228",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_driver
     )

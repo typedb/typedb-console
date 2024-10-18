@@ -6,16 +6,17 @@
 
 package com.typedb.console;
 
-import com.typedb.console.common.Either;
-import com.typedb.console.common.util.Java;
 import com.typedb.console.command.REPLCommand;
 import com.typedb.console.command.TransactionREPLCommand;
+import com.typedb.console.common.Either;
 import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
+import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
 import com.typedb.driver.api.Driver;
 import com.typedb.driver.api.Transaction;
 import com.typedb.driver.api.answer.ConceptRow;
+import com.typedb.driver.api.answer.JSON;
 import com.typedb.driver.api.answer.QueryAnswer;
 import com.typedb.driver.api.database.Database;
 import com.typedb.driver.common.exception.TypeDBDriverException;
@@ -721,8 +722,13 @@ public class TypeDBConsole {
                 printer.conceptRow(row, tx, first.get());
                 first.set(false);
             });
-//        } else if (answer.isConceptTrees()) { // TODO: Currently unsupported!
-
+        } else if (answer.isConceptDocuments()) {
+            Stream<JSON> resultDocuments = answer.asConceptDocuments().stream();
+            AtomicBoolean first = new AtomicBoolean(true);
+            printCancellableResult(resultDocuments, document -> {
+                printer.conceptDocument(document, first.get());
+                first.set(false);
+            });
         } else {
             throw new TypeDBConsoleException("Query is of unrecognized type: " + queryString);
         }

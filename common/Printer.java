@@ -13,10 +13,10 @@ import com.typedb.driver.api.answer.ConceptRow;
 import com.typedb.driver.api.answer.JSON;
 import com.typedb.driver.api.answer.ValueGroup;
 import com.typedb.driver.api.concept.Concept;
-import com.typedb.driver.api.concept.thing.Attribute;
-import com.typedb.driver.api.concept.thing.Entity;
-import com.typedb.driver.api.concept.thing.Relation;
-import com.typedb.driver.api.concept.thing.Thing;
+import com.typedb.driver.api.concept.instance.Attribute;
+import com.typedb.driver.api.concept.instance.Entity;
+import com.typedb.driver.api.concept.instance.Instance;
+import com.typedb.driver.api.concept.instance.Relation;
 import com.typedb.driver.api.concept.type.Type;
 import com.typedb.driver.api.concept.value.Value;
 import org.jline.utils.AttributedString;
@@ -37,7 +37,8 @@ public class Printer {
     public static final String QUERY_SUCCESS = "Success";
     public static final String QUERY_COMPILATION_SUCCESS = "Finished validation and compilation...";
     public static final String QUERY_WRITE_SUCCESS = "Finished writes";
-    public static final String QUERY_STREAMING_ANSWERS = "Streaming answers...";
+    public static final String QUERY_STREAMING_ROWS = "Streaming answers...";
+    public static final String QUERY_STREAMING_DOCUMENTS = "Streaming documents...";
     public static final String TOTAL_ANSWERS = "Total answers: ";
     private static final String TABLE_INDENT = "   ";
     private static final String CONTENT_INDENT = "    ";
@@ -67,8 +68,11 @@ public class Printer {
         out.println(conceptRowDisplayString(conceptRow, columnNames, columnsWidth, tx));
     }
 
-    public void json(JSON json) {
-        out.println(json.toString());
+    public void conceptDocument(JSON conceptDocument, boolean first) {
+        if (first) {
+            out.println(conceptDocumentDisplayHeader(QueryType.READ)); // TODO: Get the query type from the document when available
+        }
+        out.println(conceptDocumentDisplay(conceptDocument));
     }
 
     public void value(Value answer) {
@@ -104,7 +108,7 @@ public class Printer {
         }
 
         assert !queryType.isSchema(); // expected to return another type of answer
-        sb.append(QUERY_STREAMING_ANSWERS);
+        sb.append(QUERY_STREAMING_ROWS);
         sb.append("\n\n");
 
         if (columnsWidth != 0) {
@@ -133,6 +137,26 @@ public class Printer {
         return sb.toString();
     }
 
+    private String conceptDocumentDisplayHeader(QueryType queryType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(QUERY_COMPILATION_SUCCESS);
+        sb.append("\n");
+
+        if (queryType.isWrite()) {
+            sb.append(QUERY_WRITE_SUCCESS);
+            sb.append(". ");
+        }
+
+        assert !queryType.isSchema(); // expected to return another type of answer
+        sb.append(QUERY_STREAMING_DOCUMENTS);
+        sb.append("\n");
+        return sb.toString();
+    }
+
+    private String conceptDocumentDisplay(JSON document) {
+        return document.toString();
+    }
+
     private static String indent(String indent, String string) {
         return Arrays.stream(string.split("\n")).map(s -> indent + s).collect(joining("\n"));
     }
@@ -155,8 +179,8 @@ public class Printer {
             sb.append(relationDisplayKeyString(concept.asRelation()));
         }
 
-        if (concept.isThing()) {
-            sb.append(" ").append(isaDisplayString(concept.asThing()));
+        if (concept.isInstance()) {
+            sb.append(" ").append(isaDisplayString(concept.asInstance()));
         }
 
         return sb.toString();
@@ -178,8 +202,8 @@ public class Printer {
         return rawValue.toString();
     }
 
-    private String isaDisplayString(Thing thing) {
-        return colorKeyword("isa") + " " + colorType(thing.getType().getLabel().scopedName());
+    private String isaDisplayString(Instance instance) {
+        return colorKeyword("isa") + " " + colorType(instance.getType().getLabel());
     }
 
     private String entityDisplayKeyString(Entity entity) {

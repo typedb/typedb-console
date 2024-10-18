@@ -14,6 +14,7 @@ import com.typedb.console.common.exception.TypeDBConsoleException;
 import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
 import com.typedb.driver.api.Driver;
+import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
 import com.typedb.driver.api.answer.ConceptRow;
 import com.typedb.driver.api.answer.JSON;
@@ -713,20 +714,21 @@ public class TypeDBConsole {
 
     private void runQueryPrintAnswers(Transaction tx, String queryString) {
         QueryAnswer answer = tx.query(queryString).resolve();
+        QueryType queryType = answer.getQueryType();
         if (answer.isOk()) {
             printer.info(QUERY_SUCCESS);
         } else if (answer.isConceptRows()) {
             Stream<ConceptRow> resultRows = answer.asConceptRows().stream();
             AtomicBoolean first = new AtomicBoolean(true);
             printCancellableResult(resultRows, row -> {
-                printer.conceptRow(row, tx, first.get());
+                printer.conceptRow(row, queryType, tx, first.get());
                 first.set(false);
             });
         } else if (answer.isConceptDocuments()) {
             Stream<JSON> resultDocuments = answer.asConceptDocuments().stream();
             AtomicBoolean first = new AtomicBoolean(true);
             printCancellableResult(resultDocuments, document -> {
-                printer.conceptDocument(document, first.get());
+                printer.conceptDocument(document, queryType, first.get());
                 first.set(false);
             });
         } else {

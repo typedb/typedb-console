@@ -59,18 +59,18 @@ public class Printer {
         err.println(colorError(s));
     }
 
-    public void conceptRow(ConceptRow conceptRow, Transaction tx, boolean first) {
+    public void conceptRow(ConceptRow conceptRow, QueryType queryType, Transaction tx, boolean first) {
         List<String> columnNames = conceptRow.columnNames().collect(Collectors.toList());
         int columnsWidth = columnNames.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
         if (first) {
-            out.println(conceptRowDisplayStringHeader(conceptRow.getQueryType(), columnsWidth));
+            out.println(conceptRowDisplayStringHeader(queryType, columnsWidth));
         }
         out.println(conceptRowDisplayString(conceptRow, columnNames, columnsWidth, tx));
     }
 
-    public void conceptDocument(JSON conceptDocument, boolean first) {
+    public void conceptDocument(JSON conceptDocument, QueryType queryType, boolean first) {
         if (first) {
-            out.println(conceptDocumentDisplayHeader(QueryType.READ)); // TODO: Get the query type from the document when available
+            out.println(conceptDocumentDisplayHeader(queryType));
         }
         out.println(conceptDocumentDisplay(conceptDocument));
     }

@@ -10,4 +10,4 @@ index 4a7855a..d2c3b4a 100644
 +workspace(name = "v")
  
  ################################
- # Load @vaticle_dependencies #
+ # Load @typedb_dependencies #

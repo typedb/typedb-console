@@ -2,11 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_bazel_distribution//maven:rules.bzl", "assemble_maven", "deploy_maven")
-load("@vaticle_dependencies//distribution/maven:version.bzl", "version")
-load("@vaticle_dependencies//library/maven:artifacts.bzl", "artifacts")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@typedb_bazel_distribution//maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@typedb_dependencies//distribution/maven:version.bzl", "version")
+load("@typedb_dependencies//library/maven:artifacts.bzl", "artifacts")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
 
 java_library(
     name = "typedb-console-runner",

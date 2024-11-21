@@ -16,7 +16,7 @@ build:
     dependency-analysis:
       image: vaticle-ubuntu-22.04
       command: |
-        bazel run @vaticle_dependencies//factory/analysis:dependency-analysis
+        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
       image: vaticle-ubuntu-22.04
@@ -24,15 +24,15 @@ build:
       command: |
         export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
         export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel run @typedb_dependencies//distribution/artifact:create-netrc
         bazel build //...
-        bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
+        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
       image: vaticle-ubuntu-22.04
       command: |
-        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
 #    TODO: Cannot be run without a running 3.0 server
@@ -40,7 +40,7 @@ build:
 #      image: vaticle-ubuntu-22.04
 #      type: foreground
 #      command: |
-#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
 #        bazel test //test/assembly:test-assembly-native --test_output=streamed
     deploy-runner-maven-snapshot:
       filter:
@@ -61,7 +61,7 @@ build:
 #      dependencies: [test-assembly]
       command: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @vaticle_dependencies//tool/sync:dependencies -- --source ${FACTORY_REPO}@${FACTORY_COMMIT}
+          bazel run @typedb_dependencies//tool/sync:dependencies -- --source ${FACTORY_REPO}@${FACTORY_COMMIT}
 
 release:
   filter:
@@ -74,13 +74,13 @@ release:
       command: |
         export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
         export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-        bazel run @vaticle_dependencies//distribution/artifact:create-netrc
+        bazel run @typedb_dependencies//distribution/artifact:create-netrc
         bazel test //:release-validate-deps  --test_output=streamed
     validate-release-notes:
       image: vaticle-ubuntu-22.04
       command: |
         export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @vaticle_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO ./RELEASE_NOTES_LATEST.md
+        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO ./RELEASE_NOTES_LATEST.md
   deployment:
     trigger-release-circleci:
       image: vaticle-ubuntu-22.04

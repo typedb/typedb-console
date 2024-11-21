@@ -5,14 +5,14 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
-load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
+load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
+load("@typedb_bazel_distribution//github:rules.bzl", "deploy_github")
+load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("//:deployment.bzl", deployment_console = "deployment")
-load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
+load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
 genrule(
@@ -30,9 +30,9 @@ java_library(
     name = "console-native",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
     deps = [
-        "@vaticle_typedb_driver//java:driver-java",
-        "@vaticle_typedb_driver//java/api",
-        "@vaticle_typedb_driver//java/common",
+        "@typedb_driver//java:driver-java",
+        "@typedb_driver//java/api",
+        "@typedb_driver//java/common",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -169,7 +169,7 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@vaticle_typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
-        "@vaticle_typedb_driver",
+        "@typedb_driver",
     ],
     tags = ["manual"], # in order for bazel test //... to not fail
     version_file = "VERSION",
@@ -206,12 +206,12 @@ checkstyle_test(
 filegroup(
     name = "tools",
     data = [
-        "@vaticle_dependencies//library/maven:update",
-        "@vaticle_dependencies//distribution/artifact:create-netrc",
-        "@vaticle_dependencies//tool/checkstyle:test-coverage",
-        "@vaticle_dependencies//tool/sonarcloud:code-analysis",
-        "@vaticle_dependencies//tool/release/notes:create",
-        "@vaticle_dependencies//tool/release/notes:validate",
-        "@vaticle_dependencies//tool/sync:dependencies",
+        "@typedb_dependencies//library/maven:update",
+        "@typedb_dependencies//distribution/artifact:create-netrc",
+        "@typedb_dependencies//tool/checkstyle:test-coverage",
+        "@typedb_dependencies//tool/sonarcloud:code-analysis",
+        "@typedb_dependencies//tool/release/notes:create",
+        "@typedb_dependencies//tool/release/notes:validate",
+        "@typedb_dependencies//tool/sync:dependencies",
     ],
 )

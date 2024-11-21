@@ -11,7 +11,6 @@ import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
 import com.typedb.driver.api.answer.ConceptRow;
 import com.typedb.driver.api.answer.JSON;
-import com.typedb.driver.api.answer.ValueGroup;
 import com.typedb.driver.api.concept.Concept;
 import com.typedb.driver.api.concept.instance.Attribute;
 import com.typedb.driver.api.concept.instance.Entity;
@@ -77,10 +76,6 @@ public class Printer {
 
     public void value(Value answer) {
         out.println(stringifyNumericValue(answer));
-    }
-
-    public void valueGroup(ValueGroup answer, Transaction tx) {
-        out.println(conceptDisplayString(answer.owner(), tx) + " => " + stringifyNumericValue(answer.value().orElse(null)));
     }
 
     private static String stringifyNumericValue(Value value) {
@@ -188,15 +183,15 @@ public class Printer {
 
     private String valueDisplayString(Value value) {
         Object rawValue;
-        if (value.isLong()) rawValue = value.asLong();
-        else if (value.isDouble()) rawValue = value.asDouble();
-        else if (value.isDecimal()) rawValue = value.asDecimal();
-        else if (value.isBoolean()) rawValue = value.asBoolean();
-        else if (value.isString()) rawValue = value.asString();
-        else if (value.isDate()) rawValue = value.asDate();
-        else if (value.isDatetime()) rawValue = value.asDatetime();
-        else if (value.isDatetimeTZ()) rawValue = value.asDatetimeTZ();
-        else if (value.isDuration()) rawValue = value.asDuration();
+        if (value.isLong()) rawValue = value.getLong();
+        else if (value.isDouble()) rawValue = value.getDouble();
+        else if (value.isDecimal()) rawValue = value.getDecimal();
+        else if (value.isBoolean()) rawValue = value.getBoolean();
+        else if (value.isString()) rawValue = value.getString();
+        else if (value.isDate()) rawValue = value.getDate();
+        else if (value.isDatetime()) rawValue = value.getDatetime();
+        else if (value.isDatetimeTZ()) rawValue = value.getDatetimeTZ();
+        else if (value.isDuration()) rawValue = value.getDuration();
         else if (value.isStruct()) rawValue = "Structs are not supported in console now";
         else throw new TypeDBConsoleException(ILLEGAL_CAST);
         return rawValue.toString();

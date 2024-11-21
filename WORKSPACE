@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-workspace(name = "vaticle_typedb_console")
+workspace(name = "typedb_console")
 
 ################################
 # Load @typedb_dependencies #
@@ -180,9 +180,9 @@ load("@maven//:compat.bzl", "compat_repositories")
 compat_repositories()
 
 ############################################
-# Create @vaticle_typedb_console_workspace_refs #
+# Create @typedb_console_workspace_refs #
 ############################################
 load("@typedb_bazel_distribution//common:rules.bzl", "workspace_refs")
 workspace_refs(
-    name = "vaticle_typedb_console_workspace_refs"
+    name = "typedb_console_workspace_refs"
 )

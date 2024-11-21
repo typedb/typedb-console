@@ -6,7 +6,7 @@ index 4a7855a..d2c3b4a 100644
  # License, v. 2.0. If a copy of the MPL was not distributed with this
  # file, You can obtain one at https://mozilla.org/MPL/2.0/.
  
--workspace(name = "vaticle_typedb_console")
+-workspace(name = "typedb_console")
 +workspace(name = "v")
  
  ################################

@@ -8,7 +8,7 @@ workspace(name = "vaticle_typedb_console")
 # Load @typedb_dependencies #
 ################################
 
-load("//dependencies/vaticle:repositories.bzl", "typedb_dependencies")
+load("//dependencies/typedb:repositories.bzl", "typedb_dependencies")
 typedb_dependencies()
 
 # Load //builder/bazel for RBE
@@ -147,7 +147,7 @@ google_common_workspace_rules()
 ################################
 
 # Load repositories
-load("//dependencies/vaticle:repositories.bzl", "typedb_driver")
+load("//dependencies/typedb:repositories.bzl", "typedb_driver")
 typedb_driver()
 
 load("@typedb_driver//dependencies/typedb:repositories.bzl", "typedb_protocol")
@@ -159,7 +159,7 @@ typedb_artifact()
 
 # Load maven
 load("@typedb_driver//dependencies/maven:artifacts.bzl", typedb_driver_artifacts = "artifacts")
-#load("@typedb_driver//dependencies/vaticle:artifacts.bzl", vaticle_typedb_vaticle_maven_artifacts = "maven_artifacts")
+#load("@typedb_driver//dependencies/typedb:artifacts.bzl", vaticle_typedb_vaticle_maven_artifacts = "maven_artifacts")
 load("//dependencies/maven:artifacts.bzl", typedb_console_artifacts = "artifacts")
 
 ###############

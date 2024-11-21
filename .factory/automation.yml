@@ -14,12 +14,12 @@ build:
       owner: typedb
       branch: [master, development, "3.0"]
     dependency-analysis:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       command: |
         bazel run @typedb_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       type: foreground
       command: |
         export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
@@ -30,14 +30,14 @@ build:
         bazel run @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
 #    TODO: Cannot be run without a running 3.0 server
 #    test-assembly:
-#      image: vaticle-ubuntu-22.04
+#      image: typedb-ubuntu-22.04
 #      type: foreground
 #      command: |
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
@@ -46,14 +46,14 @@ build:
       filter:
         owner: typedb
         branch: [master, development, "3.0"]
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_TYPEDB_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_TYPEDB_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //tool/runner:deploy-maven -- snapshot
     sync-dependencies:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       filter:
         owner: typedb
         branch: [master, development]
@@ -69,7 +69,7 @@ release:
     branch: [master, "3.0"]
   validation:
     validate-dependencies:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       type: foreground
       command: |
         export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
@@ -77,13 +77,13 @@ release:
         bazel run @typedb_dependencies//distribution/artifact:create-netrc
         bazel test //:release-validate-deps  --test_output=streamed
     validate-release-notes:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       command: |
         export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO ./RELEASE_NOTES_LATEST.md
   deployment:
     trigger-release-circleci:
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       command: |
         git checkout -b release
         git push -f origin release
@@ -92,7 +92,7 @@ release:
       filter:
         owner: typedb
         branch: [master, 3.0]
-      image: vaticle-ubuntu-22.04
+      image: typedb-ubuntu-22.04
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_TYPEDB_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_TYPEDB_PASSWORD

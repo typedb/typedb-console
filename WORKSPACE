@@ -142,9 +142,9 @@ google_bazel_common()
 load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
 
-################################
-# Load @vaticle dependencies #
-################################
+#############################
+# Load @typedb dependencies #
+#############################
 
 # Load repositories
 load("//dependencies/typedb:repositories.bzl", "typedb_driver")
@@ -159,7 +159,7 @@ typedb_artifact()
 
 # Load maven
 load("@typedb_driver//dependencies/maven:artifacts.bzl", typedb_driver_artifacts = "artifacts")
-#load("@typedb_driver//dependencies/typedb:artifacts.bzl", vaticle_typedb_vaticle_maven_artifacts = "maven_artifacts")
+#load("@typedb_driver//dependencies/typedb:artifacts.bzl", typedb_maven_artifacts = "maven_artifacts")
 load("//dependencies/maven:artifacts.bzl", typedb_console_artifacts = "artifacts")
 
 ###############
@@ -173,7 +173,7 @@ maven(
     typedb_dependencies_tool_maven_artifacts +
     io_grpc_artifacts,
     generate_compat_repositories = True,
-#    internal_artifacts = vaticle_typedb_vaticle_maven_artifacts,
+#    internal_artifacts = typedb_maven_artifacts,
 )
 
 load("@maven//:compat.bzl", "compat_repositories")

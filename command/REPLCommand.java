@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.typedb.console.common.exception.ErrorMessage.Console.UNABLE_TO_READ_PASSWORD_INTERACTIVELY;
 import static com.typedb.driver.common.collection.Collections.pair;
 import static com.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.typedb.driver.api.Transaction.Type.READ;
@@ -50,45 +51,37 @@ public interface REPLCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-//    default boolean isUserList() {
-//        return false;
-//    }
-//
-//    default User.List asUserList() {
-//        throw new TypeDBConsoleException(ILLEGAL_CAST);
-//    }
-//
-//    default boolean isUserCreate() {
-//        return false;
-//    }
-//
-//    default User.Create asUserCreate() {
-//        throw new TypeDBConsoleException(ILLEGAL_CAST);
-//    }
-//
-//    default boolean isUserPasswordUpdate() {
-//        return false;
-//    }
-//
-//    default User.PasswordUpdate asUserPasswordUpdate() {
-//        throw new TypeDBConsoleException(ILLEGAL_CAST);
-//    }
-//
-//    default boolean isUserPasswordSet() {
-//        return false;
-//    }
-//
-//    default User.PasswordSet asUserPasswordSet() {
-//        throw new TypeDBConsoleException(ILLEGAL_CAST);
-//    }
-//
-//    default boolean isUserDelete() {
-//        return false;
-//    }
-//
-//    default User.Delete asUserDelete() {
-//        throw new TypeDBConsoleException(ILLEGAL_CAST);
-//    }
+    default boolean isUserList() {
+        return false;
+    }
+
+    default User.List asUserList() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserCreate() {
+        return false;
+    }
+
+    default User.Create asUserCreate() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserPasswordSet() {
+        return false;
+    }
+
+    default User.PasswordSet asUserPasswordSet() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
+
+    default boolean isUserDelete() {
+        return false;
+    }
+
+    default User.Delete asUserDelete() {
+        throw new TypeDBConsoleException(ILLEGAL_CAST);
+    }
 
     default boolean isDatabaseList() {
         return false;
@@ -319,160 +312,130 @@ public interface REPLCommand {
 //        }
     }
 
-//    abstract class User implements REPLCommand {
-//
-//        public static String token = "user";
-//
-//        public static class List extends REPLCommand.User {
-//
-//            public static String token = "list";
-//            private static String helpCommand = User.token + " " + token;
-//            private static String description = "List the users on the server";
-//
-//            @Override
-//            public boolean isUserList() {
-//                return true;
-//            }
-//
-//            @Override
-//            public User.List asUserList() {
-//                return this;
-//            }
-//        }
-//
-//        public static class Create extends REPLCommand.User {
-//
-//            public static String token = "create";
-//            private static String helpCommand = User.token + " " + token + " " + "<username>";
-//            private static String description = "Create a user with name <username> and a supplied password on the server";
-//
-//            private final String user;
-//            private final String password;
-//
-//            public Create(String user, String password) {
-//                this.user = user;
-//                this.password = password;
-//            }
-//
-//            public String user() {
-//                return user;
-//            }
-//
-//            public String password() {
-//                return password;
-//            }
-//
-//            @Override
-//            public boolean isUserCreate() {
-//                return true;
-//            }
-//
-//            @Override
-//            public User.Create asUserCreate() {
-//                return this;
-//            }
-//        }
-//
-//        public static class PasswordUpdate extends REPLCommand.User {
-//
-//            public static String token = "password-update";
-//            private static String helpCommand = User.token + " " + token + " [old-password new-password]";
-//            private static String description = "Update the password of the current user";
-//
-//            private final String passwordOld;
-//            private final String passwordNew;
-//
-//            public PasswordUpdate(String passwordOld, String passwordNew) {
-//                this.passwordOld = passwordOld;
-//                this.passwordNew = passwordNew;
-//            }
-//
-//            public String passwordOld() {
-//                return passwordOld;
-//            }
-//
-//            public String passwordNew() {
-//                return passwordNew;
-//            }
-//
-//            @Override
-//            public boolean isUserPasswordUpdate() {
-//                return true;
-//            }
-//
-//            @Override
-//            public PasswordUpdate asUserPasswordUpdate() {
-//                return this;
-//            }
-//        }
-//
-//        public static class PasswordSet extends REPLCommand.User {
-//
-//            public static String token = "password-set";
-//            private static String helpCommand = User.token + " " + token + " " + "<username>";
-//            private static String description = "Set the password of user with name <username>";
-//
-//            private final String user;
-//
-//            private final String password;
-//
-//            public PasswordSet(String user, String password) {
-//                this.user = user;
-//                this.password = password;
-//            }
-//
-//            public String user() {
-//                return user;
-//            }
-//
-//            public String password() {
-//                return password;
-//            }
-//
-//            @Override
-//            public boolean isUserPasswordSet() {
-//                return true;
-//            }
-//
-//            @Override
-//            public PasswordSet asUserPasswordSet() {
-//                return this;
-//            }
-//        }
-//
-//        public static class Delete extends REPLCommand.User {
-//
-//            public static String token = "delete";
-//            private static String helpCommand = User.token + " " + token + " " + "<username>";
-//            private static String description = "Delete a user with name <username> on the server";
-//
-//            private final String user;
-//
-//            public Delete(String user) {
-//                this.user = user;
-//            }
-//
-//            public String user() {
-//                return user;
-//            }
-//
-//            @Override
-//            public boolean isUserDelete() {
-//                return true;
-//            }
-//
-//            @Override
-//            public User.Delete asUserDelete() {
-//                return this;
-//            }
-//        }
-//    }
+    abstract class User implements REPLCommand {
+
+        public static String token = "user";
+
+        public static class List extends REPLCommand.User {
+
+            public static String token = "list";
+            private static String helpCommand = User.token + " " + token;
+            private static String description = "List the users on the server";
+
+            @Override
+            public boolean isUserList() {
+                return true;
+            }
+
+            @Override
+            public User.List asUserList() {
+                return this;
+            }
+        }
+
+        public static class Create extends REPLCommand.User {
+
+            public static String token = "create";
+            private static String helpCommand = User.token + " " + token + " " + "<username>";
+            private static String description = "Create a user with name <username> and a supplied password on the server";
+
+            private final String user;
+            private final String password;
+
+            public Create(String user, String password) {
+                this.user = user;
+                this.password = password;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            public String password() {
+                return password;
+            }
+
+            @Override
+            public boolean isUserCreate() {
+                return true;
+            }
+
+            @Override
+            public User.Create asUserCreate() {
+                return this;
+            }
+        }
+
+        public static class PasswordSet extends REPLCommand.User {
+
+            public static String token = "password-set";
+            private static String helpCommand = User.token + " " + token + " " + "<username> [new-password]";
+            private static String description = "Set the password of user with name <username>";
+
+            private final String user;
+
+            private final String password;
+
+            public PasswordSet(String user, String password) {
+                this.user = user;
+                this.password = password;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            public String password() {
+                return password;
+            }
+
+            @Override
+            public boolean isUserPasswordSet() {
+                return true;
+            }
+
+            @Override
+            public PasswordSet asUserPasswordSet() {
+                return this;
+            }
+        }
+
+        public static class Delete extends REPLCommand.User {
+
+            public static String token = "delete";
+            private static String helpCommand = User.token + " " + token + " " + "<username>";
+            private static String description = "Delete a user with name <username> on the server";
+
+            private final String user;
+
+            public Delete(String user) {
+                this.user = user;
+            }
+
+            public String user() {
+                return user;
+            }
+
+            @Override
+            public boolean isUserDelete() {
+                return true;
+            }
+
+            @Override
+            public User.Delete asUserDelete() {
+                return this;
+            }
+        }
+    }
 
     class Transaction implements REPLCommand {
 
         public static final String token = "transaction";
+        public static final String readToken = "read";
+        public static final String writeToken = "write";
+        public static final String schemaToken = "schema";
 //        private static final String helpCommand = token + " <db> read|write|schema [" + Options.token + "]";
-        private static final String helpCommand = token + " <db> read|write|schema";
+        private static final String helpCommand = token + String.format(" <db> %s|%s|%s", readToken, writeToken, schemaToken);
         private static final String description = "Start a read, write, or schema transaction to database <db>";
 
         private final String database;
@@ -678,20 +641,18 @@ public interface REPLCommand {
 //    }
 
     static String createHelpMenu(Driver driver, boolean isCloud) {
-        //        if (driver.users() != null) {
-//            menu.addAll(Arrays.asList(
-//                    pair(User.List.helpCommand, User.List.description),
-//                    pair(User.Create.helpCommand, User.Create.description),
-//                    pair(User.PasswordUpdate.helpCommand, User.PasswordUpdate.description),
-//                    pair(User.PasswordSet.helpCommand, User.PasswordSet.description),
-//                    pair(User.Delete.helpCommand, User.Delete.description)));
-//        }
 
         List<Pair<String, String>> menu = new ArrayList<>(Arrays.asList(
                 pair(Database.List.helpCommand, Database.List.description),
                 pair(Database.Create.helpCommand, Database.Create.description),
                 pair(Database.Delete.helpCommand, Database.Delete.description),
                 pair(Database.Schema.helpCommand, Database.Schema.description)));
+
+        menu.addAll(Arrays.asList(
+                pair(User.List.helpCommand, User.List.description),
+                pair(User.Create.helpCommand, User.Create.description),
+                pair(User.PasswordSet.helpCommand, User.PasswordSet.description),
+                pair(User.Delete.helpCommand, User.Delete.description)));
 
 //        if (isCloud) {
 //            menu.add(pair(Database.Replicas.helpCommand, Database.Replicas.description));
@@ -731,33 +692,26 @@ public interface REPLCommand {
             command = new Help();
         } else if (tokens.length == 1 && tokens[0].equals(Clear.token)) {
             command = new Clear();
-//        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
-//            command = new User.List();
-//        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
-//            String name = tokens[2];
-//            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-//            String password = Utils.readPassword(passwordReader, "Password: ");
-//            command = new User.Create(name, password);
-//        } else if ((tokens.length == 2 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
-//            String passwordOld;
-//            String passwordNew;
-//            if (tokens.length == 2) {
-//                if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-//                passwordOld = Utils.readPassword(passwordReader, "Old password: ");
-//                passwordNew = Utils.readPassword(passwordReader, "New password: ");
-//            } else {
-//                passwordOld = tokens[2];
-//                passwordNew = tokens[3];
-//            }
-//            command = new User.PasswordUpdate(passwordOld, passwordNew);
-//        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
-//            String name = tokens[2];
-//            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
-//            String newPassword = Utils.readPassword(passwordReader, "New password: ");
-//            command = new User.PasswordSet(name, newPassword);
-//        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
-//            String name = tokens[2];
-//            command = new User.Delete(name);
+        } else if (tokens.length == 2 && tokens[0].equals(User.token) && tokens[1].equals(User.List.token)) {
+            command = new User.List();
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Create.token)) {
+            String name = tokens[2];
+            if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+            String password = Utils.readPassword(passwordReader, "Password: ");
+            command = new User.Create(name, password);
+        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
+            String name = tokens[2];
+            String newPassword;
+            if (tokens.length == 3) {
+                if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
+                newPassword = Utils.readPassword(passwordReader, "New password: ");
+            } else {
+                newPassword = tokens[3];
+            }
+            command = new User.PasswordSet(name, newPassword);
+        } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
+            String name = tokens[2];
+            command = new User.Delete(name);
         } else if (tokens.length == 2 && tokens[0].equals(Database.token) && tokens[1].equals(Database.List.token)) {
             command = new Database.List();
         } else if (tokens.length == 3 && tokens[0].equals(Database.token) && tokens[1].equals(Database.Create.token)) {
@@ -773,9 +727,12 @@ public interface REPLCommand {
 //            String database = tokens[2];
 //            command = new Database.Replicas(database);
         } else if (tokens.length >= 3 && tokens[0].equals(Transaction.token) &&
-                (tokens[2].equals("write") || tokens[2].equals("read") || tokens[2].equals("schema"))) {
+                (tokens[2].equals(Transaction.readToken) || tokens[2].equals(Transaction.writeToken) || tokens[2].equals(Transaction.schemaToken))) {
             String database = tokens[1];
-            com.typedb.driver.api.Transaction.Type transactionType = tokens[2].equals("write") ? WRITE : tokens[2].equals("read") ? READ : SCHEMA;
+            com.typedb.driver.api.Transaction.Type transactionType =
+                    tokens[2].equals(Transaction.writeToken) ? WRITE :
+                            tokens[2].equals(Transaction.schemaToken) ? READ :
+                                    SCHEMA;
 //            Options options;
 //            if (tokens.length > 3) options = Options.from(Arrays.copyOfRange(tokens, 3, tokens.length), isCloud);
 //            else options = new Options();

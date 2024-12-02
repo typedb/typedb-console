@@ -67,11 +67,11 @@ public interface REPLCommand {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
-    default boolean isUserPasswordSet() {
+    default boolean isUserPasswordUpdate() {
         return false;
     }
 
-    default User.PasswordSet asUserPasswordSet() {
+    default User.PasswordUpdate asUserPasswordUpdate() {
         throw new TypeDBConsoleException(ILLEGAL_CAST);
     }
 
@@ -366,17 +366,17 @@ public interface REPLCommand {
             }
         }
 
-        public static class PasswordSet extends REPLCommand.User {
+        public static class PasswordUpdate extends REPLCommand.User {
 
-            public static String token = "password-set";
+            public static String token = "password-update";
             private static String helpCommand = User.token + " " + token + " " + "<username> [new-password]";
-            private static String description = "Set the password of user with name <username>";
+            private static String description = "Update the password of user with name <username>";
 
             private final String user;
 
             private final String password;
 
-            public PasswordSet(String user, String password) {
+            public PasswordUpdate(String user, String password) {
                 this.user = user;
                 this.password = password;
             }
@@ -390,12 +390,12 @@ public interface REPLCommand {
             }
 
             @Override
-            public boolean isUserPasswordSet() {
+            public boolean isUserPasswordUpdate() {
                 return true;
             }
 
             @Override
-            public PasswordSet asUserPasswordSet() {
+            public PasswordUpdate asUserPasswordUpdate() {
                 return this;
             }
         }
@@ -651,7 +651,7 @@ public interface REPLCommand {
         menu.addAll(Arrays.asList(
                 pair(User.List.helpCommand, User.List.description),
                 pair(User.Create.helpCommand, User.Create.description),
-                pair(User.PasswordSet.helpCommand, User.PasswordSet.description),
+                pair(User.PasswordUpdate.helpCommand, User.PasswordUpdate.description),
                 pair(User.Delete.helpCommand, User.Delete.description)));
 
 //        if (isCloud) {
@@ -699,7 +699,7 @@ public interface REPLCommand {
             if (passwordReader == null) throw new TypeDBConsoleException(UNABLE_TO_READ_PASSWORD_INTERACTIVELY);
             String password = Utils.readPassword(passwordReader, "Password: ");
             command = new User.Create(name, password);
-        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordSet.token)) {
+        } else if ((tokens.length == 3 || tokens.length == 4) && tokens[0].equals(User.token) && tokens[1].equals(User.PasswordUpdate.token)) {
             String name = tokens[2];
             String newPassword;
             if (tokens.length == 3) {
@@ -708,7 +708,7 @@ public interface REPLCommand {
             } else {
                 newPassword = tokens[3];
             }
-            command = new User.PasswordSet(name, newPassword);
+            command = new User.PasswordUpdate(name, newPassword);
         } else if (tokens.length == 3 && tokens[0].equals(User.token) && tokens[1].equals(User.Delete.token)) {
             String name = tokens[2];
             command = new User.Delete(name);

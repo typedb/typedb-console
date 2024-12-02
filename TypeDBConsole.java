@@ -213,12 +213,12 @@ public class TypeDBConsole {
                     runUserList(driver);
                 } else if (command.isUserCreate()) {
                     runUserCreate(driver, command.asUserCreate().user(), command.asUserCreate().password());
-                } else if (command.isUserPasswordSet()) {
-                    REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
-                    boolean passwordSetSuccessful = runUserPasswordSet(driver,
-                            userPasswordSet.user(),
-                            userPasswordSet.password());
-                    if (passwordSetSuccessful && userPasswordSet.user().equals(driver.users().getCurrentUsername())) {
+                } else if (command.isUserPasswordUpdate()) {
+                    REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                            userPasswordUpdate.user(),
+                            userPasswordUpdate.password());
+                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUsername())) {
                         printer.info("Please login again with your updated password.");
                         break;
                     }
@@ -279,7 +279,7 @@ public class TypeDBConsole {
         nodes.add(node(REPLCommand.User.token,
                 node(REPLCommand.User.List.token),
                 node(REPLCommand.User.Create.token),
-                node(REPLCommand.User.PasswordSet.token),
+                node(REPLCommand.User.PasswordUpdate.token),
                 node(REPLCommand.User.Delete.token,
                         node(userNameCompleter))
         ));
@@ -377,12 +377,12 @@ public class TypeDBConsole {
                     } else if (command.isUserCreate()) {
                         boolean success = runUserCreate(driver, command.asUserCreate().user(), command.asUserCreate().password());
                         if (!success) return false;
-                    } else if (command.isUserPasswordSet()) {
-                        REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
-                        boolean passwordSetSuccessful = runUserPasswordSet(driver,
-                                userPasswordSet.user(),
-                                userPasswordSet.password());
-                        if (passwordSetSuccessful && userPasswordSet.user().equals(driver.users().getCurrentUsername())) {
+                    } else if (command.isUserPasswordUpdate()) {
+                        REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                        boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                                userPasswordUpdate.user(),
+                                userPasswordUpdate.password());
+                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUsername())) {
                             printer.info("Please login again with your updated password.");
                             break;
                         } else return false;
@@ -521,11 +521,11 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPasswordSet(Driver driver, String username, String password) {
+    private boolean runUserPasswordUpdate(Driver driver, String username, String password) {
         try {
             if (driver.users().contains(username)) {
                 driver.users().setPassword(username, password);
-                printer.info("Set password for user '" + username + "'");
+                printer.info("Update password for user '" + username + "'");
                 return true;
             } else {
                 printer.info("No such user '" + username + "'");

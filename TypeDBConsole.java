@@ -521,17 +521,6 @@ public class TypeDBConsole {
         }
     }
 
-    private boolean runUserPasswordUpdate(Driver driver, String username, String passwordOld, String passwordNew) {
-        try {
-            driver.users().get(username).updatePassword(passwordOld, passwordNew);
-            printer.info("Updated password for user '" + username + "'.");
-            return true;
-        } catch (TypeDBDriverException e) {
-            printer.error(e.getMessage());
-            return false;
-        }
-    }
-
     private boolean runUserPasswordSet(Driver driver, String username, String password) {
         try {
             if (driver.users().contains(username)) {

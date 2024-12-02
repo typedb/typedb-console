@@ -725,8 +725,7 @@ public class TypeDBConsole {
         String[] cloud;
 
         @CommandLine.Option(names = {"--username"}, description = "Username", required = true)
-        private @Nullable
-        String username;
+        private String username;
 
         @CommandLine.Option(
                 names = {"--password"},
@@ -736,8 +735,7 @@ public class TypeDBConsole {
                 arity = "0..1",
                 required = true
         )
-        private @Nullable
-        String password;
+        private String password;
 
         @CommandLine.Option(
                 names = {"--tls-enabled", "--encryption-enable"},
@@ -787,10 +785,6 @@ public class TypeDBConsole {
             if (core != null && cloud != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "Either '--core' or '--cloud' must be provided, but not both.");
             if (cloud != null) validateCloudOptions();
-            if (username == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied");
-            if (password == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied");
             if (!tlsEnabled && tlsRootCA != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
         }

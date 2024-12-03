@@ -194,7 +194,7 @@ public class TypeDBConsole {
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
-                    .completer(getCompleter(driver, isCloud))
+                    .completer(getCompleter(driver))
                     .build();
             while (true) {
                 REPLCommand command;
@@ -253,7 +253,7 @@ public class TypeDBConsole {
         }
     }
 
-    private Completers.TreeCompleter getCompleter(Driver driver, boolean isCloud) {
+    private Completers.TreeCompleter getCompleter(Driver driver) {
         Completer databaseNameCompleter = (reader, line, candidates) -> driver.databases().all().stream()
                 .map(Database::name)
                 .filter(name -> name.startsWith(line.word()))

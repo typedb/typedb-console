@@ -731,7 +731,7 @@ public interface REPLCommand {
             String database = tokens[1];
             com.typedb.driver.api.Transaction.Type transactionType =
                     tokens[2].equals(Transaction.writeToken) ? WRITE :
-                            tokens[2].equals(Transaction.schemaToken) ? READ :
+                            tokens[2].equals(Transaction.readToken) ? READ :
                                     SCHEMA;
 //            Options options;
 //            if (tokens.length > 3) options = Options.from(Arrays.copyOfRange(tokens, 3, tokens.length), isCloud);

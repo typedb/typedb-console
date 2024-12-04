@@ -13,8 +13,8 @@ import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
 import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
-import com.typedb.driver.api.ConnectionSettings;
-import com.typedb.driver.api.Credential;
+import com.typedb.driver.api.DriverOptions;
+import com.typedb.driver.api.Credentials;
 import com.typedb.driver.api.Driver;
 import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
@@ -218,7 +218,7 @@ public class TypeDBConsole {
                     boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
                             userPasswordUpdate.user(),
                             userPasswordUpdate.password());
-                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUsername())) {
+                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
                         printer.info("Please login again with your updated password.");
                         break;
                     }
@@ -382,7 +382,7 @@ public class TypeDBConsole {
                         boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
                                 userPasswordUpdate.user(),
                                 userPasswordUpdate.password());
-                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUsername())) {
+                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
                             printer.info("Please login again with your updated password.");
                             break;
                         } else return false;
@@ -463,25 +463,25 @@ public class TypeDBConsole {
     private Driver createDriver(CLIOptions options) {
         try {
             Driver driver;
-            Credential credential = new Credential(options.username(), options.password());
-            ConnectionSettings connectionSettings = new ConnectionSettings(options.tlsEnabled(), options.tlsRootCA());
+            Credentials credentials = new Credentials(options.username(), options.password());
+            DriverOptions driverOptions = new DriverOptions(options.tlsEnabled(), options.tlsRootCA());
             if (options.core() != null) {
-                driver = TypeDB.coreDriver(options.core(), credential, connectionSettings);
+                driver = TypeDB.coreDriver(options.core(), credentials, driverOptions);
             } else if (options.cloud() != null) {
                 String[] optCloud = options.cloud();
                 if (Arrays.stream(optCloud).anyMatch(address -> address.contains("="))) {
                     Map<String, String> addressTranslation = Arrays.stream(optCloud).map(address -> address.split("=", 2))
                             .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[1]));
-                    driver = TypeDB.cloudDriver(addressTranslation, credential, connectionSettings);
+                    driver = TypeDB.cloudDriver(addressTranslation, credentials, driverOptions);
                 } else {
-                    driver = TypeDB.cloudDriver(Set.of(optCloud), credential, connectionSettings);
+                    driver = TypeDB.cloudDriver(Set.of(optCloud), credentials, driverOptions);
                 }
 //                Optional<Duration> passwordExpiry = driver.users().get(options.username)
 //                        .passwordExpirySeconds().map(Duration::ofSeconds);
 //                if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
 //                    printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
             } else {
-                driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS, credential, connectionSettings);
+                driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS, credentials, driverOptions);
             }
             return driver;
         } catch (TypeDBDriverException e) {
@@ -524,7 +524,7 @@ public class TypeDBConsole {
     private boolean runUserPasswordUpdate(Driver driver, String username, String password) {
         try {
             if (driver.users().contains(username)) {
-                driver.users().setPassword(username, password);
+                driver.users().get(username).updatePassword(password);
                 printer.info("Update password for user '" + username + "'");
                 return true;
             } else {
@@ -539,7 +539,7 @@ public class TypeDBConsole {
 
     private boolean runUserDelete(Driver driver, String username) {
         try {
-            driver.users().delete(username);
+            driver.users().get(username).delete();
             printer.info("User '" + username + "' deleted");
             return true;
         } catch (TypeDBDriverException e) {

@@ -225,23 +225,23 @@ workflows:
       - deploy-artifact-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [master, development, "3.0", update-to-alpha-10]
+              only: [master, development, "3.0"]
       - deploy-artifact-snapshot-linux-arm64:
           filters:
             branches:
-              only: [master, development, "3.0", update-to-alpha-10]
+              only: [master, development, "3.0"]
       - deploy-artifact-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [master, development, "3.0", update-to-alpha-10]
+              only: [master, development, "3.0"]
       - deploy-artifact-snapshot-mac-arm64:
           filters:
             branches:
-              only: [master, development, "3.0", update-to-alpha-10]
+              only: [master, development, "3.0"]
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [master, development, "3.0", update-to-alpha-10]
+              only: [master, development, "3.0"]
 
   release:
     jobs:

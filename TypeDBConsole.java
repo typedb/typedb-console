@@ -13,6 +13,8 @@ import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
 import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
+import com.typedb.driver.api.DriverOptions;
+import com.typedb.driver.api.Credentials;
 import com.typedb.driver.api.Driver;
 import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
@@ -20,6 +22,7 @@ import com.typedb.driver.api.answer.ConceptRow;
 import com.typedb.driver.api.answer.JSON;
 import com.typedb.driver.api.answer.QueryAnswer;
 import com.typedb.driver.api.database.Database;
+import com.typedb.driver.api.user.User;
 import com.typedb.driver.common.exception.TypeDBDriverException;
 import io.sentry.Sentry;
 import org.jline.builtins.Completers;
@@ -52,7 +55,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -68,6 +73,7 @@ import static com.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
 import static com.typedb.console.common.Printer.TOTAL_ANSWERS;
 import static com.typedb.console.common.exception.ErrorMessage.Console.INCOMPATIBLE_JAVA_RUNTIME;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.jline.builtins.Completers.TreeCompleter.node;
 
 public class TypeDBConsole {
@@ -188,7 +194,7 @@ public class TypeDBConsole {
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .variable(LineReader.HISTORY_FILE, COMMAND_HISTORY_FILE)
-                    .completer(getCompleter(driver, isCloud))
+                    .completer(getCompleter(driver))
                     .build();
             while (true) {
                 REPLCommand command;
@@ -203,33 +209,21 @@ public class TypeDBConsole {
                     printer.info(REPLCommand.createHelpMenu(driver, isCloud));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
-//                } else if (command.isUserList()) {
-//                    runUserList(driver, isCloud);
-//                } else if (command.isUserCreate()) {
-//                    runUserCreate(driver, isCloud, command.asUserCreate().user(), command.asUserCreate().password());
-//                } else if (command.isUserPasswordUpdate()) {
-//                    REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
-//                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
-//                            isCloud,
-//                            options.username,
-//                            userPasswordUpdate.passwordOld(),
-//                            userPasswordUpdate.passwordNew());
-//                    if (passwordUpdateSuccessful) {
-//                        printer.info("Please login again with your updated password.");
-//                        break;
-//                    }
-//                } else if (command.isUserPasswordSet()) {
-//                    REPLCommand.User.PasswordSet userPasswordSet = command.asUserPasswordSet();
-//                    boolean passwordSetSuccessful = runUserPasswordSet(driver,
-//                            isCloud,
-//                            userPasswordSet.user(),
-//                            userPasswordSet.password());
-//                    if (passwordSetSuccessful && userPasswordSet.user().equals(driver.user().username())) {
-//                        printer.info("Please login again with your updated password.");
-//                        break;
-//                    }
-//                } else if (command.isUserDelete()) {
-//                    runUserDelete(driver, isCloud, command.asUserDelete().user());
+                } else if (command.isUserList()) {
+                    runUserList(driver);
+                } else if (command.isUserCreate()) {
+                    runUserCreate(driver, command.asUserCreate().user(), command.asUserCreate().password());
+                } else if (command.isUserPasswordUpdate()) {
+                    REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                    boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                            userPasswordUpdate.user(),
+                            userPasswordUpdate.password());
+                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
+                        printer.info("Please login again with your updated password.");
+                        break;
+                    }
+                } else if (command.isUserDelete()) {
+                    runUserDelete(driver, command.asUserDelete().user());
                 } else if (command.isDatabaseList()) {
                     runDatabaseList(driver);
                 } else if (command.isDatabaseCreate()) {
@@ -259,18 +253,18 @@ public class TypeDBConsole {
         }
     }
 
-    private Completers.TreeCompleter getCompleter(Driver driver, boolean isCloud) {
+    private Completers.TreeCompleter getCompleter(Driver driver) {
         Completer databaseNameCompleter = (reader, line, candidates) -> driver.databases().all().stream()
                 .map(Database::name)
                 .filter(name -> name.startsWith(line.word()))
                 .forEach(name -> candidates.add(new Candidate(name)));
-//        Completer userNameCompleter = (reader, line, candidates) -> {
-//            driver.users().all().stream()
-//                    .map(User::username)
-//                    // "admin" user is excluded as it can't be deleted
-//                    .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
-//                    .forEach(name -> candidates.add(new Candidate(name)));
-//        };
+        Completer userNameCompleter = (reader, line, candidates) -> {
+            driver.users().all().stream()
+                    .map(User::name)
+                    // "admin" user is excluded as it can't be deleted
+                    .filter(name -> name.startsWith(line.word()) && !"admin".equals(name))
+                    .forEach(name -> candidates.add(new Candidate(name)));
+        };
         final List<Completers.TreeCompleter.Node> nodes = new ArrayList<>();
         nodes.add(
                 node(REPLCommand.Database.token,
@@ -282,23 +276,20 @@ public class TypeDBConsole {
                                 node(databaseNameCompleter)
                         )
                 ));
-//        if (isCloud) {
-//            nodes.add(node(REPLCommand.User.token,
-//                    node(REPLCommand.User.List.token),
-//                    node(REPLCommand.User.Create.token),
-//                    node(REPLCommand.User.PasswordUpdate.token),
-//                    node(REPLCommand.User.PasswordSet.token),
-//                    node(REPLCommand.User.Delete.token,
-//                            node(userNameCompleter))
-//            ));
-//        }
+        nodes.add(node(REPLCommand.User.token,
+                node(REPLCommand.User.List.token),
+                node(REPLCommand.User.Create.token),
+                node(REPLCommand.User.PasswordUpdate.token),
+                node(REPLCommand.User.Delete.token,
+                        node(userNameCompleter))
+        ));
         nodes.add(node(REPLCommand.Transaction.token,
                 node(databaseNameCompleter,
-                        node(new StringsCompleter("schema", "data"),
-                                node(new StringsCompleter("read", "write")
-                                        // TODO(vmax): complete [transaction-options] here
-                                )
-                        )
+                        node(new StringsCompleter(
+                                REPLCommand.Transaction.readToken,
+                                REPLCommand.Transaction.writeToken,
+                                REPLCommand.Transaction.schemaToken
+                        ))
                 )
         ));
         nodes.add(node(REPLCommand.Help.token));
@@ -380,28 +371,25 @@ public class TypeDBConsole {
                 if (commandString.startsWith("#")) continue;
                 REPLCommand command = REPLCommand.readREPLCommand(commandString, null, isCloud);
                 if (command != null) {
-//                    if (command.isUserList()) {
-//                        boolean success = runUserList(driver, isCloud);
-//                        if (!success) return false;
-//                    } else if (command.isUserCreate()) {
-//                        boolean success = runUserCreate(driver, isCloud, command.asUserCreate().user(), command.asUserCreate().password());
-//                        if (!success) return false;
-//                    } else if (command.isUserPasswordUpdate()) {
-//                        REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
-//                        boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
-//                                isCloud,
-//                                options.username,
-//                                userPasswordUpdate.passwordOld(),
-//                                userPasswordUpdate.passwordNew());
-//                        if (passwordUpdateSuccessful) {
-//                            printer.info("Please login again with your updated password.");
-//                            break;
-//                        } else return false;
-//                    } else if (command.isUserDelete()) {
-//                        boolean success = runUserDelete(driver, isCloud, command.asUserDelete().user());
-//                        if (!success) return false;
-//                } else
-                    if (command.isDatabaseList()) {
+                    if (command.isUserList()) {
+                        boolean success = runUserList(driver);
+                        if (!success) return false;
+                    } else if (command.isUserCreate()) {
+                        boolean success = runUserCreate(driver, command.asUserCreate().user(), command.asUserCreate().password());
+                        if (!success) return false;
+                    } else if (command.isUserPasswordUpdate()) {
+                        REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                        boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
+                                userPasswordUpdate.user(),
+                                userPasswordUpdate.password());
+                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
+                            printer.info("Please login again with your updated password.");
+                            break;
+                        } else return false;
+                    } else if (command.isUserDelete()) {
+                        boolean success = runUserDelete(driver, command.asUserDelete().user());
+                        if (!success) return false;
+                    } else if (command.isDatabaseList()) {
                         boolean success = runDatabaseList(driver);
                         if (!success) return false;
                     } else if (command.isDatabaseCreate()) {
@@ -475,24 +463,25 @@ public class TypeDBConsole {
     private Driver createDriver(CLIOptions options) {
         try {
             Driver driver;
+            Credentials credentials = new Credentials(options.username(), options.password());
+            DriverOptions driverOptions = new DriverOptions(options.tlsEnabled(), options.tlsRootCA());
             if (options.core() != null) {
-                driver = TypeDB.coreDriver(options.core());
-//            } else if (options.cloud() != null) {
-//                String[] optCloud = options.cloud();
-//                if (Arrays.stream(optCloud).anyMatch(address -> address.contains("="))) {
-//                    Map<String, String> addressTranslation = Arrays.stream(optCloud).map(address -> address.split("=", 2))
-//                            .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[1]));
-//                    driver = TypeDB.cloudDriver(addressTranslation, createTypeDBCredential(options));
-//                } else {
-//                    driver = TypeDB.cloudDriver(set(optCloud), createTypeDBCredential(options));
-//                }
+                driver = TypeDB.coreDriver(options.core(), credentials, driverOptions);
+            } else if (options.cloud() != null) {
+                String[] optCloud = options.cloud();
+                if (Arrays.stream(optCloud).anyMatch(address -> address.contains("="))) {
+                    Map<String, String> addressTranslation = Arrays.stream(optCloud).map(address -> address.split("=", 2))
+                            .collect(toUnmodifiableMap(parts -> parts[0], parts -> parts[1]));
+                    driver = TypeDB.cloudDriver(addressTranslation, credentials, driverOptions);
+                } else {
+                    driver = TypeDB.cloudDriver(Set.of(optCloud), credentials, driverOptions);
+                }
 //                Optional<Duration> passwordExpiry = driver.users().get(options.username)
 //                        .passwordExpirySeconds().map(Duration::ofSeconds);
 //                if (passwordExpiry.isPresent() && passwordExpiry.get().compareTo(PASSWORD_EXPIRY_WARN) < 0) {
 //                    printer.info("Your password will expire within " + (passwordExpiry.get().toHours() + 1) + " hour(s).");
-//                }
             } else {
-                driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS);
+                driver = TypeDB.coreDriver(TypeDB.DEFAULT_ADDRESS, credentials, driverOptions);
             }
             return driver;
         } catch (TypeDBDriverException e) {
@@ -502,107 +491,62 @@ public class TypeDBConsole {
         }
     }
 
-//    private TypeDBCredential createTypeDBCredential(CLIOptions options) {
-//        TypeDBCredential credential;
-//        if (options.tlsEnabled()) {
-//            String optRootCa = options.tlsRootCA();
-//            if (optRootCa != null) {
-//                credential = new TypeDBCredential(options.username(), options.password(), Paths.get(optRootCa));
-//            } else {
-//                credential = new TypeDBCredential(options.username(), options.password(), true);
-//            }
-//        } else
-//            credential = new TypeDBCredential(options.username(), options.password(), false);
-//        return credential;
-//    }
-
-//    private boolean runUserList(Driver driver, boolean isCloud) {
-//        try {
-//            if (!isCloud) {
-//                printer.error("The command 'user list' is only available in TypeDB Cloud.");
-//                return false;
-//            }
-//            if (driver.users().all().size() > 0) {
-//                driver.users().all().forEach(user -> {
+    private boolean runUserList(Driver driver) {
+        try {
+            if (!driver.users().all().isEmpty()) {
+                driver.users().all().forEach(user -> {
 //                    Optional<Long> expirySeconds = user.passwordExpirySeconds();
 //                    if (expirySeconds.isPresent()) {
 //                        printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
 //                    } else {
-//                        printer.info(user.username());
+                        printer.info(user.name());
 //                    }
-//                });
-//            } else printer.info("No users are present on the server.");
-//            return true;
-//        } catch (TypeDBDriverException e) {
-//            printer.error(e.getMessage());
-//            return false;
-//        }
-//    }
-//
-//    private boolean runUserCreate(Driver driver, boolean isCloud, String username, String password) {
-//        try {
-//            if (!isCloud) {
-//                printer.error("The command 'user create' is only available in TypeDB Cloud.");
-//                return false;
-//            }
-//            driver.users().create(username, password);
-//            printer.info("User '" + username + "' created");
-//            return true;
-//        } catch (TypeDBDriverException e) {
-//            printer.error(e.getMessage());
-//            return false;
-//        }
-//    }
-//
-//    private boolean runUserPasswordUpdate(Driver driver, boolean isCloud, String username, String passwordOld, String passwordNew) {
-//        try {
-//            if (!isCloud) {
-//                printer.error("The command 'user password-update' is only available in TypeDB Cloud.");
-//                return false;
-//            }
-//            driver.users().get(username).passwordUpdate(passwordOld, passwordNew);
-//            printer.info("Updated password for user '" + username + "'.");
-//            return true;
-//        } catch (TypeDBDriverException e) {
-//            printer.error(e.getMessage());
-//            return false;
-//        }
-//    }
-//
-//    private boolean runUserPasswordSet(Driver driver, boolean isCloud, String username, String password) {
-//        try {
-//            if (!isCloud) {
-//                printer.error("The command 'user password-set' is only available in TypeDB Cloud.");
-//                return false;
-//            }
-//            if (driver.users().contains(username)) {
-//                driver.users().passwordSet(username, password);
-//                printer.info("Set password for user '" + username + "'");
-//                return true;
-//            } else {
-//                printer.info("No such user '" + username + "'");
-//                return false;
-//            }
-//        } catch (TypeDBDriverException e) {
-//            printer.error(e.getMessage());
-//            return false;
-//        }
-//    }
-//
-//    private boolean runUserDelete(Driver driver, boolean isCloud, String username) {
-//        try {
-//            if (!isCloud) {
-//                printer.error("The command 'user delete' is only available in TypeDB Cloud.");
-//                return false;
-//            }
-//            driver.users().delete(username);
-//            printer.info("User '" + username + "' deleted");
-//            return true;
-//        } catch (TypeDBDriverException e) {
-//            printer.error(e.getMessage());
-//            return false;
-//        }
-//    }
+                });
+            } else printer.info("No users are present on the server.");
+            return true;
+        } catch (TypeDBDriverException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserCreate(Driver driver, String username, String password) {
+        try {
+            driver.users().create(username, password);
+            printer.info("User '" + username + "' created");
+            return true;
+        } catch (TypeDBDriverException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserPasswordUpdate(Driver driver, String username, String password) {
+        try {
+            if (driver.users().contains(username)) {
+                driver.users().get(username).updatePassword(password);
+                printer.info("Update password for user '" + username + "'");
+                return true;
+            } else {
+                printer.info("No such user '" + username + "'");
+                return false;
+            }
+        } catch (TypeDBDriverException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean runUserDelete(Driver driver, String username) {
+        try {
+            driver.users().get(username).delete();
+            printer.info("User '" + username + "' deleted");
+            return true;
+        } catch (TypeDBDriverException e) {
+            printer.error(e.getMessage());
+            return false;
+        }
+    }
 
     private boolean runDatabaseList(Driver driver) {
         try {
@@ -772,38 +716,37 @@ public class TypeDBConsole {
         private @Nullable
         String core;
 
-        //        @CommandLine.Option(
-//                names = {"--cloud"},
-//                description = "TypeDB Cloud address(es) to which Console will connect to, or Cloud address translation 'configured-url=actual-url'",
-//                split = ","
-//        )
+        @CommandLine.Option(
+                names = {"--cloud"},
+                description = "TypeDB Cloud address(es) to which Console will connect to, or Cloud address translation 'configured-url=actual-url'",
+                split = ","
+        )
         private @Nullable
         String[] cloud;
 
-        //        @CommandLine.Option(names = {"--username"}, description = "Username")
-        private @Nullable
-        String username;
+        @CommandLine.Option(names = {"--username"}, description = "Username", required = true)
+        private String username;
 
-        //        @CommandLine.Option(
-//                names = {"--password"},
-//                description = "Password",
-//                prompt = "Password: ",
-//                interactive = true,
-//                arity = "0..1"
-//        )
-        private @Nullable
-        String password;
+        @CommandLine.Option(
+                names = {"--password"},
+                description = "Password",
+                prompt = "Password: ",
+                interactive = true,
+                arity = "0..1",
+                required = true
+        )
+        private String password;
 
-        //        @CommandLine.Option(
-//                names = {"--tls-enabled", "--encryption-enable"},
-//                description = "Whether to connect to TypeDB Cloud with TLS encryption"
-//        )
+        @CommandLine.Option(
+                names = {"--tls-enabled", "--encryption-enable"},
+                description = "Whether to connect to TypeDB Cloud with TLS encryption"
+        )
         private boolean tlsEnabled;
 
-        //        @CommandLine.Option(
-//                names = {"--tls-root-ca", "--encryption-root-ca"},
-//                description = "Path to the TLS encryption root CA file"
-//        )
+        @CommandLine.Option(
+                names = {"--tls-root-ca", "--encryption-root-ca"},
+                description = "Path to the TLS encryption root CA file"
+        )
         private @Nullable
         String tlsRootCA;
 
@@ -839,33 +782,15 @@ public class TypeDBConsole {
         }
 
         private void validateOptions() {
-            if (core != null && cloud != null) {
+            if (core != null && cloud != null)
                 throw new CommandLine.ParameterException(spec.commandLine(), "Either '--core' or '--cloud' must be provided, but not both.");
-            } else {
-                if (cloud != null) validateCloudOptions();
-                else validateServerOptions();
-            }
-        }
-
-        private void validateServerOptions() {
-            if (username != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' should only be supplied with '--cloud'");
-            if (password != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' should only be supplied with '--cloud'");
-            if (tlsEnabled)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-enabled' is only valid with '--cloud'");
-            if (tlsRootCA != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' is only valid with '--cloud'");
+            if (cloud != null) validateCloudOptions();
+            if (!tlsEnabled && tlsRootCA != null)
+                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
         }
 
         private void validateCloudOptions() {
             assert cloud != null;
-            if (username == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--username' must be supplied with '--cloud'");
-            if (password == null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--password' must be supplied with '--cloud'");
-            if (!tlsEnabled && tlsRootCA != null)
-                throw new CommandLine.ParameterException(spec.commandLine(), "'--tls-root-ca' should only be supplied when '--tls-enabled' is set to 'true'");
             if (Arrays.stream(cloud).map(address -> address.contains("=")).distinct().count() != 1) {
                 throw new CommandLine.ParameterException(spec.commandLine(), "Either all or none of the parameters supplied with '--cloud' must provide translation.");
             }

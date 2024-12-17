@@ -215,10 +215,11 @@ public class TypeDBConsole {
                     runUserCreate(driver, command.asUserCreate().user(), command.asUserCreate().password());
                 } else if (command.isUserPasswordUpdate()) {
                     REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                    String username = driver.users().getCurrentUser().name();
                     boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
                             userPasswordUpdate.user(),
                             userPasswordUpdate.password());
-                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
+                    if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(username)) {
                         printer.info("Please login again with your updated password.");
                         break;
                     }
@@ -379,10 +380,11 @@ public class TypeDBConsole {
                         if (!success) return false;
                     } else if (command.isUserPasswordUpdate()) {
                         REPLCommand.User.PasswordUpdate userPasswordUpdate = command.asUserPasswordUpdate();
+                        String username = driver.users().getCurrentUser().name();
                         boolean passwordUpdateSuccessful = runUserPasswordUpdate(driver,
                                 userPasswordUpdate.user(),
                                 userPasswordUpdate.password());
-                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(driver.users().getCurrentUser().name())) {
+                        if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(username)) {
                             printer.info("Please login again with your updated password.");
                             break;
                         } else return false;

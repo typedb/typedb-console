@@ -183,7 +183,7 @@ public class Printer {
 
     private String valueDisplayString(Value value) {
         Object rawValue;
-        if (value.isLong()) rawValue = value.getLong();
+        if (value.isInteger()) rawValue = value.getInteger();
         else if (value.isDouble()) rawValue = value.getDouble();
         else if (value.isDecimal()) rawValue = value.getDecimal();
         else if (value.isBoolean()) rawValue = value.getBoolean();

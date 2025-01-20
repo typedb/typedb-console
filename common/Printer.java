@@ -18,6 +18,7 @@ import com.typedb.driver.api.concept.instance.Instance;
 import com.typedb.driver.api.concept.instance.Relation;
 import com.typedb.driver.api.concept.type.Type;
 import com.typedb.driver.api.concept.value.Value;
+import com.typedb.driver.common.exception.TypeDBDriverException;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -60,6 +61,13 @@ public class Printer {
 
     public void conceptRow(ConceptRow conceptRow, QueryType queryType, Transaction tx, boolean first) {
         List<String> columnNames = conceptRow.columnNames().collect(Collectors.toList());
+        if (columnNames.isEmpty()) {
+            if (first) {
+                out.println("No columns to show");
+            }
+            return;
+        }
+
         int columnsWidth = columnNames.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
         if (first) {
             out.println(conceptRowDisplayStringHeader(queryType, columnsWidth));
@@ -117,14 +125,19 @@ public class Printer {
         String content = columnNames
                 .stream()
                 .map(columnName -> {
-                    Concept concept = conceptRow.get(columnName);
                     StringBuilder sb = new StringBuilder("$");
                     sb.append(columnName);
                     sb.append(" ".repeat(columnsWidth - columnName.length() + 1));
                     sb.append("| ");
-                    sb.append(conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx));
+                    Concept concept;
+                    try {
+                        concept = conceptRow.get(columnName);
+                        sb.append(conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx));
+                    } catch (TypeDBDriverException e) {
+                        // TODO: substitute the "try catch" by an optional processing when implemented
+                    }
                     return sb.toString();
-                }).collect(joining("\n"));
+                }).filter(string -> !string.isEmpty()).collect(joining("\n"));
 
         StringBuilder sb = new StringBuilder(indent(CONTENT_INDENT, content));
         sb.append("\n");

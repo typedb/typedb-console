@@ -13,9 +13,9 @@ import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
 import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
-import com.typedb.driver.api.DriverOptions;
 import com.typedb.driver.api.Credentials;
 import com.typedb.driver.api.Driver;
+import com.typedb.driver.api.DriverOptions;
 import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
 import com.typedb.driver.api.answer.ConceptRow;
@@ -68,6 +68,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.typedb.console.Version.VERSION;
+import static com.typedb.console.common.Printer.QUERY_COMPILATION_SUCCESS;
 import static com.typedb.console.common.Printer.QUERY_SUCCESS;
 import static com.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
 import static com.typedb.console.common.Printer.TOTAL_ANSWERS;
@@ -501,7 +502,7 @@ public class TypeDBConsole {
 //                    if (expirySeconds.isPresent()) {
 //                        printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
 //                    } else {
-                        printer.info(user.name());
+                    printer.info(user.name());
 //                    }
                 });
             } else printer.info("No users are present on the server.");
@@ -660,6 +661,8 @@ public class TypeDBConsole {
     private void runQueryPrintAnswers(Transaction tx, String queryString) {
         QueryAnswer answer = tx.query(queryString).resolve();
         QueryType queryType = answer.getQueryType();
+        printer.info(QUERY_COMPILATION_SUCCESS);
+
         if (answer.isOk()) {
             printer.info(QUERY_SUCCESS);
         } else if (answer.isConceptRows()) {

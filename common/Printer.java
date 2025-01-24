@@ -53,10 +53,6 @@ public class Printer {
     }
 
     public void info(String s) {
-        out.print(s);
-    }
-
-    public void infoln(String s) {
         out.println(s);
     }
 

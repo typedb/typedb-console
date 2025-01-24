@@ -39,6 +39,7 @@ public class Printer {
     public static final String QUERY_WRITE_SUCCESS = "Finished writes";
     public static final String QUERY_STREAMING_ROWS = "Streaming answers...";
     public static final String QUERY_STREAMING_DOCUMENTS = "Streaming documents...";
+    public static final String QUERY_NO_COLUMNS = "No columns to show";
     public static final String TOTAL_ANSWERS = "Total answers: ";
     private static final String TABLE_INDENT = "   ";
     private static final String CONTENT_INDENT = "    ";
@@ -52,6 +53,10 @@ public class Printer {
     }
 
     public void info(String s) {
+        out.print(s);
+    }
+
+    public void infoln(String s) {
         out.println(s);
     }
 
@@ -61,18 +66,15 @@ public class Printer {
 
     public void conceptRow(ConceptRow conceptRow, QueryType queryType, Transaction tx, boolean first) {
         List<String> columnNames = conceptRow.columnNames().collect(Collectors.toList());
-        if (columnNames.isEmpty()) {
-            if (first) {
-                out.println("No columns to show");
-            }
-            return;
-        }
 
         int columnsWidth = columnNames.stream().map(String::length).max(Comparator.comparingInt(Integer::intValue)).orElse(0);
         if (first) {
             out.println(conceptRowDisplayStringHeader(queryType, columnsWidth));
         }
-        out.println(conceptRowDisplayString(conceptRow, columnNames, columnsWidth, tx));
+
+        if (!columnNames.isEmpty()) {
+            out.println(conceptRowDisplayString(conceptRow, columnNames, columnsWidth, tx));
+        }
     }
 
     public void conceptDocument(JSON conceptDocument, QueryType queryType, boolean first) {
@@ -102,19 +104,15 @@ public class Printer {
 
     private String conceptRowDisplayStringHeader(QueryType queryType, int columnsWidth) {
         StringBuilder sb = new StringBuilder();
-        sb.append(QUERY_COMPILATION_SUCCESS);
-        sb.append("\n");
 
-        if (queryType.isWrite()) {
-            sb.append(QUERY_WRITE_SUCCESS);
-            sb.append(". ");
-        }
-
+        appendWriteSuccessString(queryType, sb);
         assert !queryType.isSchema(); // expected to return another type of answer
         sb.append(QUERY_STREAMING_ROWS);
         sb.append("\n\n");
 
-        if (columnsWidth != 0) {
+        if (columnsWidth == 0) {
+            sb.append(QUERY_NO_COLUMNS);
+        } else {
             sb.append(lineDashSeparator(columnsWidth));
         }
 
@@ -147,14 +145,7 @@ public class Printer {
 
     private String conceptDocumentDisplayHeader(QueryType queryType) {
         StringBuilder sb = new StringBuilder();
-        sb.append(QUERY_COMPILATION_SUCCESS);
-        sb.append("\n");
-
-        if (queryType.isWrite()) {
-            sb.append(QUERY_WRITE_SUCCESS);
-            sb.append(". ");
-        }
-
+        appendWriteSuccessString(queryType, sb);
         assert !queryType.isSchema(); // expected to return another type of answer
         sb.append(QUERY_STREAMING_DOCUMENTS);
         sb.append("\n");
@@ -163,6 +154,13 @@ public class Printer {
 
     private String conceptDocumentDisplay(JSON document) {
         return document.toString();
+    }
+
+    private static void appendWriteSuccessString(QueryType queryType, StringBuilder stringBuilder) {
+        if (queryType.isWrite()) {
+            stringBuilder.append(QUERY_WRITE_SUCCESS);
+            stringBuilder.append(". ");
+        }
     }
 
     private static String indent(String indent, String string) {

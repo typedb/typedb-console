@@ -13,9 +13,9 @@ import com.typedb.console.common.Printer;
 import com.typedb.console.common.exception.TypeDBConsoleException;
 import com.typedb.console.common.util.Java;
 import com.typedb.driver.TypeDB;
-import com.typedb.driver.api.DriverOptions;
 import com.typedb.driver.api.Credentials;
 import com.typedb.driver.api.Driver;
+import com.typedb.driver.api.DriverOptions;
 import com.typedb.driver.api.QueryType;
 import com.typedb.driver.api.Transaction;
 import com.typedb.driver.api.answer.ConceptRow;
@@ -68,6 +68,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.typedb.console.Version.VERSION;
+import static com.typedb.console.common.Printer.QUERY_COMPILATION_SUCCESS;
 import static com.typedb.console.common.Printer.QUERY_SUCCESS;
 import static com.typedb.console.common.Printer.QUERY_WRITE_SUCCESS;
 import static com.typedb.console.common.Printer.TOTAL_ANSWERS;
@@ -188,7 +189,7 @@ public class TypeDBConsole {
     }
 
     private void runREPLMode(CLIOptions options) {
-        printer.info(COPYRIGHT);
+        printer.infoln(COPYRIGHT);
         boolean isCloud = options.cloud() != null;
         try (Driver driver = createDriver(options)) {
             LineReader reader = LineReaderBuilder.builder()
@@ -206,7 +207,7 @@ public class TypeDBConsole {
                 if (command.isExit()) {
                     break;
                 } else if (command.isHelp()) {
-                    printer.info(REPLCommand.createHelpMenu(driver, isCloud));
+                    printer.infoln(REPLCommand.createHelpMenu(driver, isCloud));
                 } else if (command.isClear()) {
                     reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                 } else if (command.isUserList()) {
@@ -220,7 +221,7 @@ public class TypeDBConsole {
                             userPasswordUpdate.user(),
                             userPasswordUpdate.password());
                     if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(username)) {
-                        printer.info("Please login again with your updated password.");
+                        printer.infoln("Please login again with your updated password.");
                         break;
                     }
                 } else if (command.isUserDelete()) {
@@ -327,7 +328,7 @@ public class TypeDBConsole {
                     } else if (replCommand.isClear()) {
                         reader.getTerminal().puts(InfoCmp.Capability.clear_screen);
                     } else if (replCommand.isHelp()) {
-                        printer.info(TransactionREPLCommand.createHelpMenu());
+                        printer.infoln(TransactionREPLCommand.createHelpMenu());
                     } else if (replCommand.isCommit()) {
                         runCommit(tx);
                         break;
@@ -368,7 +369,7 @@ public class TypeDBConsole {
         try (Driver driver = createDriver(options)) {
             for (int i = 0; i < inlineCommands.size() && !cancelled[0]; i++) {
                 String commandString = inlineCommands.get(i);
-                printer.info("+ " + commandString);
+                printer.infoln("+ " + commandString);
                 if (commandString.startsWith("#")) continue;
                 REPLCommand command = REPLCommand.readREPLCommand(commandString, null, isCloud);
                 if (command != null) {
@@ -385,7 +386,7 @@ public class TypeDBConsole {
                                 userPasswordUpdate.user(),
                                 userPasswordUpdate.password());
                         if (passwordUpdateSuccessful && userPasswordUpdate.user().equals(username)) {
-                            printer.info("Please login again with your updated password.");
+                            printer.infoln("Please login again with your updated password.");
                             break;
                         } else return false;
                     } else if (command.isUserDelete()) {
@@ -417,7 +418,7 @@ public class TypeDBConsole {
                         try (Transaction tx = driver.transaction(database, transactionType)) {
                             for (i += 1; i < inlineCommands.size() && !cancelled[0]; i++) {
                                 String txCommandString = inlineCommands.get(i);
-                                printer.info("++ " + txCommandString);
+                                printer.infoln("++ " + txCommandString);
                                 Either<TransactionREPLCommand, String> txCommand = TransactionREPLCommand.readCommand(txCommandString);
                                 if (txCommand.isSecond()) {
                                     printer.error(txCommand.second());
@@ -501,10 +502,10 @@ public class TypeDBConsole {
 //                    if (expirySeconds.isPresent()) {
 //                        printer.info(user.username() + " (expiry within: " + (Duration.ofSeconds(expirySeconds.get()).toHours() + 1) + " hours)");
 //                    } else {
-                        printer.info(user.name());
+                    printer.infoln(user.name());
 //                    }
                 });
-            } else printer.info("No users are present on the server.");
+            } else printer.infoln("No users are present on the server.");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -515,7 +516,7 @@ public class TypeDBConsole {
     private boolean runUserCreate(Driver driver, String username, String password) {
         try {
             driver.users().create(username, password);
-            printer.info("User '" + username + "' created");
+            printer.infoln("User '" + username + "' created");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -527,10 +528,10 @@ public class TypeDBConsole {
         try {
             if (driver.users().contains(username)) {
                 driver.users().get(username).updatePassword(password);
-                printer.info("Update password for user '" + username + "'");
+                printer.infoln("Update password for user '" + username + "'");
                 return true;
             } else {
-                printer.info("No such user '" + username + "'");
+                printer.infoln("No such user '" + username + "'");
                 return false;
             }
         } catch (TypeDBDriverException e) {
@@ -542,7 +543,7 @@ public class TypeDBConsole {
     private boolean runUserDelete(Driver driver, String username) {
         try {
             driver.users().get(username).delete();
-            printer.info("User '" + username + "' deleted");
+            printer.infoln("User '" + username + "' deleted");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -553,8 +554,8 @@ public class TypeDBConsole {
     private boolean runDatabaseList(Driver driver) {
         try {
             if (driver.databases().all().size() > 0)
-                driver.databases().all().forEach(database -> printer.info(database.name()));
-            else printer.info("No databases are present on the server.");
+                driver.databases().all().forEach(database -> printer.infoln(database.name()));
+            else printer.infoln("No databases are present on the server.");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -565,7 +566,7 @@ public class TypeDBConsole {
     private boolean runDatabaseCreate(Driver driver, String database) {
         try {
             driver.databases().create(database);
-            printer.info("Database '" + database + "' created");
+            printer.infoln("Database '" + database + "' created");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -576,7 +577,7 @@ public class TypeDBConsole {
     private boolean runDatabaseSchema(Driver driver, String database) {
         try {
             String schema = driver.databases().get(database).schema();
-            printer.info(schema);
+            printer.infoln(schema);
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -587,7 +588,7 @@ public class TypeDBConsole {
     private boolean runDatabaseDelete(Driver driver, String database) {
         try {
             driver.databases().get(database).delete();
-            printer.info("Database '" + database + "' deleted");
+            printer.infoln("Database '" + database + "' deleted");
             return true;
         } catch (TypeDBDriverException e) {
             printer.error(e.getMessage());
@@ -613,19 +614,19 @@ public class TypeDBConsole {
 
     private void runCommit(Transaction tx) {
         tx.commit();
-        printer.info("Transaction changes committed");
+        printer.infoln("Transaction changes committed");
     }
 
     private void runRollback(Transaction tx) {
         tx.rollback();
-        printer.info("Transaction changes have rolled back, i.e. erased, and not committed");
+        printer.infoln("Transaction changes have rolled back, i.e. erased, and not committed");
     }
 
     private void runClose(Transaction tx) {
         tx.close();
         if (tx.getType().isWrite() || tx.getType().isSchema())
-            printer.info("Transaction closed without committing changes");
-        else printer.info("Transaction closed");
+            printer.infoln("Transaction closed without committing changes");
+        else printer.infoln("Transaction closed");
     }
 
     private RunQueriesResult runSource(Transaction tx, String file, boolean printAnswers) {
@@ -654,14 +655,16 @@ public class TypeDBConsole {
     @SuppressWarnings("CheckReturnValue")
     private void runQuery(Transaction tx, String queryString) {
         tx.query(queryString).resolve();
-        printer.info(QUERY_WRITE_SUCCESS);
+        printer.infoln(QUERY_WRITE_SUCCESS);
     }
 
     private void runQueryPrintAnswers(Transaction tx, String queryString) {
         QueryAnswer answer = tx.query(queryString).resolve();
         QueryType queryType = answer.getQueryType();
+        printer.infoln(QUERY_COMPILATION_SUCCESS);
+
         if (answer.isOk()) {
-            printer.info(QUERY_SUCCESS);
+            printer.infoln(QUERY_SUCCESS);
         } else if (answer.isConceptRows()) {
             Stream<ConceptRow> resultRows = answer.asConceptRows().stream();
             AtomicBoolean first = new AtomicBoolean(true);
@@ -694,15 +697,15 @@ public class TypeDBConsole {
             });
             prevHandler = terminal.handle(Terminal.Signal.INT, s -> answerPrintingJob.cancel(true));
             answerPrintingJob.get();
-            printer.info("");
-            printer.info("Finished. " + TOTAL_ANSWERS + counter[0]);
+            printer.infoln("");
+            printer.infoln("Finished. " + TOTAL_ANSWERS + counter[0]);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             throw (TypeDBDriverException) e.getCause();
         } catch (CancellationException e) {
-            printer.info("");
-            printer.info("The query has been cancelled. It may take some time for the cancellation to finish on the server side. " + TOTAL_ANSWERS + counter[0]);
+            printer.infoln("");
+            printer.infoln("The query has been cancelled. It may take some time for the cancellation to finish on the server side. " + TOTAL_ANSWERS + counter[0]);
         } finally {
             if (prevHandler != null) terminal.handle(Terminal.Signal.INT, prevHandler);
         }

@@ -26,6 +26,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.typedb.console.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -123,15 +124,13 @@ public class Printer {
                     sb.append(columnName);
                     sb.append(" ".repeat(columnsWidth - columnName.length() + 1));
                     sb.append("| ");
-                    Concept concept;
-                    try {
-                        concept = conceptRow.get(columnName);
+                    Optional<Concept> conceptOptional = conceptRow.get(columnName);
+                    if (conceptOptional.isPresent()) {
+                        Concept concept = conceptOptional.get();
                         sb.append(conceptDisplayString(concept.isValue() ? concept.asValue() : concept, tx));
-                    } catch (TypeDBDriverException e) {
-                        // TODO: substitute the "try catch" by an optional processing when implemented
                     }
                     return sb.toString();
-                }).filter(string -> !string.isEmpty()).collect(joining("\n"));
+                }).collect(joining("\n"));
 
         StringBuilder sb = new StringBuilder(indent(CONTENT_INDENT, content));
         sb.append("\n");

@@ -7,81 +7,114 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
-## Running TypeDB Console in the terminal
+## Running TypeDB Console 
 
-Go to the directory whe you have your `typedb-all` or `typedb-console` distribution unarchived, and run `./typedb console`
-```
+Go to the directory where you have your `typedb-all` or `typedb-console` distribution unarchived, and run `./typedb console`
+```bash
 cd <your_typedb_console_dir>/
 ./typedb console
 ```
+
+To build and run from Cargo, use:
+```bash
+cargo run -- --username=<username> --address=<address>
+```
+
+Or to use bazel, use:
+```bash
+bazel run //:console-binary-native -- --username=<username> --address=<address>
+```
+
+TypeDB console binaries are platform-specific, so cannot be moved across platforms - please use the correct
+platform-specific distribution.
 
 ## Command line arguments
 
 You can provide several command arguments when running console in the terminal.
 
-- `--core=<address>` : TypeDB server address to which the console will connect to.
-- `--script=<script>` : Run commands in the script file in non-interactive mode.
+- `--username=<username>` : TypeDB server username to log in with (mandatory).
+- `--address=<address>` : TypeDB server address to which the console will connect to.
+- `--file=<file>` : Run commands in the script file in non-interactive mode.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
 
+TypeDB Console will by default prompt you for your password in a safe way. If you must,
+you are still able to pass in the login password with `--password=<password>`.
+
+**By default, TLS encryption is enabled to ensure passwords are not sent over the network in plaintext**
+
+For development or local work, you can disable this with:
+
+`--tls-disabled`
+
+For TypeDB Cloud deployments, there is **no reason to use this setting** as they can only operate with network TLS encryption.
+
+Alternatively, you may securely connect by managing your own certificates for both the client-side and server-side,
+and provide your certificate to the console with:
+`--tls-root-ca=<path>`
+
+See documentation at https://typedb.com/docs/manual/configure/encryption for further details.
+
 ## Console commands
 
-TypeDB Console provides two levels of interaction: database-level commands and transaction-level commands. The database-level command is the first level of interaction, i.e. first-level REPL. From one of the database-level commands, you can open a transaction to the database. This will open a transaction-level interface, i.e. second-level REPL.
+TypeDB Console provides two levels of interaction: server-level commands and transaction-level commands. 
+To enter the transaction command mode, open a transaction, using a `transaction` command.
 
-Console also offers command completion, accessible with a `tab` keypress.
+Console offers command completion, accessible with a `tab` keypress. Some non-keyword data, such as database and usernames,
+will also be autocompleted, while others, such as queries, will not.
 
 ### Database-level commands
 
-- `database create <db>` : Create a database with name `<db>` on the server. For example:
+- `database create <db>` : Create a database with name `<db>` on the server.
   ```
   > database create my-typedb-database
-  Database 'my-typedb-database' created
+  Successfully created database.
   ```
-- `database list` : List the databases on the server. For example:
+- `database list` : List the databases on the server. 
   ```
   > database list
   my-typedb-database
   ```
-- `database delete <db>` : Delete a database with name `<db>` on the server. For example:
+- `database delete <db>` : Delete a database with name `<db>` on the server.
   ```
   > database delete my-typedb-database
-  Database 'my-typedb-database' deleted
+  Successfully deleted database.
   ```
-- `transaction <db> read|write|schema` : Start a `read`, `write`, or `schema` transaction to database `<db>`. For example:
+- `transaction read|write|schema <db>` : Start a `read`, `write`, or `schema` transaction to database `<db>`.
   ```
-  > transaction my-typedb-database schema
+  > transaction schema my-typedb-database
   my-typedb-database::schema>
   ```
   This will then take you to the transaction-level interface, i.e. the second-level REPL.
 - `help` : Print help menu
-- `clear` : Clear console screen
 - `exit` : Exit console
 
 ### Transaction-level commands
 
-- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you hit enter twice. For example:
+- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you hit enter twice.
   ```
-  my-typedb-database::schema> define
+  my-typedb-database::schema>> define
                               attribute name, value string;
                               entity person, owns name;
-
-  Success
+  
+  Finished schema query.
+  >>
   ```
-- `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. For example:
+- `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. Multiline TypeQL queries in these files must be indicated by using the backslash (\) character
   ```
   my-typedb-database::schema> source ./schema.tql
-  Finished writes
+  Successfully executed 1 queries.
   ```
 - `commit` : Commit the transaction changes and close transaction. For example:
   ```
   my-typedb-database::schema> commit
-  Transaction changes committed
+  Successfully committed transaction.
   ```
 - `rollback` : Will remove any uncommitted changes you've made in the transaction, while leaving transaction open. For example:
   ```
   my-typedb-database::schema> rollback
-  Transaction changes have rolled back, i.e. erased, and not committed
+  Transaction changes rolled back.
   ```
 - `close` : Close the transaction without committing changes, and takes you back to the database-level interface, i.e. first-level REPL. For example:
   ```
@@ -89,24 +122,23 @@ Console also offers command completion, accessible with a `tab` keypress.
   Transaction closed without committing changes
   ```
 - `help` : Print this help menu
-- `clear` : Clear console screen
 - `exit` : Exit console
 
 ### Non-interactive mode
 
-To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./typedb console --script=<script>`. We can also specify the commands to run directly from the command line using `./typedb console --command=<command1> --command=<command2> ...`.
+To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./typedb console --file=<file>`. We can also specify ordered commands to run directly from the command line using `./typedb console --command=<command1> --command=<command2> ...`.
 
 For example given the following command script file:
 
 ```
 database create test
-transaction test schema 
+transaction schema test
     define entity person;
     commit
-transaction test write
+transaction write test
     insert $x isa person;
     commit
-transaction test read
+transaction read test
     match $x isa person;
     close
 database delete test
@@ -114,40 +146,37 @@ database delete test
 
 You will see the following output:
 ```
-./typedb console --script=script      
-+ database create test
-Database 'test' created
-+ transaction test schema
-++ define entity person;
-Success
-++ commit
-Transaction changes committed
-+ transaction test write
-++ insert $x isa person;
-Finished validation and compilation...
-Finished writes. Streaming answers...
-
-   --------
-    $x | iid 0x1e00000000000000000000 isa person
-   --------
-
-Finished. Total answers: 1
-++ commit
-Transaction changes committed
-+ transaction test read
-++ match $x isa person;
-Finished validation and compilation...
+./typedb console --username="user" --password="password" --file=commands.tql     
+>> database create test
+Successfully created database.
+>> transaction schema test
+test::schema>>     define entity person;
+Finished schema query.
+test::schema>>     commit
+Successfully committed transaction.
+>> transaction write test
+test::write>>     insert $x isa person;
+Finished write query validation and compilation...
+Finished writes...
 Streaming answers...
-
    --------
-    $x | iid 0x1e00000000000000000000 isa person
+    $x | isa person, iid 0x1e00000000000000000000
    --------
-
-Finished. Total answers: 1
-++ close
+test::write>>     commit
+Successfully committed transaction.
+>> transaction read test
+test::read>>     match $x isa person;
+Finished read query validation and compilation...
+Streaming answers...
+   --------
+    $x | isa person, iid 0x1e00000000000000000000
+   --------
+test::read>>     close
 Transaction closed
-+ database delete test
-Database 'test' deleted
+>> database delete test
+Successfully deleted database.
+
 ```
 
-The indentation in the script file are only for visual guide and will be ignored by the console. Each line in the script is interpreted as one command, so multiline query is not available in this mode.
+The indentation in the script file are only for visual guide and will be ignored by the console. 
+Each line in the script is executed as a single command, unless split over multiple lines using a backslash (\) character.

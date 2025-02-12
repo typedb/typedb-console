@@ -2,44 +2,25 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@typedb_bazel_distribution//maven:rules.bzl", "assemble_maven", "deploy_maven")
-load("@typedb_dependencies//distribution/maven:version.bzl", "version")
-load("@typedb_dependencies//library/maven:artifacts.bzl", "artifacts")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
 
-java_library(
-    name = "typedb-console-runner",
-    srcs = glob(["*.java"]),
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+rust_library(
+    name = "typedb_binary_runner",
+    srcs = glob(["*.rs"]),
+    crate_root = "lib.rs",
     deps = [
-        "@maven//:info_picocli_picocli",
-        "@maven//:org_zeroturnaround_zt_exec",
-        "@maven//:org_slf4j_slf4j_api",
+        "@crates//:clap",
+        "@crates//:tempdir",
     ],
     visibility = ["//visibility:public"],
-    tags = [
-        "maven_coordinates=com.typedb:typedb-console-runner:{pom_version}",
-    ],
-)
-
-assemble_maven(
-    name = "assemble-maven",
-    target = ":typedb-console-runner",
-    workspace_refs = "@typedb_console_workspace_refs//:refs.json",
-    version_overrides = version(artifacts_org = artifacts, artifacts_repo={}),
-    project_name = "TypeDB Console Runner",
-    project_description = "TypeDB Console Runner classes and tools",
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven",
-    snapshot = deployment['maven']['snapshot']['upload'],
-    release = deployment['maven']['release']['upload'],
+    tags = ["crate-name=typedb_binary_runner"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*"]),
+    exclude = glob(["Cargo.*", "target/**"]),
     license_type = "mpl-header",
 )

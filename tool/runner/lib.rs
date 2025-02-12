@@ -4,11 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.typedb.console;
-
-/**
- * Class for storing the TypeDB Version.
- */
-public class Version {
-    public static final String VERSION = "{version}";
-}
+pub mod runner;
+pub mod util;

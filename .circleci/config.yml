@@ -87,7 +87,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-x86_64-targz -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt //:deploy-linux-x86_64-targz -- snapshot
 
   deploy-artifact-snapshot-linux-arm64:
     executor: linux-arm64-amazonlinux-2
@@ -98,7 +98,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-arm64-targz -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt //:deploy-linux-arm64-targz -- snapshot
 
   deploy-artifact-snapshot-mac-x86_64:
     executor: mac-arm64
@@ -110,7 +110,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-x86_64-zip -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt //:deploy-mac-x86_64-zip -- snapshot
 
   deploy-artifact-snapshot-mac-arm64:
     executor: mac-arm64
@@ -121,7 +121,7 @@ jobs:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-arm64-zip -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt //:deploy-mac-arm64-zip -- snapshot
 
   deploy-artifact-snapshot-windows-x86_64:
     executor: win-x86_64

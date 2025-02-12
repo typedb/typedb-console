@@ -62,46 +62,6 @@ rust_test(
     use_libtest_harness = True,
 )
 
-#rust_test(
-#    name = "test_assembly",
-#    srcs = ["assembly.rs"],
-#    deps = [
-#        "@crates//:tokio",
-#    ],
-#    data = ["//:assemble-typedb-all", ":script.tql"],
-#    env = select({
-#        "@typedb_bazel_distribution//platform:is_linux_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-linux-x86_64.tar.gz" },
-#        "@typedb_bazel_distribution//platform:is_linux_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-linux-arm64.tar.gz"},
-#        "@typedb_bazel_distribution//platform:is_mac_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-mac-x86_64.zip"},
-#        "@typedb_bazel_distribution//platform:is_mac_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-mac-arm64.zip"},
-#        # "@typedb_bazel_distribution//platform:is_windows_x86_64" : ":assemble-windows-x86_64-zip"},
-#    }),
-#)
-#
-#
-#typedb_java_test(
-#    name = "test-assembly-native",
-#    test_class = "com.typedb.console.test.assembly.AssemblyTest",
-#    srcs = ["AssemblyTest.java"],
-#    deps = [
-#        "//tool/runner:typedb-console-runner",
-#    ],
-#    server_artifacts = {
-#        "@typedb_bazel_distribution//platform:is_linux_arm64": "@typedb_artifact_linux-arm64//file",
-#        "@typedb_bazel_distribution//platform:is_linux_x86_64": "@typedb_artifact_linux-x86_64//file",
-#        "@typedb_bazel_distribution//platform:is_mac_arm64": "@typedb_artifact_mac-arm64//file",
-#        "@typedb_bazel_distribution//platform:is_mac_x86_64": "@typedb_artifact_mac-86_64//file",
-#        "@typedb_bazel_distribution//platform:is_windows_x86_64": "@typedb_artifact_windows-x86_64//file",
-#    },
-#    console_artifacts = {
-#        "@typedb_bazel_distribution//platform:is_linux_arm64": "//:assemble-linux-arm64-targz",
-#        "@typedb_bazel_distribution//platform:is_linux_x86_64": "//:assemble-linux-x86_64-targz",
-#        "@typedb_bazel_distribution//platform:is_mac_arm64": "//:assemble-mac-arm64-zip",
-#        "@typedb_bazel_distribution//platform:is_mac_x86_64": "//:assemble-mac-x86_64-zip",
-#        "@typedb_bazel_distribution//platform:is_windows_x86_64": "//:assemble-windows-x86_64-zip",
-#    },
-#)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

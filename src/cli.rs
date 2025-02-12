@@ -20,8 +20,8 @@ pub struct Args {
     #[arg(long, value_name = "path to file")]
     pub file: Vec<String>,
 
-    /// TypeDB address to connect to. Defaults to 'localhost:1729'.
-    #[arg(long, value_name = "host:port", default_value = "localhost:1729")]
+    /// TypeDB address to connect to.
+    #[arg(long, value_name = "host:port")]
     pub address: String,
 
     /// Username for authentication

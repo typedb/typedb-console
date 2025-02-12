@@ -90,9 +90,7 @@ load("@crates//:defs.bzl", "crate_repositories")
 crate_repositories()
 
 load("@typedb_dependencies//tool/swig:deps.bzl", "swig")
-swig(
-
-)
+swig()
 
 # Load //tool/common
 load("@typedb_dependencies//tool/common:deps.bzl", "typedb_dependencies_ci_pip",

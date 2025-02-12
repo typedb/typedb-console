@@ -17,12 +17,12 @@ cd <your_typedb_console_dir>/
 
 To build and run from Cargo, use:
 ```bash
-cargo run -- --username=<username>
+cargo run -- --username=<username> --address=<address>
 ```
 
 Or to use bazel, use:
 ```bash
-bazel run //:console-binary-native -- --username=<username>
+bazel run //:console-binary-native -- --username=<username> --address=<address>
 ```
 
 TypeDB console binaries are platform-specific, so cannot be moved across platforms - please use the correct
@@ -33,7 +33,7 @@ platform-specific distribution.
 You can provide several command arguments when running console in the terminal.
 
 - `--username=<username>` : TypeDB server username to log in with (mandatory).
-- `--address=<address>` : TypeDB server address to which the console will connect to (default: `localhost:1729`).
+- `--address=<address>` : TypeDB server address to which the console will connect to.
 - `--file=<file>` : Run commands in the script file in non-interactive mode.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
@@ -41,8 +41,6 @@ You can provide several command arguments when running console in the terminal.
 
 TypeDB Console will by default prompt you for your password in a safe way. If you must,
 you are still able to pass in the login password with `--password=<password>`.
-
-# Network encryption
 
 **By default, TLS encryption is enabled to ensure passwords are not sent over the network in plaintext**
 
@@ -103,7 +101,7 @@ will also be autocompleted, while others, such as queries, will not.
   Finished schema query.
   >>
   ```
-- `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. Multiline TypeQL queries in these files must be indicated by using the backslash (\\) character
+- `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. Multiline TypeQL queries in these files must be indicated by using the backslash (\) character
   ```
   my-typedb-database::schema> source ./schema.tql
   Successfully executed 1 queries.
@@ -128,7 +126,7 @@ will also be autocompleted, while others, such as queries, will not.
 
 ### Non-interactive mode
 
-To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./typedb console --file=<file>`. We can also specify the commands to run directly from the command line using `./typedb console --command=<command1> --command=<command2> ...`.
+To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./typedb console --file=<file>`. We can also specify ordered commands to run directly from the command line using `./typedb console --command=<command1> --command=<command2> ...`.
 
 For example given the following command script file:
 
@@ -181,4 +179,4 @@ Successfully deleted database.
 ```
 
 The indentation in the script file are only for visual guide and will be ignored by the console. 
-Each line in the script is interpreted as one command, unless indicated otherwise with a backslash (\) character.
+Each line in the script is executed as a single command, unless split over multiple lines using a backslash (\) character.

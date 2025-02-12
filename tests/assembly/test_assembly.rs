@@ -18,10 +18,6 @@ const TYPEDB_CONSOLE_SUBCOMMAND: &str = "console";
 
 #[test]
 fn test_console() -> Result<(), Box<dyn Error>> {
-    println!("------HELLO-----");
-    println!("CONSOLE_ARCHIVE_ENV: {}", env::var(TYPEDB_CONSOLE_ARCHIVE_VAR).unwrap());
-    println!("SERVER_ARCHIVE_ENV: {}", env::var(TYPEDB_SERVER_ARCHIVE_VAR).unwrap());
-
     // can't drop server_runner, or it will delete the temp dir
     let (_server_runner, mut server_process) = run_typedb_server();
 

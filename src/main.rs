@@ -48,16 +48,13 @@ mod repl;
 mod runtime;
 
 pub const VERSION: &str = include_str!("../VERSION");
+
 const PROMPT: &'static str = ">> ";
 const MULTILINE_INPUT_SYMBOL: &'static str = "\\";
+const ENTRY_REPL_HISTORY: &'static str = ".typedb_console_repl_history";
+const TRANSACTION_REPL_HISTORY: &'static str = "typedb_console_transaction_repl_history";
 const DIAGNOSTICS_REPORTING_URI: &'static str =
     "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
-
-///
-/// Missing items:
-/// 8. Dependencies, delete Java
-/// 9. Bazel
-///
 
 struct ConsoleContext {
     repl_stack: Vec<Rc<Repl<ConsoleContext>>>,
@@ -87,7 +84,7 @@ fn main() {
     if !args.tls_disabled && !args.address.starts_with("https:") {
         println!(
             "\
-            TLS connections can only be enabled when connecting with 'https://<ip>:port'. \
+            TLS connections can only be enabled when connecting to HTTPS endpoints, for example using 'https://<ip>:port'. \
             Please modify the address, or disable TLS (WARNING: this will send passwords over plaintext!).\
         "
         );
@@ -111,8 +108,12 @@ fn main() {
     };
 
     let repl = entry_repl(driver.clone(), runtime.clone());
-    let mut context =
-        ConsoleContext { repl_stack: vec![Rc::new(repl)], background_runtime: runtime, transaction: None, driver };
+    let mut context = ConsoleContext {
+        repl_stack: vec![Rc::new(repl)],
+        background_runtime: runtime,
+        transaction: None,
+        driver
+    };
 
     if !args.command.is_empty() && !args.file.is_empty() {
         println!("Error: Cannot specify both commands and files");
@@ -277,7 +278,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             transaction_schema,
         ));
 
-    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(".typedb_console_repl_history");
+    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(ENTRY_REPL_HISTORY);
 
     let repl = Repl::new(PROMPT.to_owned(), history_path, false)
         .add(database_commands)
@@ -289,7 +290,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
 
 fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<ConsoleContext> {
     let db_prompt = format!("{}::{}{}", database, transaction_type_str(transaction_type), PROMPT);
-    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(".typedb_console_transaction_repl_history");
+    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(TRANSACTION_REPL_HISTORY);
     let repl = Repl::new(db_prompt, history_path, true)
         .add(CommandOption::new(
             "commit",

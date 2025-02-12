@@ -34,7 +34,7 @@ rust_binary(
         "@crates//:serde_json",
         "@crates//:tokio",
     ],
-    compile_data = [":version"],
+    compile_data = ["//:VERSION"],
     tags = [
         "crate-name=typedb-console"
     ],

@@ -108,12 +108,8 @@ fn main() {
     };
 
     let repl = entry_repl(driver.clone(), runtime.clone());
-    let mut context = ConsoleContext {
-        repl_stack: vec![Rc::new(repl)],
-        background_runtime: runtime,
-        transaction: None,
-        driver
-    };
+    let mut context =
+        ConsoleContext { repl_stack: vec![Rc::new(repl)], background_runtime: runtime, transaction: None, driver };
 
     if !args.command.is_empty() && !args.file.is_empty() {
         println!("Error: Cannot specify both commands and files");

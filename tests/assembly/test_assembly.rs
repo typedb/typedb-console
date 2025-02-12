@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{env, error::Error, io, process::Child, thread::sleep, time::Duration};
+use std::{error::Error, io, process::Child, thread::sleep, time::Duration};
 
 use typedb_binary_runner::runner::TypeDBBinaryRunner;
 

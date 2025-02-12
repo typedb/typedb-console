@@ -53,10 +53,6 @@ rules_proto_grpc_repos()
 load("@rules_proto_grpc//java:repositories.bzl", rules_proto_grpc_java_repos = "java_repos")
 rules_proto_grpc_java_repos()
 
-load("@io_grpc_grpc_java//:repositories.bzl", "IO_GRPC_GRPC_JAVA_ARTIFACTS")
-load("@typedb_dependencies//library/maven:rules.bzl", "parse_unversioned")
-io_grpc_artifacts = [parse_unversioned(c) for c in IO_GRPC_GRPC_JAVA_ARTIFACTS]
-
 # Load //distribution/docker
 load("@typedb_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
@@ -65,9 +61,10 @@ docker_deps()
 load("@typedb_dependencies//builder/rust:deps.bzl", rust_deps = "deps")
 rust_deps()
 
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_analyzer_toolchain_repository")
-load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_analyzer_toolchain_tools_repository")
 rules_rust_dependencies()
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+rust_analyzer_dependencies()
 load("@rules_rust//rust:defs.bzl", "rust_common")
 rust_register_toolchains(
     edition = "2021",
@@ -78,7 +75,13 @@ rust_register_toolchains(
         "x86_64-pc-windows-msvc",
         "x86_64-unknown-linux-gnu",
     ],
-    rust_analyzer_version = rust_common.default_version,
+    rust_analyzer_version = "1.81.0",
+    versions = ["1.81.0"],
+)
+
+rust_analyzer_toolchain_tools_repository(
+    name = "rust_analyzer_toolchain_tools",
+    version = rust_common.default_version
 )
 
 load("@typedb_dependencies//library/crates:crates.bzl", "fetch_crates")
@@ -87,7 +90,9 @@ load("@crates//:defs.bzl", "crate_repositories")
 crate_repositories()
 
 load("@typedb_dependencies//tool/swig:deps.bzl", "swig")
-swig()
+swig(
+
+)
 
 # Load //tool/common
 load("@typedb_dependencies//tool/common:deps.bzl", "typedb_dependencies_ci_pip",
@@ -157,27 +162,13 @@ typedb_protocol()
 load("@typedb_driver//dependencies/typedb:artifacts.bzl", "typedb_artifact")
 typedb_artifact()
 
-# Load maven
-load("@typedb_driver//dependencies/maven:artifacts.bzl", typedb_driver_artifacts = "artifacts")
-#load("@typedb_driver//dependencies/typedb:artifacts.bzl", typedb_maven_artifacts = "maven_artifacts")
-load("//dependencies/maven:artifacts.bzl", typedb_console_artifacts = "artifacts")
-
-###############
-# Load @maven #
-###############
-
+############################
+# Load @maven dependencies #
+############################
 load("@typedb_dependencies//library/maven:rules.bzl", "maven")
 maven(
-    typedb_driver_artifacts +
-    typedb_console_artifacts +
-    typedb_dependencies_tool_maven_artifacts +
-    io_grpc_artifacts,
-    generate_compat_repositories = True,
-#    internal_artifacts = typedb_maven_artifacts,
+    typedb_dependencies_tool_maven_artifacts
 )
-
-load("@maven//:compat.bzl", "compat_repositories")
-compat_repositories()
 
 ############################################
 # Create @typedb_console_workspace_refs #

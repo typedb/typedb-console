@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "assemble_versioned")
+load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "assemble_versioned")
 load("@typedb_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
@@ -15,63 +15,36 @@ load("//:deployment.bzl", deployment_console = "deployment")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-genrule(
-    name = "version",
-    srcs = [
-        "//templates:Version.java",
-        ":VERSION",
-    ],
-    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location //templates:Version.java) >> $@",
-    outs = ["Version.java"],
-    visibility = ["//visibility:public"]
-)
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 
-java_library(
+rust_binary(
     name = "console-native",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["bazel-*/*"]) + [":version"],
+    srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@typedb_driver//java:driver-java",
-        "@typedb_driver//java/api",
-        "@typedb_driver//java/common",
+        "@typedb_driver//rust:typedb_driver",
 
         # External dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:info_picocli_picocli",
-        "@maven//:io_grpc_grpc_core",
-        "@maven//:io_grpc_grpc_api",
-        "@maven//:io_sentry_sentry",
-        "@maven//:org_jline_jline",
-        "@maven//:org_jline_jline_terminal_jansi",
-        "@maven//:org_slf4j_slf4j_api",
+        "@crates//:clap",
+        "@crates//:futures",
+        "@crates//:glob",
+        "@crates//:home",
+        "@crates//:rpassword",
+        "@crates//:rustyline",
+        "@crates//:sentry",
+        "@crates//:serde_json",
+        "@crates//:tokio",
     ],
-    visibility = ["//visibility:public"],
-    resources = ["LICENSE"],
-)
-
-java_binary(
-    name = "console-binary-native",
-    main_class = "com.typedb.console.TypeDBConsole",
-    runtime_deps = [":console-native"],
-    visibility = ["//:__pkg__"],
-    # If running the console binary directly, include the following logback to reduce noise
-#    resource_strip_prefix = "conf/logback",
-#    resources = ["//conf/logback:logback.xml"]
-)
-
-java_deps(
-    name = "console-deps-native",
-    target = ":console-binary-native",
-    java_deps_root = "console/lib/",
+    compile_data = [":version"],
+    tags = [
+        "crate-name=typedb-console"
+    ],
     visibility = ["//visibility:public"],
 )
 
 pkg_tar(
     name = "console-artifact-native",
-    deps = [":console-deps-native"],
+    files = {":console-native" : "console/typedb_console_bin"},
     extension = "tar.gz",
-    files = {
-        "//conf/logback:logback.xml": "console/conf/logback.xml"
-    },
     visibility = ["//visibility:public"]
 )
 
@@ -179,11 +152,9 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
+        "src/**",
         ".circleci/**/*",
         ".factory/*",
-        "command/*",
-        "common/*",
-        "common/**/*",
     ]),
     exclude = [
         ".bazelversion",
@@ -192,7 +163,10 @@ checkstyle_test(
         ".circleci/windows/short_workspace.patch",
         "LICENSE",
         "VERSION",
-    ] + glob(["*.md"]),
+    ] + glob([
+        "*.md",
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )
 
@@ -202,16 +176,17 @@ checkstyle_test(
     license_type = "mpl-fulltext",
 )
 
-# Tools to be built during `build //...`
+# Force tools to be built during `build //...`
 filegroup(
     name = "tools",
     data = [
-        "@typedb_dependencies//library/maven:update",
-        "@typedb_dependencies//distribution/artifact:create-netrc",
         "@typedb_dependencies//tool/checkstyle:test-coverage",
-        "@typedb_dependencies//tool/sonarcloud:code-analysis",
+        "@typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh",
         "@typedb_dependencies//tool/release/notes:create",
-        "@typedb_dependencies//tool/release/notes:validate",
+        "@typedb_dependencies//tool/ide:rust_sync",
+        "@typedb_dependencies//tool/sonarcloud:code-analysis",
+        "@typedb_dependencies//tool/unuseddeps:unused-deps",
+        "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
         "@typedb_dependencies//tool/sync:dependencies",
     ],
 )

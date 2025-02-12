@@ -22,10 +22,11 @@ bazel-*
 .project
 .classpath
 
-# Compiled files #
+# Compiled #
 dist/
 out/
 *.class
+target
 
 # Mobile Tools for Java (J2ME) files #
 .mtj.tmp/
@@ -60,13 +61,8 @@ typedb-test/test-biomed/data/*
 *.swp
 *.swo
 
-
 # Python cache #
 __pycache__
-
-# bazel-local #
-.local_deps*
-
 
 # bazel-local #
 .local_deps*

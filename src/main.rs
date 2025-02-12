@@ -4,45 +4,54 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use ControlFlow::Break;
-use std::env::temp_dir;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-use std::fs::File;
-use std::io;
-use std::io::BufRead;
-use std::ops::ControlFlow;
-use std::ops::ControlFlow::Continue;
-use std::path::Path;
-use std::process::exit;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{
+    env::temp_dir,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+    fs::File,
+    io,
+    io::BufRead,
+    ops::{ControlFlow, ControlFlow::Continue},
+    path::Path,
+    process::exit,
+    rc::Rc,
+    sync::Arc,
+};
 
 use clap::Parser;
 use home::home_dir;
 use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
+use ControlFlow::Break;
 
-use crate::cli::Args;
-use crate::completions::{database_name_completer_fn, file_completer};
-use crate::operations::{database_create, database_delete, database_list, transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_update_password};
-use crate::repl::{Repl, ReplContext, ReplResult};
-use crate::repl::command::{CommandDefault, CommandInput, CommandOption, get_all, get_word, Subcommands};
-use crate::repl::line_reader::LineReaderHidden;
-use crate::runtime::BackgroundRuntime;
+use crate::{
+    cli::Args,
+    completions::{database_name_completer_fn, file_completer},
+    operations::{
+        database_create, database_delete, database_list, transaction_close, transaction_commit, transaction_query,
+        transaction_read, transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create,
+        user_delete, user_update_password,
+    },
+    repl::{
+        command::{get_all, get_word, CommandDefault, CommandInput, CommandOption, Subcommands},
+        line_reader::LineReaderHidden,
+        Repl, ReplContext, ReplResult,
+    },
+    runtime::BackgroundRuntime,
+};
 
-mod repl;
-mod operations;
-mod completions;
-mod runtime;
 mod cli;
+mod completions;
+mod operations;
 mod printer;
+mod repl;
+mod runtime;
 
 pub const VERSION: &str = include_str!("../VERSION");
 const PROMPT: &'static str = ">> ";
 const MULTILINE_INPUT_SYMBOL: &'static str = "\\";
-const DIAGNOSTICS_REPORTING_URI: &'static str = "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
+const DIAGNOSTICS_REPORTING_URI: &'static str =
+    "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
 
 ///
 /// Missing items:
@@ -76,10 +85,12 @@ fn main() {
         init_diagnostics()
     }
     if !args.tls_disabled && !args.address.starts_with("https:") {
-        println!("\
+        println!(
+            "\
             TLS connections can only be enabled when connecting with 'https://<ip>:port'. \
             Please modify the address, or disable TLS (WARNING: this will send passwords over plaintext!).\
-        ");
+        "
+        );
         exit(1);
     }
     let runtime = BackgroundRuntime::new();
@@ -100,12 +111,8 @@ fn main() {
     };
 
     let repl = entry_repl(driver.clone(), runtime.clone());
-    let mut context = ConsoleContext {
-        repl_stack: vec![Rc::new(repl)],
-        background_runtime: runtime,
-        transaction: None,
-        driver,
-    };
+    let mut context =
+        ConsoleContext { repl_stack: vec![Rc::new(repl)], background_runtime: runtime, transaction: None, driver };
 
     if !args.command.is_empty() && !args.file.is_empty() {
         println!("Error: Cannot specify both commands and files");
@@ -130,7 +137,7 @@ fn execute_files(context: &mut ConsoleContext, files: &[String]) {
     }
 }
 
-fn execute_file(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<Item=Result<String, io::Error>>) {
+fn execute_file(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<Item = Result<String, io::Error>>) {
     let inputs = inputs.enumerate();
     let mut current: Vec<String> = Vec::new();
     for (index, input) in inputs {
@@ -210,11 +217,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
     let database_commands = Subcommands::new("database")
-        .add(CommandOption::new(
-            "list",
-            "List databases on the server.",
-            database_list,
-        ))
+        .add(CommandOption::new("list", "List databases on the server.", database_list))
         .add(CommandOption::new_with_input(
             "create",
             "Create a new database with the given name.",
@@ -274,9 +277,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             transaction_schema,
         ));
 
-    let history_path = home_dir()
-        .unwrap_or_else(|| temp_dir())
-        .join(".typedb_console_repl_history");
+    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(".typedb_console_repl_history");
 
     let repl = Repl::new(PROMPT.to_owned(), history_path, false)
         .add(database_commands)
@@ -288,9 +289,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
 
 fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<ConsoleContext> {
     let db_prompt = format!("{}::{}{}", database, transaction_type_str(transaction_type), PROMPT);
-    let history_path = home_dir()
-        .unwrap_or_else(|| temp_dir())
-        .join(".typedb_console_transaction_repl_history");
+    let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(".typedb_console_transaction_repl_history");
     let repl = Repl::new(db_prompt, history_path, true)
         .add(CommandOption::new(
             "commit",

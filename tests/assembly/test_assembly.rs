@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{env, io};
-use std::error::Error;
-use std::process::Child;
-use std::thread::sleep;
-use std::time::Duration;
+use std::{env, error::Error, io, process::Child, thread::sleep, time::Duration};
 
 use typedb_binary_runner::runner::TypeDBBinaryRunner;
 
@@ -33,19 +29,19 @@ fn test_console() -> Result<(), Box<dyn Error>> {
         .expect("Failed to create console binary runner");
     let db_create_command = format!("database create {}", DATABASE_NAME);
     let args = vec![
-        "--address", "localhost:1729",
-        "--command", &db_create_command,
-        "--username", "admin",
-        "--password", "password",
+        "--address",
+        "localhost:1729",
+        "--command",
+        &db_create_command,
+        "--username",
+        "admin",
+        "--password",
+        "password",
         "--tls-disabled",
     ];
     sleep(Duration::from_secs(1));
     let mut console_process: Child = console_runner.run(&args).expect("Failed to spawn child console process.");
-    let status = console_process
-        .wait()
-        .expect("Error waiting for console to finish")
-        .code()
-        .unwrap_or(-1);
+    let status = console_process.wait().expect("Error waiting for console to finish").code().unwrap_or(-1);
     if status != 0 {
         panic!("Console command returned non-zero exit status: {}", status);
     }

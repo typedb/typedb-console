@@ -4,15 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-use std::path::PathBuf;
+use std::{borrow::Cow, path::PathBuf};
 
-use rustyline::{CompletionType, Config, Editor, Helper};
-use rustyline::completion::Completer;
-use rustyline::highlight::Highlighter;
-use rustyline::hint::Hinter;
-use rustyline::history::FileHistory;
-use rustyline::validate::{ValidationContext, ValidationResult, Validator};
+use rustyline::{
+    completion::Completer,
+    highlight::Highlighter,
+    hint::Hinter,
+    history::FileHistory,
+    validate::{ValidationContext, ValidationResult, Validator},
+    CompletionType, Config, Editor, Helper,
+};
 
 use crate::repl::command::CommandDefinitions;
 
@@ -23,24 +24,15 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let config = Config::builder()
-            .completion_type(CompletionType::Circular)
-            .auto_add_history(true)
-            .build();
+        let config = Config::builder().completion_type(CompletionType::Circular).auto_add_history(true).build();
         let history = FileHistory::new();
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap
 
-        let helper = EditorHelper {
-            command_definitions: command_helper,
-            multiline
-        };
+        let helper = EditorHelper { command_definitions: command_helper, multiline };
 
         editor.set_helper(Some(helper));
         let _ = editor.load_history(&history_file);
-        Self {
-            editor,
-            history_file,
-        }
+        Self { editor, history_file }
     }
 
     pub(crate) fn readline(&mut self, prompt: &str) -> rustyline::Result<String> {
@@ -49,7 +41,7 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
                 let _ = self.editor.append_history(&self.history_file);
                 Ok(line)
             }
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
 }
@@ -64,10 +56,11 @@ impl<H: CommandDefinitions> Helper for EditorHelper<H> {}
 impl<H: CommandDefinitions> Completer for EditorHelper<H> {
     type Candidate = H::Candidate;
 
-    fn complete(&self,
-                line: &str,
-                pos: usize,
-                ctx: &rustyline::Context<'_>,
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        ctx: &rustyline::Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
         self.command_definitions.complete(line, pos, ctx)
     }

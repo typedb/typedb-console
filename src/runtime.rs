@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{future::Future, sync::Arc};
 
-use std::future::Future;
-use std::sync::Arc;
-
-use tokio::runtime::Runtime;
-use tokio::sync::oneshot::channel;
+use tokio::{runtime::Runtime, sync::oneshot::channel};
 
 #[derive(Clone)]
 pub(crate) struct BackgroundRuntime {
@@ -22,9 +19,9 @@ impl BackgroundRuntime {
     }
 
     pub(crate) fn run<F>(&self, future: F) -> F::Output
-        where
-            F: Future + Send + 'static,
-            F::Output: Send + 'static
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
     {
         let (response_sink, response) = channel();
         self.runtime.spawn(async move {

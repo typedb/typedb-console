@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::env;
-use std::fs::File;
-use std::io;
-use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::{
+    env, io,
+    path::PathBuf,
+    process::{Child, Command},
+};
+
 use tempdir::TempDir;
 
 use crate::util::{get_archive_file, unarchive};
@@ -42,10 +43,7 @@ impl TypeDBBinaryRunner {
         cmd.args(args);
 
         // Execute and wait for the process
-        let child = cmd
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
-            .spawn()?;
+        let child = cmd.stdout(std::process::Stdio::inherit()).stderr(std::process::Stdio::inherit()).spawn()?;
 
         Ok(child)
     }

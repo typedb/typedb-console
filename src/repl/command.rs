@@ -4,19 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    borrow::Cow,
+    error::Error,
+    fmt,
+    fmt::{Debug, Display, Formatter},
+    rc::Rc,
+};
 
-use std::borrow::Cow;
-use std::error::Error;
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
-use std::rc::Rc;
+use rustyline::{
+    completion::{extract_word, Completer},
+    highlight::Highlighter,
+    hint::Hinter,
+};
 
-use rustyline::completion::{Completer, extract_word};
-use rustyline::highlight::Highlighter;
-use rustyline::hint::Hinter;
-
-use crate::repl::line_reader::LineReaderHidden;
-use crate::repl::ReplResult;
+use crate::repl::{line_reader::LineReaderHidden, ReplResult};
 
 pub(crate) trait Command<Context> {
     // single-word token
@@ -31,7 +33,7 @@ pub(crate) trait Command<Context> {
     // execute this command with the provided input
     fn execute(&self, context: &mut Context, input: &str) -> ReplResult;
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_>;
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_>;
 }
 
 pub(crate) type CommandExecutor<Context> = fn(&mut Context, &[String]) -> ReplResult;
@@ -44,11 +46,7 @@ pub(crate) struct CommandOption<Context> {
 }
 
 impl<Context> CommandOption<Context> {
-    pub(crate) fn new(
-        token: &'static str,
-        description: &'static str,
-        executor: CommandExecutor<Context>,
-    ) -> Self {
+    pub(crate) fn new(token: &'static str, description: &'static str, executor: CommandExecutor<Context>) -> Self {
         Self::new_with_inputs(token, description, vec![], executor)
     }
 
@@ -120,7 +118,9 @@ impl<Context> Command<Context> for CommandOption<Context> {
                     if argument.is_hidden() {
                         (argument.get_as_hidden().unwrap(), input)
                     } else {
-                        return Err(Box::new(ReplError { message: format!("Missing argument {}: {}", index, argument.usage) }));
+                        return Err(Box::new(ReplError {
+                            message: format!("Missing argument {}: {}", index, argument.usage),
+                        }));
                     }
                 }
                 Some((arg_value, remaining_input)) => (arg_value.to_owned(), remaining_input),
@@ -134,7 +134,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
         (self.executor)(context, &arguments)
     }
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
         let mut usage = format!("{}", self.token);
         for arg in &self.arguments {
             usage = format!("{} <{}>", usage, arg.usage());
@@ -144,7 +144,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
 }
 
 pub(crate) type InputReaderFn = for<'a> fn(&'a str) -> Option<(&'a str, &'a str)>;
-pub(crate) type HiddenReaderFn = for<'a> fn(&'a str) ->  Option<(&'a str, &'a str)>;
+pub(crate) type HiddenReaderFn = for<'a> fn(&'a str) -> Option<(&'a str, &'a str)>;
 // since we can't pass the context in through RustyLine's completion/hinting system, we have to hack around it
 // this type lets us construct a closure capturing whatever we want
 pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
@@ -161,7 +161,7 @@ impl CommandInput {
         usage: &'static str,
         reader: InputReaderFn,
         hidden_reader: Option<HiddenReaderFn>,
-        completer: Option<Box<InputCompleterFn>>
+        completer: Option<Box<InputCompleterFn>>,
     ) -> Self {
         Self { usage, reader, hidden_reader, completer }
     }
@@ -228,13 +228,17 @@ impl<Context> CommandDefault<Context> {
                 if self.reader.is_hidden() {
                     (self.reader.get_as_hidden().unwrap(), input)
                 } else {
-                    return Err(Box::new(ReplError { message: format!("'{}' could not parse from input: {}", self.reader.usage(), input) }));
+                    return Err(Box::new(ReplError {
+                        message: format!("'{}' could not parse from input: {}", self.reader.usage(), input),
+                    }));
                 }
             }
-            Some((argument, remainder)) => (argument.to_owned(), remainder)
+            Some((argument, remainder)) => (argument.to_owned(), remainder),
         };
         if !remainder.trim().is_empty() {
-            return Err(Box::new(ReplError { message: format!("Unexpected extra inputs for {}: {}", self.description, remainder) }));
+            return Err(Box::new(ReplError {
+                message: format!("Unexpected extra inputs for {}: {}", self.description, remainder),
+            }));
         }
         (self.executor)(context, &[argument])
     }
@@ -276,20 +280,14 @@ impl<Context> Command<Context> for Subcommands<Context> {
 
     fn compute_completions(&self, input: &str) -> Vec<String> {
         if self.token.is_empty() {
-            return self.subcommands
-                .iter()
-                .flat_map(|cmd| cmd.compute_completions(input))
-                .collect();
+            return self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(input)).collect();
         }
 
         let command = input.trim().split(char::is_whitespace).next().unwrap();
         if self.token == command {
             let remaining_input = input.strip_prefix(command).unwrap();
             if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands
-                    .iter()
-                    .flat_map(|cmd| cmd.compute_completions(remaining_input.trim()))
-                    .collect()
+                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining_input.trim())).collect()
             } else {
                 Vec::with_capacity(0)
             }
@@ -302,18 +300,14 @@ impl<Context> Command<Context> for Subcommands<Context> {
 
     fn is_complete_command(&self, input: &str) -> bool {
         if self.token.is_empty() {
-            return self.subcommands
-                .iter()
-                .any(|cmd| cmd.is_complete_command(input))
+            return self.subcommands.iter().any(|cmd| cmd.is_complete_command(input));
         }
 
         let command = input.trim().split(char::is_whitespace).next().unwrap();
         if self.token == command {
             let remaining_input = input.strip_prefix(command).unwrap();
             if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands
-                    .iter()
-                    .any(|cmd| cmd.is_complete_command(remaining_input.trim()))
+                self.subcommands.iter().any(|cmd| cmd.is_complete_command(remaining_input.trim()))
             } else {
                 false
             }
@@ -325,9 +319,14 @@ impl<Context> Command<Context> for Subcommands<Context> {
     fn execute(&self, context: &mut Context, input: &str) -> ReplResult {
         let (command, remainder) = match get_word(input) {
             None => {
-                return Err(Box::new(ReplError { message: format!("Failed to read {} command from input {}, please type 'help' to see the help menu.", self.token, input) }));
+                return Err(Box::new(ReplError {
+                    message: format!(
+                        "Failed to read {} command from input {}, please type 'help' to see the help menu.",
+                        self.token, input
+                    ),
+                }));
             }
-            Some((command, remainder)) => (command.trim(), remainder)
+            Some((command, remainder)) => (command.trim(), remainder),
         };
         for subcommand in &self.subcommands {
             if command == subcommand.token() {
@@ -337,39 +336,36 @@ impl<Context> Command<Context> for Subcommands<Context> {
         if let Some(default) = &self.default {
             default.execute(context, input)
         } else {
-            Err(Box::new(ReplError { message: format!("Unrecognised command: {}, please type 'help' to see the help menu.", input) }))
+            Err(Box::new(ReplError {
+                message: format!("Unrecognised command: {}, please type 'help' to see the help menu.", input),
+            }))
         }
     }
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
-        Box::new(self.subcommands
-            .iter()
-            .rev()
-            .flat_map(|command| {
-                command.usage_description().map(|(usage, description)| {
-                    if self.token().is_empty() {
-                        (usage, description)
-                    } else {
-                        (format!("{} {}", self.token, usage), description)
-                    }
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
+        Box::new(
+            self.subcommands
+                .iter()
+                .rev()
+                .flat_map(|command| {
+                    command.usage_description().map(|(usage, description)| {
+                        if self.token().is_empty() {
+                            (usage, description)
+                        } else {
+                            (format!("{} {}", self.token, usage), description)
+                        }
+                    })
                 })
-            }).chain(
-            self.default.iter().map(|default| default.usage_description())
-            )
+                .chain(self.default.iter().map(|default| default.usage_description())),
         )
     }
 }
 
 impl<Context> Clone for Subcommands<Context> {
     fn clone(&self) -> Self {
-        Self {
-            token: self.token,
-            subcommands: self.subcommands.clone(),
-            default: self.default.clone(),
-        }
+        Self { token: self.token, subcommands: self.subcommands.clone(), default: self.default.clone() }
     }
 }
-
 
 pub(crate) trait CommandDefinitions: Highlighter + Hinter + Completer {
     fn is_complete_command(&self, input: &str) -> bool;
@@ -417,12 +413,10 @@ impl<Context> Hinter for Subcommands<Context> {
 }
 
 impl<Context> Highlighter for Subcommands<Context> {
-
     fn highlight_hint<'h>(&self, hint: &'h str) -> Cow<'h, str> {
         Cow::Owned(format!("\x1b[37m{}\x1b[0m", hint))
     }
 }
-
 
 pub(crate) struct ReplError {
     pub(crate) message: String,

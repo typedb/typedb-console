@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::env;
-use std::error::Error;
-use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
+use std::{env, error::Error, fs, path::PathBuf, process::Command};
 
 use tempdir::TempDir;
 
@@ -38,14 +33,11 @@ pub fn unarchive(archive: PathBuf) -> Result<(TempDir, PathBuf), Box<dyn Error>>
                 .current_dir(&current_dir)
                 .output()?;
         }
-        _ => return Err(format!("The distribution archive format must be either {} or {}",
-                               TAR_GZ, ZIP).into()),
+        _ => return Err(format!("The distribution archive format must be either {} or {}", TAR_GZ, ZIP).into()),
     }
 
     // Get the first (and only) directory entry
-    let extracted_dir = fs::read_dir(runner_dir.path())?
-        .next()
-        .ok_or("No files found in extracted directory")??.path();
+    let extracted_dir = fs::read_dir(runner_dir.path())?.next().ok_or("No files found in extracted directory")??.path();
 
     Ok((runner_dir, extracted_dir))
 }

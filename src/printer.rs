@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typedb_driver::answer::{ConceptDocument, ConceptRow};
-use typedb_driver::concept::{Concept, Value};
-use typedb_driver::IID;
+use typedb_driver::{
+    answer::{ConceptDocument, ConceptRow},
+    concept::{Concept, Value},
+    IID,
+};
 
 const TABLE_INDENT: &'static str = "   ";
 const CONTENT_INDENT: &'static str = "    ";
@@ -23,21 +25,14 @@ pub(crate) fn print_document(document: ConceptDocument) {
 }
 
 pub(crate) fn print_row(row: ConceptRow, is_first: bool) {
-    let variable_column_width = row.get_column_names()
-        .iter()
-        .map(|s| s.len())
-        .max()
-        .unwrap_or(0);
+    let variable_column_width = row.get_column_names().iter().map(|s| s.len()).max().unwrap_or(0);
     if is_first {
         println(&line_dash_separator(variable_column_width));
     }
     println(&concept_row_display_string(&row, variable_column_width));
 }
 
-fn concept_row_display_string(
-    concept_row: &ConceptRow,
-    variable_column_width: usize,
-) -> String {
+fn concept_row_display_string(concept_row: &ConceptRow, variable_column_width: usize) -> String {
     let column_names = concept_row.get_column_names();
     let content = column_names
         .iter()
@@ -64,46 +59,42 @@ fn concept_row_display_string(
 fn concept_display_string(concept: Option<&Concept>) -> String {
     match concept {
         None => "".to_owned(),
-        Some(concept) => {
-            match concept {
-                Concept::EntityType(type_) => {
-                    format!("{}", format_type(&type_.label))
-                }
-                Concept::RelationType(type_) => {
-                    format!("{}", format_type(&type_.label))
-                }
-                Concept::RoleType(type_) => {
-                    format!("{}", format_type(&type_.label))
-                }
-                Concept::AttributeType(type_) => {
-                    format!("{}", format_type(&type_.label))
-                }
-                Concept::Entity(entity) => {
-                    format!(
-                        "{}, {}",
-                        entity.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
-                        format_iid(&entity.iid),
-                    )
-                }
-                Concept::Relation(relation) => {
-                    format!(
-                        "{}, {}",
-                        relation.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
-                        format_iid(&relation.iid),
-                    )
-                }
-                Concept::Attribute(attribute) => {
-                    format!(
-                        "{} {}",
-                        attribute.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
-                        format_value(&attribute.value),
-                    )
-                }
-                Concept::Value(value) => {
-                    format_value(&value)
-                }
+        Some(concept) => match concept {
+            Concept::EntityType(type_) => {
+                format!("{}", format_type(&type_.label))
             }
-        }
+            Concept::RelationType(type_) => {
+                format!("{}", format_type(&type_.label))
+            }
+            Concept::RoleType(type_) => {
+                format!("{}", format_type(&type_.label))
+            }
+            Concept::AttributeType(type_) => {
+                format!("{}", format_type(&type_.label))
+            }
+            Concept::Entity(entity) => {
+                format!(
+                    "{}, {}",
+                    entity.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
+                    format_iid(&entity.iid),
+                )
+            }
+            Concept::Relation(relation) => {
+                format!(
+                    "{}, {}",
+                    relation.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
+                    format_iid(&relation.iid),
+                )
+            }
+            Concept::Attribute(attribute) => {
+                format!(
+                    "{} {}",
+                    attribute.type_.as_ref().map(|t| format_isa(t.label())).unwrap_or(String::new()),
+                    format_value(&attribute.value),
+                )
+            }
+            Concept::Value(value) => format_value(&value),
+        },
     }
 }
 
@@ -128,16 +119,9 @@ fn format_keyword(keyword: &str) -> String {
 }
 
 fn indent(indent: &str, string: &str) -> String {
-    string
-        .split('\n')
-        .map(|s| format!("{}{}", indent, s))
-        .collect::<Vec<_>>()
-        .join("\n")
+    string.split('\n').map(|s| format!("{}{}", indent, s)).collect::<Vec<_>>().join("\n")
 }
 
 fn line_dash_separator(additional_dashes_num: usize) -> String {
-    indent(
-        TABLE_INDENT,
-        &"-".repeat(TABLE_DASHES + additional_dashes_num),
-    )
+    indent(TABLE_INDENT, &"-".repeat(TABLE_DASHES + additional_dashes_num))
 }

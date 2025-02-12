@@ -15,7 +15,7 @@ load("//:deployment.bzl", deployment_console = "deployment")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test", "rust_test")
 
 rust_binary(
     name = "console-native",
@@ -174,6 +174,17 @@ checkstyle_test(
     name = "checkstyle-license",
     include = ["LICENSE"],
     license_type = "mpl-fulltext",
+)
+
+filegroup(
+    name = "rustfmt_config",
+    srcs = ["rustfmt.toml"],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [":console-native"],
+    size = "small",
 )
 
 # Force tools to be built during `build //...`

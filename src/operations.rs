@@ -4,28 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::error::Error;
-use std::fs::File;
-use std::io::BufRead;
-use std::path::Path;
-use std::rc::Rc;
-
-use typedb_driver::answer::{QueryAnswer, QueryType};
-use typedb_driver::TransactionType;
+use std::{error::Error, fs::File, io::BufRead, path::Path, rc::Rc};
 
 use futures::stream::StreamExt;
+use typedb_driver::{
+    answer::{QueryAnswer, QueryType},
+    TransactionType,
+};
 
-use crate::{ConsoleContext, MULTILINE_INPUT_SYMBOL, transaction_repl};
-use crate::printer::{print_document, print_row};
-use crate::repl::command::ReplError;
-use crate::repl::ReplResult;
+use crate::{
+    printer::{print_document, print_row},
+    repl::{command::ReplError, ReplResult},
+    transaction_repl, ConsoleContext, MULTILINE_INPUT_SYMBOL,
+};
 
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
     let driver = context.driver.clone();
-    let databases = context.background_runtime.run(async move {
-        driver.databases().all().await
-    })
+    let databases = context
+        .background_runtime
+        .run(async move { driver.databases().all().await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     for db in databases {
         println!("{}", db.name());
@@ -36,9 +33,9 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
 pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
-    context.background_runtime.run(async move {
-        driver.databases().create(db_name).await
-    })
+    context
+        .background_runtime
+        .run(async move { driver.databases().create(db_name).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully created database.");
     Ok(())
@@ -47,10 +44,12 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
 pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
-    context.background_runtime.run(async move {
-        let db = driver.databases().get(db_name).await?;
-        db.delete().await
-    })
+    context
+        .background_runtime
+        .run(async move {
+            let db = driver.databases().get(db_name).await?;
+            db.delete().await
+        })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully deleted database.");
     Ok(())
@@ -60,9 +59,9 @@ pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> Rep
     let driver = context.driver.clone();
     let username = input[0].clone();
     let password = input[1].clone();
-    context.background_runtime.run(async move {
-        driver.users().create(username, password).await
-    })
+    context
+        .background_runtime
+        .run(async move { driver.users().create(username, password).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully created user.");
     Ok(())
@@ -72,11 +71,14 @@ pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> Rep
     let driver = context.driver.clone();
     let username = input[0].clone();
     context.background_runtime.run(async move {
-        let user = match driver.users().get(username.clone()).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
-        {
-            None => Err(Box::new(ReplError { message: format!("User {} not found.", username) }) as Box<dyn Error + Send>)?,
-            Some(user) => user
-        };
+        let user =
+            match driver.users().get(username.clone()).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)? {
+                None => {
+                    Err(Box::new(ReplError { message: format!("User {} not found.", username) })
+                        as Box<dyn Error + Send>)?
+                }
+                Some(user) => user,
+            };
         user.delete().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
         Ok(())
     })?;
@@ -89,11 +91,14 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     let username = input[0].clone();
     let new_password = input[1].clone();
     context.background_runtime.run(async move {
-        let user = match driver.users().get(username.clone()).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
-        {
-            None => Err(Box::new(ReplError { message: format!("User {} not found.", username) }) as Box<dyn Error + Send>)?,
-            Some(user) => user
-        };
+        let user =
+            match driver.users().get(username.clone()).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)? {
+                None => {
+                    Err(Box::new(ReplError { message: format!("User {} not found.", username) })
+                        as Box<dyn Error + Send>)?
+                }
+                Some(user) => user,
+            };
         user.update_password(new_password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
         Ok(())
     })?;
@@ -105,10 +110,9 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
-    let transaction = context.background_runtime
-        .run(async move {
-            driver.transaction(db_name_owned, TransactionType::Read).await
-        })
+    let transaction = context
+        .background_runtime
+        .run(async move { driver.transaction(db_name_owned, TransactionType::Read).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some(transaction);
     let repl = transaction_repl(db_name, TransactionType::Read);
@@ -120,10 +124,9 @@ pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) 
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
-    let transaction = context.background_runtime
-        .run(async move {
-            driver.transaction(db_name_owned, TransactionType::Write).await
-        })
+    let transaction = context
+        .background_runtime
+        .run(async move { driver.transaction(db_name_owned, TransactionType::Write).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some(transaction);
     let repl = transaction_repl(db_name, TransactionType::Write);
@@ -135,10 +138,9 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
-    let transaction = context.background_runtime
-        .run(async move {
-            driver.transaction(db_name_owned, TransactionType::Schema).await
-        })
+    let transaction = context
+        .background_runtime
+        .run(async move { driver.transaction(db_name_owned, TransactionType::Schema).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some(transaction);
     let repl = transaction_repl(db_name, TransactionType::Schema);
@@ -147,7 +149,8 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
 }
 
 pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
-    context.background_runtime
+    context
+        .background_runtime
         .run(context.transaction.take().unwrap().commit())
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully committed transaction.");
@@ -159,7 +162,7 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
     let transaction = context.transaction.take().unwrap(); // drop
     let message = match transaction.type_() {
         TransactionType::Read => "Transaction closed",
-        TransactionType::Write | TransactionType::Schema => "Transaction closed without committing changes."
+        TransactionType::Write | TransactionType::Schema => "Transaction closed without committing changes.",
     };
     context.repl_stack.pop();
     println!("{}", message);
@@ -168,11 +171,10 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
 
 pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
     let transaction = context.transaction.take().unwrap();
-    let (transaction, result) = context.background_runtime
-        .run(async move {
-            let result = transaction.rollback().await;
-            (transaction, result)
-        });
+    let (transaction, result) = context.background_runtime.run(async move {
+        let result = transaction.rollback().await;
+        (transaction, result)
+    });
     match result {
         Ok(_) => {
             context.transaction = Some(transaction);
@@ -193,7 +195,9 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
     if !path.exists() {
         return Err(Box::new(ReplError { message: format!("File not found: {}", file_str) }) as Box<dyn Error + Send>);
     } else if path.is_dir() {
-        return Err(Box::new(ReplError { message: format!("Path must be a file: {}", file_str) }) as Box<dyn Error + Send>);
+        return Err(
+            Box::new(ReplError { message: format!("Path must be a file: {}", file_str) }) as Box<dyn Error + Send>
+        );
     }
 
     let file = File::open(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
@@ -205,7 +209,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
         match input {
             Ok(mut input) => {
                 if input.trim().is_empty() {
-                    continue
+                    continue;
                 } else if input.ends_with(&MULTILINE_INPUT_SYMBOL) {
                     input.truncate(input.len() - 1);
                     current.push(input);
@@ -219,7 +223,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
                                 err.message(),
                                 file_str,
                                 index + 1
-                            )
+                            ),
                         }) as Box<dyn Error + Send>);
                     }
                     current.clear();
@@ -228,7 +232,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
             }
             Err(_) => {
                 return Err(Box::new(ReplError {
-                    message: format!("Error reading file '{}' at line: {}", file_str, index + 1)
+                    message: format!("Error reading file '{}' at line: {}", file_str, index + 1),
                 }) as Box<dyn Error + Send>);
             }
         }
@@ -239,8 +243,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
 pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> ReplResult {
     let query = input[0].as_ref().to_owned();
-    execute_query(context, query, true)
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 const MESSAGE_QUERY_TEMPLATE: &'static str = "<QUERY>";
@@ -273,7 +276,11 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                     }
                     QueryAnswer::ConceptRowStream(header, mut rows_stream) => {
                         if logging {
-                            println!("{}", QUERY_COMPILATION_SUCCESS.replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type)));
+                            println!(
+                                "{}",
+                                QUERY_COMPILATION_SUCCESS
+                                    .replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type))
+                            );
                             if matches!(header.query_type, QueryType::WriteQuery) {
                                 println!("{}", QUERY_WRITE_SUCCESS);
                             }
@@ -295,7 +302,11 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                     }
                     QueryAnswer::ConceptDocumentStream(header, mut documents_stream) => {
                         if logging {
-                            println!("{}", QUERY_COMPILATION_SUCCESS.replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type)));
+                            println!(
+                                "{}",
+                                QUERY_COMPILATION_SUCCESS
+                                    .replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type))
+                            );
                             if matches!(header.query_type, QueryType::WriteQuery) {
                                 println!("{}", QUERY_WRITE_SUCCESS);
                             }

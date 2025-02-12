@@ -4,16 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::ops::ControlFlow;
-use std::ops::ControlFlow::{Break, Continue};
-use std::path::PathBuf;
-use std::process::exit;
+use std::{
+    error::Error,
+    ops::{
+        ControlFlow,
+        ControlFlow::{Break, Continue},
+    },
+    path::PathBuf,
+    process::exit,
+};
 
 use rustyline::error::ReadlineError;
 
-use crate::repl::command::{Command, CommandDefault, CommandOption, Subcommands};
-use crate::repl::line_reader::RustylineReader;
+use crate::repl::{
+    command::{Command, CommandDefault, CommandOption, Subcommands},
+    line_reader::RustylineReader,
+};
 
 pub(crate) mod command;
 pub(crate) mod line_reader;
@@ -39,12 +45,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         let subcommands = Subcommands::new("")
             .add(CommandOption::new(Self::EXIT, "Exit", do_exit))
             .add(CommandOption::new(Self::HELP, "Print help menu", help_menu));
-        Self {
-            prompt,
-            commands: subcommands,
-            history_file,
-            multiline_input
-        }
+        Self { prompt, commands: subcommands, history_file, multiline_input }
     }
 
     pub(crate) fn add(mut self, command: impl Command<Context> + 'static) -> Self {
@@ -81,7 +82,8 @@ impl<Context: ReplContext + 'static> Repl<Context> {
 
         let widest_usage = usages_descriptions.iter().map(|(usage, _)| usage.len()).max().unwrap_or(0);
         let usage_width = widest_usage + 4;
-        usages_descriptions.iter()
+        usages_descriptions
+            .iter()
             .map(|(usage, description)| format!("{:<width$}{}", usage, description, width = usage_width))
             .collect::<Vec<_>>()
             .join("\n")

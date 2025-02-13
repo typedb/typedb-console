@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fs::File, io::BufRead, path::Path, rc::Rc};
+use std::{error::Error, fs::File, io::BufRead, path::Path, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
 use typedb_driver::{
@@ -90,7 +90,7 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     let driver = context.driver.clone();
     let username = input[0].clone();
     let new_password = input[1].clone();
-    context.background_runtime.run(async move {
+    let updated_current_user = context.background_runtime.run(async move {
         let user =
             match driver.users().get(username.clone()).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)? {
                 None => {
@@ -99,10 +99,22 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
                 }
                 Some(user) => user,
             };
+        let current_user = driver
+            .users()
+            .get_current_user()
+            .await
+            .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
+            .expect("Could not fetch currently logged in user.");
+
         user.update_password(new_password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-        Ok(())
+        Ok(current_user.name == username)
     })?;
-    println!("Successfully updated user password.");
+    if updated_current_user {
+        println!("Successfully updated current user's password, exiting console. Please log in with the updated credentials.");
+        exit(0);
+    } else {
+        println!("Successfully updated user password.");
+    }
     Ok(())
 }
 
@@ -154,7 +166,7 @@ pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]
         .run(context.transaction.take().unwrap().commit())
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully committed transaction.");
-    context.repl_stack.pop();
+    context.repl_stack.pop().unwrap().finished(context);
     Ok(())
 }
 
@@ -164,7 +176,7 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
         TransactionType::Read => "Transaction closed",
         TransactionType::Write | TransactionType::Schema => "Transaction closed without committing changes.",
     };
-    context.repl_stack.pop();
+    context.repl_stack.pop().unwrap().finished(context);
     println!("{}", message);
     Ok(())
 }
@@ -246,11 +258,14 @@ pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRe
     execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
-const MESSAGE_QUERY_TEMPLATE: &'static str = "<QUERY>";
-const QUERY_COMPILATION_SUCCESS: &'static str = "Finished <QUERY> query validation and compilation...";
-const QUERY_WRITE_SUCCESS: &'static str = "Finished writes...";
-const QUERY_STREAMING_ROWS: &'static str = "Streaming answers...";
+const QUERY_TYPE_TEMPLATE: &'static str = "<QUERY TYPE>";
+const QUERY_COMPILATION_SUCCESS: &'static str = "Finished <QUERY TYPE> query validation and compilation...";
+const QUERY_WRITE_FINISHED_STREAMING_ROWS: &'static str = "Finished writes. Streaming rows...";
+const QUERY_WRITE_FINISHED_STREAMING_DOCUMENTS: &'static str = "Finished writes. Streaming rows...";
+const QUERY_STREAMING_ROWS: &'static str = "Streaming rows...";
 const QUERY_STREAMING_DOCUMENTS: &'static str = "Streaming documents...";
+const ANSWER_COUNT_TEMPLATE: &'static str = "<ANSWER COUNT>";
+const QUERY_FINISHED_COUNT: &'static str = "Finished. Total answers: <ANSWER COUNT>";
 
 fn query_type_str(query_type: QueryType) -> &'static str {
     match query_type {
@@ -264,72 +279,81 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
     let transaction = context.transaction.take().expect("Transaction query run without active transaction.");
     let (transaction, result) = context.background_runtime.run(async move {
         let result = transaction.query(query).await;
-        // note: print results in the async block so we don't have to collect first
-        match result {
-            Ok(answer) => {
-                match answer {
-                    QueryAnswer::Ok(query_type) => {
-                        if logging {
+        if logging {
+            // note: print results in the async block so we don't have to collect first
+            match result {
+                Ok(answer) => {
+                    match answer {
+                        QueryAnswer::Ok(query_type) => {
                             println!("Finished {} query.", query_type_str(query_type));
+                            (transaction, Ok(()))
                         }
-                        (transaction, Ok(()))
-                    }
-                    QueryAnswer::ConceptRowStream(header, mut rows_stream) => {
-                        if logging {
+                        QueryAnswer::ConceptRowStream(header, mut rows_stream) => {
                             println!(
                                 "{}",
                                 QUERY_COMPILATION_SUCCESS
-                                    .replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type))
+                                    .replace(QUERY_TYPE_TEMPLATE, query_type_str(header.query_type))
                             );
                             if matches!(header.query_type, QueryType::WriteQuery) {
-                                println!("{}", QUERY_WRITE_SUCCESS);
+                                println!("{}", QUERY_WRITE_FINISHED_STREAMING_ROWS);
+                            } else {
+                                println!("{}", QUERY_STREAMING_ROWS);
                             }
-                            println!("{}", QUERY_STREAMING_ROWS);
-                        }
-                        let mut is_first = true;
-                        while let Some(result) = rows_stream.next().await {
-                            match result {
-                                Ok(row) => {
-                                    if logging {
-                                        print_row(row, is_first);
+                            let has_columns = !header.column_names.is_empty();
+                            if !has_columns {
+                                println!("\nNo columns to show.\n");
+                            }
+                            let mut count = 0;
+                            while let Some(result) = rows_stream.next().await {
+                                match result {
+                                    Ok(row) => {
+                                        if has_columns {
+                                            print_row(row, count == 0);
+                                        }
+                                        count += 1;
                                     }
-                                    is_first = false;
+                                    Err(err) => return (transaction, Err(err)),
                                 }
-                                Err(err) => return (transaction, Err(err)),
                             }
+                            println!("{}", QUERY_FINISHED_COUNT.replace(ANSWER_COUNT_TEMPLATE, &count.to_string()));
+                            (transaction, Ok(()))
                         }
-                        (transaction, Ok(()))
-                    }
-                    QueryAnswer::ConceptDocumentStream(header, mut documents_stream) => {
-                        if logging {
+                        QueryAnswer::ConceptDocumentStream(header, mut documents_stream) => {
                             println!(
                                 "{}",
                                 QUERY_COMPILATION_SUCCESS
-                                    .replace(MESSAGE_QUERY_TEMPLATE, query_type_str(header.query_type))
+                                    .replace(QUERY_TYPE_TEMPLATE, query_type_str(header.query_type))
                             );
                             if matches!(header.query_type, QueryType::WriteQuery) {
-                                println!("{}", QUERY_WRITE_SUCCESS);
+                                println!("{}", QUERY_WRITE_FINISHED_STREAMING_DOCUMENTS);
+                            } else {
+                                println!("{}", QUERY_STREAMING_DOCUMENTS);
                             }
-                            println!("{}", QUERY_STREAMING_DOCUMENTS);
-                        }
 
-                        while let Some(result) = documents_stream.next().await {
-                            match result {
-                                Ok(document) => {
-                                    if logging {
+                            let mut count = 0;
+                            while let Some(result) = documents_stream.next().await {
+                                match result {
+                                    Ok(document) => {
                                         print_document(document);
+                                        count += 1;
                                     }
+                                    // Note: we don't necessarily have to terminate the transaction when we get an error
+                                    // but the signalling isn't in place to do this canonically either!
+                                    Err(err) => return (transaction, Err(err)),
                                 }
-                                // Note: we don't necessarily have to terminate the transaction when we get an error
-                                // but the signalling isn't in place to do this canonically either!
-                                Err(err) => return (transaction, Err(err)),
                             }
+                            println!("{}", QUERY_FINISHED_COUNT.replace(ANSWER_COUNT_TEMPLATE, &count.to_string()));
+                            (transaction, Ok(()))
                         }
-                        (transaction, Ok(()))
                     }
                 }
+                Err(err) => (transaction, Err(err)),
             }
-            Err(err) => (transaction, Err(err)),
+        } else {
+            match result {
+                Ok(_) => (transaction, Ok(())),
+                Err(err) => (transaction, Err(err)),
+            }
         }
     });
     if !transaction.is_open() {

@@ -202,7 +202,8 @@ fn execute_interactive(context: &mut ConsoleContext) {
                 if context.repl_stack.len() == repl_index + 1 {
                     // TODO: extra way to eliminate the current repl...
                     //  ideally, every command would signal with a new Repl or to pop one off, so stack manipulation is these control loops
-                    context.repl_stack.pop();
+                    let last = context.repl_stack.pop();
+                    last.unwrap().finished(context);
                 } else {
                     // this is unexpected... quit
                     exit(0)
@@ -276,7 +277,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
 
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(ENTRY_REPL_HISTORY);
 
-    let repl = Repl::new(PROMPT.to_owned(), history_path, false)
+    let repl = Repl::new(PROMPT.to_owned(), history_path, false, None)
         .add(database_commands)
         .add(user_commands)
         .add(transaction_commands);
@@ -287,7 +288,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
 fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<ConsoleContext> {
     let db_prompt = format!("{}::{}{}", database, transaction_type_str(transaction_type), PROMPT);
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(TRANSACTION_REPL_HISTORY);
-    let repl = Repl::new(db_prompt, history_path, true)
+    let repl = Repl::new(db_prompt, history_path, true, Some(on_transaction_repl_finished))
         .add(CommandOption::new(
             "commit",
             "Commit the current transaction.",
@@ -315,6 +316,10 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             transaction_query,
         ));
     repl
+}
+
+fn on_transaction_repl_finished(context: &mut ConsoleContext) {
+    context.transaction.take(); // drop
 }
 
 fn transaction_type_str(transaction_type: TransactionType) -> &'static str {

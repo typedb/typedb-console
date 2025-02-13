@@ -119,7 +119,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
                         (argument.get_as_hidden().unwrap(), input)
                     } else {
                         return Err(Box::new(ReplError {
-                            message: format!("Missing argument {}: {}", index, argument.usage),
+                            message: format!("Missing argument {}: {}", index + 1, argument.usage),
                         }));
                     }
                 }

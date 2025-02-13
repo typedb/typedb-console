@@ -1,0 +1,13 @@
+diff --git a/BUILD b/BUILD
+index 6544c0e9..8d7a06ec 100644
+--- a/BUILD
++++ b/BUILD
+@@ -43,7 +43,7 @@ rust_binary(
+ 
+ pkg_tar(
+     name = "console-artifact-native",
+-    files = {":console-native" : "console/typedb_console_bin"},
++    files = {":console-native" : "console/typedb_console_bin.exe"},
+     extension = "tar.gz",
+     visibility = ["//visibility:public"]
+ )

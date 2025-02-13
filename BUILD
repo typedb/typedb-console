@@ -43,7 +43,7 @@ rust_binary(
 
 pkg_tar(
     name = "console-artifact-native",
-    files = {":console-native" : "console/typedb_console_bin"},
+    files = {":console-native" : "console/typedb_console_bin.exe"},
     extension = "tar.gz",
     visibility = ["//visibility:public"]
 )

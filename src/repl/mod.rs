@@ -35,17 +35,23 @@ pub(crate) struct Repl<Context> {
     commands: Subcommands<Context>,
     history_file: PathBuf,
     multiline_input: bool,
+    on_finish: Option<fn(&mut Context) -> ()>,
 }
 
 impl<Context: ReplContext + 'static> Repl<Context> {
     const HELP: &'static str = "help";
     const EXIT: &'static str = "exit";
 
-    pub(crate) fn new(prompt: String, history_file: PathBuf, multiline_input: bool) -> Self {
+    pub(crate) fn new(
+        prompt: String,
+        history_file: PathBuf,
+        multiline_input: bool,
+        on_finish: Option<fn(&mut Context) -> ()>,
+    ) -> Self {
         let subcommands = Subcommands::new("")
             .add(CommandOption::new(Self::EXIT, "Exit", do_exit))
             .add(CommandOption::new(Self::HELP, "Print help menu", help_menu));
-        Self { prompt, commands: subcommands, history_file, multiline_input }
+        Self { prompt, commands: subcommands, history_file, multiline_input, on_finish }
     }
 
     pub(crate) fn add(mut self, command: impl Command<Context> + 'static) -> Self {
@@ -91,6 +97,12 @@ impl<Context: ReplContext + 'static> Repl<Context> {
 
     pub(crate) fn prompt(&self) -> &str {
         &self.prompt
+    }
+
+    pub(crate) fn finished(&self, context: &mut Context) {
+        if let Some(on_finish) = self.on_finish {
+            on_finish(context)
+        }
     }
 }
 

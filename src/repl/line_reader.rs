@@ -14,6 +14,7 @@ use rustyline::{
     validate::{ValidationContext, ValidationResult, Validator},
     CompletionType, Config, Editor, Helper,
 };
+use rustyline::config::Configurer;
 
 use crate::repl::command::CommandDefinitions;
 
@@ -24,8 +25,12 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let config = Config::builder().completion_type(CompletionType::Circular).auto_add_history(true).build();
+        let mut builder = Config::builder()
+            .completion_type(CompletionType::Circular)
+            .auto_add_history(true);
+        let config = builder.build();
         let history = FileHistory::new();
+
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap
 
         let helper = EditorHelper { command_definitions: command_helper, multiline };

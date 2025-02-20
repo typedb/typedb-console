@@ -20,7 +20,7 @@ pub struct Args {
     #[arg(long, value_name = "path to file")]
     pub file: Vec<String>,
 
-    /// TypeDB address to connect to.
+    /// TypeDB address to connect to. If using TLS encryption, this must start with "https://"
     #[arg(long, value_name = "host:port")]
     pub address: String,
 
@@ -28,7 +28,7 @@ pub struct Args {
     #[arg(long, value_name = "username")]
     pub username: String,
 
-    /// Password for authentication
+    /// Password for authentication. Will be requested safely by default.
     #[arg(long, value_name = "password")]
     pub password: Option<String>,
 

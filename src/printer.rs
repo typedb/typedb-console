@@ -20,8 +20,21 @@ fn println(string: &str) {
 
 pub(crate) fn print_document(document: ConceptDocument) {
     // Note: inefficient, but easy...
-    let parsed: serde_json::Value = serde_json::from_str(&document.into_json().to_string()).unwrap();
-    println(&serde_json::to_string_pretty(&parsed).unwrap());
+    match serde_json::from_str::<serde_json::Value>(&document.into_json().to_string()) {
+        Ok(parsed) => {
+            match serde_json::to_string_pretty(&parsed) {
+                Ok(pretty) => {
+                    println(&pretty);
+                }
+                Err(err) => {
+                    println(&format!("Error trying to pretty-print JSON: {}", err));
+                }
+            }
+        }
+        Err(err) => {
+            println(&format!("Error trying to parse JSON: {}", err));
+        }
+    }
 }
 
 pub(crate) fn print_row(row: ConceptRow, is_first: bool) {
@@ -37,7 +50,7 @@ fn concept_row_display_string(concept_row: &ConceptRow, variable_column_width: u
     let content = column_names
         .iter()
         .map(|column_name| {
-            let concept = concept_row.get(column_name).unwrap();
+            let concept = concept_row.get(column_name).unwrap_or_else(|_| None);
             let mut string = String::new();
             string.push('$');
             string.push_str(column_name);

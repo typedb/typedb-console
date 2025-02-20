@@ -24,13 +24,13 @@ pub(crate) fn database_name_completer(
     runtime: BackgroundRuntime,
     input: &str,
 ) -> Vec<String> {
-    runtime
-        .run(async move { driver.databases().all().await })
-        .unwrap()
-        .iter()
-        .map(|db| db.name().to_owned())
-        .filter(|db_name| db_name.starts_with(input))
-        .collect()
+    match runtime.run(async move { driver.databases().all().await }) {
+        Ok(dbs) => dbs.iter()
+            .map(|db| db.name().to_owned())
+            .filter(|db_name| db_name.starts_with(input))
+            .collect(),
+        Err(_) => Vec::with_capacity(0),
+    }
 }
 
 pub(crate) fn file_completer(input: &str) -> Vec<String> {

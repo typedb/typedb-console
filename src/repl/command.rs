@@ -75,7 +75,10 @@ impl<Context> Command<Context> for CommandOption<Context> {
     }
 
     fn compute_completions(&self, input: &str) -> Vec<String> {
-        let mut inputs = input.trim().split(char::is_whitespace).peekable();
+        if input.ends_with(char::is_whitespace) {
+            return Vec::with_capacity(0);
+        }
+        let mut inputs = input.trim_start().split_whitespace();
         let command = match inputs.next() {
             None => return Vec::with_capacity(0),
             Some(command) => command,
@@ -102,7 +105,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
     }
 
     fn is_complete_command(&self, input: &str) -> bool {
-        let mut inputs = input.trim().split(char::is_whitespace).peekable();
+        let mut inputs = input.trim_start().split_whitespace().peekable();
         let command = match inputs.next() {
             None => return false,
             Some(command) => command,
@@ -203,7 +206,7 @@ pub(crate) fn get_word(input: &str) -> Option<(&str, &str)> {
     if input.is_empty() {
         None
     } else {
-        Some(input.trim().split_once(char::is_whitespace).unwrap_or((input, "")))
+        Some(input.trim_start().split_once(char::is_whitespace).unwrap_or((input, "")))
     }
 }
 
@@ -283,11 +286,11 @@ impl<Context> Command<Context> for Subcommands<Context> {
             return self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(input)).collect();
         }
 
-        let command = input.trim().split(char::is_whitespace).next().unwrap();
+        let command = input.trim_start().split_whitespace().next().unwrap();
         if self.token == command {
-            let remaining_input = input.strip_prefix(command).unwrap();
+            let remaining_input = input.trim_start().strip_prefix(command).unwrap();
             if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining_input.trim())).collect()
+                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining_input.trim_start())).collect()
             } else {
                 Vec::with_capacity(0)
             }
@@ -303,11 +306,11 @@ impl<Context> Command<Context> for Subcommands<Context> {
             return self.subcommands.iter().any(|cmd| cmd.is_complete_command(input));
         }
 
-        let command = input.trim().split(char::is_whitespace).next().unwrap();
+        let command = input.trim_start().split_whitespace().next().unwrap();
         if self.token == command {
-            let remaining_input = input.strip_prefix(command).unwrap();
+            let remaining_input = input.trim_start().strip_prefix(command).unwrap();
             if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands.iter().any(|cmd| cmd.is_complete_command(remaining_input.trim()))
+                self.subcommands.iter().any(|cmd| cmd.is_complete_command(remaining_input.trim_start()))
             } else {
                 false
             }
@@ -330,7 +333,7 @@ impl<Context> Command<Context> for Subcommands<Context> {
         };
         for subcommand in &self.subcommands {
             if command == subcommand.token() {
-                return subcommand.execute(context, remainder.trim());
+                return subcommand.execute(context, remainder.trim_start());
             }
         }
         if let Some(default) = &self.default {
@@ -390,7 +393,7 @@ impl<Context> Completer for Subcommands<Context> {
             Ok((0, Vec::with_capacity(0)))
         } else {
             let (last_word_boundary, _) = extract_word(line, pos, None, char::is_whitespace);
-            Ok((last_word_boundary, self.compute_completions(line.trim())))
+            Ok((last_word_boundary, self.compute_completions(line)))
         }
     }
 }

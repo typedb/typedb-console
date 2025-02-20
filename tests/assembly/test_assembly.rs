@@ -26,7 +26,7 @@ fn test_console() -> Result<(), Box<dyn Error>> {
     let db_create_command = format!("database create {}", DATABASE_NAME);
     let args = vec![
         "--address",
-        "localhost:1729",
+        "localhost:1730",
         "--command",
         &db_create_command,
         "--username",
@@ -48,7 +48,7 @@ fn test_console() -> Result<(), Box<dyn Error>> {
 fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
     let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
         .expect("Failed to create server binary runner");
-    let args: Vec<String> = vec![];
+    let args: Vec<String> = vec!["--server.address".to_owned(), "0.0.0.0:1730".to_owned()];
     let child: io::Result<Child> = runner.run(&args);
     (runner, child.expect("Failed to spawn child server process."))
 }

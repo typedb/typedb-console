@@ -33,14 +33,14 @@ platform-specific distribution.
 You can provide several command arguments when running console in the terminal.
 
 - `--username=<username>` : TypeDB server username to log in with (mandatory).
-- `--address=<address>` : TypeDB server address to which the console will connect to.
+- `--address=<address>` : TypeDB server address to which the console will connect to (mandatory). Ensure it is prefixed with `https://` when using TLS.
 - `--file=<file>` : Run commands in the script file in non-interactive mode.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
 
 TypeDB Console will by default prompt you for your password in a safe way. If you must,
-you are still able to pass in the login password with `--password=<password>`.
+you are still able to pass in the password with `--password=<password>`.
 
 **By default, TLS encryption is enabled to ensure passwords are not sent over the network in plaintext**
 
@@ -87,6 +87,9 @@ will also be autocompleted, while others, such as queries, will not.
   my-typedb-database::schema>
   ```
   This will then take you to the transaction-level interface, i.e. the second-level REPL.
+
+**IMPORTANT: For TypeDB Console 2.x users, this command has changed order! It used to be `transaction <db> read|write|schema`**. Now, the `<db>` and `read|write|schema` order is reversed!
+
 - `help` : Print help menu
 - `exit` : Exit console
 

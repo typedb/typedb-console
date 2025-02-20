@@ -189,6 +189,7 @@ fn execute_one(context: &mut ConsoleContext, input: &str) -> ReplResult {
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
+    println!("\nWelcome to TypeDB Console!\n");
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();

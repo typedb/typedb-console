@@ -69,6 +69,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         match editor.readline(&self.prompt) {
             Ok(line) => {
                 if !line.trim().is_empty() {
+                    let multiline_input: Vec<_> = line.lines().collect();
                     Continue(self.execute_once(context, &line))
                 } else {
                     Continue(Ok(()))

@@ -10,15 +10,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use rustyline::{
-    completion::Completer,
-    highlight::Highlighter,
-    hint::Hinter,
-    history::FileHistory,
-    validate::{ValidationContext, ValidationResult, Validator},
-    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
-    Modifiers, Movement, RepeatCount,
-};
+use rustyline::{completion::Completer, highlight::Highlighter, hint::Hinter, history::FileHistory, validate::{ValidationContext, ValidationResult, Validator}, Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
+    Modifiers, Movement, RepeatCount, KeyCode};
 use rustyline::history::History;
 
 use crate::repl::command::CommandDefinitions;
@@ -30,8 +23,9 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let mut builder = Config::builder().completion_type(CompletionType::Circular);
-        let config = builder.build();
+        let mut config = Config::builder()
+            .completion_type(CompletionType::Circular)
+            .build();
         let history = FileHistory::new();
 
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap

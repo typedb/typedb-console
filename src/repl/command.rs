@@ -211,7 +211,28 @@ pub(crate) fn get_word(input: &str) -> Option<(&str, &str)> {
     }
 }
 
-pub(crate) fn get_all(input: &str) -> Option<(&str, &str)> {
+pub(crate) fn get_multiline_query(input: &str) -> Option<(&str, &str)> {
+    let mut previous_newline: usize = 0;
+    while let Some(newline_pos) = input.find("\n") {
+        // let before = &input[0..newline_pos];
+        // let after = &input[newline_pos..];
+        let line_before = &input[previous_newline..newline_pos];
+        if line_before.trim().is_empty() {
+            return (current_query_range
+        }
+
+    }
+
+
+    let mut lines = input.lines();
+    let last_line = match lines.next() {
+        None => return None,
+        Some(line) => line,
+    };
+    if last_line.trim().is_empty() {
+
+    }
+
     Some((input, ""))
 }
 
@@ -245,6 +266,10 @@ impl<Context> CommandDefault<Context> {
             }));
         }
         (self.executor)(context, &[argument])
+    }
+
+    fn is_complete_command(&self, input: &str) -> bool {
+        self.reader.get(input)
     }
 
     fn usage_description(&self) -> (String, &'static str) {
@@ -318,6 +343,8 @@ impl<Context> Command<Context> for Subcommands<Context> {
             } else {
                 false
             }
+        } else if let Some(default) = self.default.as_ref() {
+            default.is_complete_command(input)
         } else {
             false
         }

@@ -13,9 +13,9 @@ use typedb_driver::{
 };
 
 use crate::{
-    ConsoleContext,
-    MULTILINE_INPUT_SYMBOL,
-    printer::{print_document, print_row}, repl::{command::ReplError, ReplResult}, transaction_repl,
+    printer::{print_document, print_row},
+    repl::{command::ReplError, ReplResult},
+    transaction_repl, ConsoleContext, MULTILINE_INPUT_SYMBOL,
 };
 
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
@@ -161,10 +161,7 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
 }
 
 pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
-    match context
-        .background_runtime
-        .run(context.transaction.take().unwrap().commit())
-    {
+    match context.background_runtime.run(context.transaction.take().unwrap().commit()) {
         Ok(_) => {
             println!("Successfully committed transaction.");
             context.repl_stack.pop().unwrap().finished(context);

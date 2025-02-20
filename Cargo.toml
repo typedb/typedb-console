@@ -24,13 +24,13 @@ features = {}
 		default-features = false
 
 	[dependencies.rustyline]
-		features = ["fd-lock", "with-file-history"]
+		features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
 		version = "15.0.0"
 		default-features = false
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.28"
+		version = "4.5.30"
 		default-features = false
 
 	[dependencies.glob]
@@ -51,7 +51,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.138"
+		version = "1.0.139"
 		default-features = false
 
 	[dependencies.rpassword]

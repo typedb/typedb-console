@@ -282,6 +282,9 @@ impl<Context> Command<Context> for Subcommands<Context> {
     }
 
     fn compute_completions(&self, input: &str) -> Vec<String> {
+        if input.ends_with(char::is_whitespace) {
+            return Vec::with_capacity(0);
+        }
         if self.token.is_empty() {
             return self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(input)).collect();
         }

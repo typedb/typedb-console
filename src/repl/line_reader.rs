@@ -12,9 +12,9 @@ use rustyline::{
     hint::Hinter,
     history::FileHistory,
     validate::{ValidationContext, ValidationResult, Validator},
-    CompletionType, Config, Editor, Helper,
+    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyEvent, Movement,
+    RepeatCount,
 };
-use rustyline::config::Configurer;
 
 use crate::repl::command::CommandDefinitions;
 
@@ -25,9 +25,7 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let mut builder = Config::builder()
-            .completion_type(CompletionType::Circular)
-            .auto_add_history(true);
+        let mut builder = Config::builder().completion_type(CompletionType::Circular).auto_add_history(true);
         let config = builder.build();
         let history = FileHistory::new();
 
@@ -36,6 +34,10 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
         let helper = EditorHelper { command_definitions: command_helper, multiline };
 
         editor.set_helper(Some(helper));
+        editor.bind_sequence(
+            Event::from(KeyEvent::ctrl('c')),
+            EventHandler::Conditional(Box::new(InterruptIfEmptyElseClear {})),
+        );
         let _ = editor.load_history(&history_file);
         Self { editor, history_file }
     }
@@ -92,6 +94,18 @@ impl<H: CommandDefinitions> Validator for EditorHelper<H> {
             validator.validate(ctx)
         } else {
             Ok(ValidationResult::Valid(None))
+        }
+    }
+}
+
+struct InterruptIfEmptyElseClear {}
+
+impl ConditionalEventHandler for InterruptIfEmptyElseClear {
+    fn handle(&self, _evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
+        if ctx.line().is_empty() {
+            Some(Cmd::Interrupt)
+        } else {
+            Some(Cmd::Kill(Movement::BeginningOfBuffer))
         }
     }
 }

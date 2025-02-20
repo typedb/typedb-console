@@ -21,16 +21,14 @@ fn println(string: &str) {
 pub(crate) fn print_document(document: ConceptDocument) {
     // Note: inefficient, but easy...
     match serde_json::from_str::<serde_json::Value>(&document.into_json().to_string()) {
-        Ok(parsed) => {
-            match serde_json::to_string_pretty(&parsed) {
-                Ok(pretty) => {
-                    println(&pretty);
-                }
-                Err(err) => {
-                    println(&format!("Error trying to pretty-print JSON: {}", err));
-                }
+        Ok(parsed) => match serde_json::to_string_pretty(&parsed) {
+            Ok(pretty) => {
+                println(&pretty);
             }
-        }
+            Err(err) => {
+                println(&format!("Error trying to pretty-print JSON: {}", err));
+            }
+        },
         Err(err) => {
             println(&format!("Error trying to parse JSON: {}", err));
         }

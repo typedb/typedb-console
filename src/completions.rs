@@ -25,10 +25,7 @@ pub(crate) fn database_name_completer(
     input: &str,
 ) -> Vec<String> {
     match runtime.run(async move { driver.databases().all().await }) {
-        Ok(dbs) => dbs.iter()
-            .map(|db| db.name().to_owned())
-            .filter(|db_name| db_name.starts_with(input))
-            .collect(),
+        Ok(dbs) => dbs.iter().map(|db| db.name().to_owned()).filter(|db_name| db_name.starts_with(input)).collect(),
         Err(_) => Vec::with_capacity(0),
     }
 }

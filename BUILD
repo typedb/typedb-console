@@ -43,7 +43,7 @@ rust_binary(
 
 pkg_tar(
     name = "console-artifact-native",
-    files = {":console-native" : "console/typedb_console_bin.exe"},
+    files = {":console-native" : "console/typedb_console_bin"},
     extension = "tar.gz",
     visibility = ["//visibility:public"]
 )
@@ -161,6 +161,7 @@ checkstyle_test(
         ".bazel-remote-cache.rc",
         ".bazel-cache-credential.json",
         ".circleci/windows/short_workspace.patch",
+        ".circleci/windows/package_binary_as_exe.patch",
         "LICENSE",
         "VERSION",
     ] + glob([

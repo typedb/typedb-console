@@ -19,6 +19,7 @@ use rustyline::{
     Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
     Modifiers, Movement, RepeatCount,
 };
+use rustyline::history::History;
 
 use crate::repl::command::CommandDefinitions;
 
@@ -29,7 +30,7 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let mut builder = Config::builder().completion_type(CompletionType::Circular).auto_add_history(true);
+        let mut builder = Config::builder().completion_type(CompletionType::Circular);
         let config = builder.build();
         let history = FileHistory::new();
 
@@ -62,6 +63,7 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn readline(&mut self, prompt: &str) -> rustyline::Result<String> {
         match self.editor.readline(prompt) {
             Ok(line) => {
+                let _ = self.editor.history_mut().add(line.trim_end());
                 let _ = self.editor.append_history(&self.history_file);
                 Ok(line)
             }

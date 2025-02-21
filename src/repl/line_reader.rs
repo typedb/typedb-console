@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, path::PathBuf};
+use std::{
+    borrow::Cow,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use rustyline::{
     completion::Completer,
@@ -12,8 +16,8 @@ use rustyline::{
     hint::Hinter,
     history::FileHistory,
     validate::{ValidationContext, ValidationResult, Validator},
-    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyEvent, Movement,
-    RepeatCount,
+    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
+    Modifiers, Movement, RepeatCount,
 };
 
 use crate::repl::command::CommandDefinitions;
@@ -32,11 +36,24 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap
 
         let helper = EditorHelper { command_definitions: command_helper, multiline };
-
         editor.set_helper(Some(helper));
+
+        let search_mode = Arc::new(Mutex::new(SearchMode::Normal));
+        editor.bind_sequence(
+            Event::Any,
+            EventHandler::Conditional(Box::new(SearchHistoryModeReset { search_mode: search_mode.clone() })),
+        );
         editor.bind_sequence(
             Event::from(KeyEvent::ctrl('c')),
             EventHandler::Conditional(Box::new(InterruptIfEmptyElseClear {})),
+        );
+        editor.bind_sequence(
+            Event::from(KeyEvent(KeyCode::Up, Modifiers::NONE)),
+            EventHandler::Conditional(Box::new(SearchHistory { forward: false, search_mode: search_mode.clone() })),
+        );
+        editor.bind_sequence(
+            Event::from(KeyEvent(KeyCode::Down, Modifiers::NONE)),
+            EventHandler::Conditional(Box::new(SearchHistory { forward: true, search_mode })),
         );
         let _ = editor.load_history(&history_file);
         Self { editor, history_file }
@@ -105,7 +122,80 @@ impl ConditionalEventHandler for InterruptIfEmptyElseClear {
         if ctx.line().is_empty() {
             Some(Cmd::Interrupt)
         } else {
-            Some(Cmd::Kill(Movement::BeginningOfBuffer))
+            Some(Cmd::Kill(Movement::WholeBuffer))
+        }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+enum SearchMode {
+    Normal,
+    InNormalHistory,
+    InCompletion,
+}
+
+struct SearchHistoryModeReset {
+    search_mode: Arc<Mutex<SearchMode>>,
+}
+
+impl ConditionalEventHandler for SearchHistoryModeReset {
+    fn handle(&self, evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
+        if let Event::KeySeq(keys) = evt {
+            if !(keys.contains(&KeyEvent(KeyCode::Up, Modifiers::NONE))
+                || keys.contains(&KeyEvent(KeyCode::Down, Modifiers::NONE)))
+            {
+                *self.search_mode.lock().unwrap() = SearchMode::Normal;
+            }
+        }
+        None
+    }
+}
+
+struct SearchHistory {
+    forward: bool,
+    search_mode: Arc<Mutex<SearchMode>>,
+}
+
+impl ConditionalEventHandler for SearchHistory {
+    fn handle(&self, _evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
+        if ctx.line().is_empty() {
+            *self.search_mode.lock().unwrap() = SearchMode::InNormalHistory;
+            if self.forward {
+                Some(Cmd::NextHistory)
+            } else {
+                Some(Cmd::PreviousHistory)
+            }
+        } else {
+            let mode = *self.search_mode.lock().unwrap();
+            match mode {
+                SearchMode::Normal => {
+                    *self.search_mode.lock().unwrap() = SearchMode::InCompletion;
+                }
+                SearchMode::InNormalHistory => {
+                    // stay cycling through normal history
+                }
+                SearchMode::InCompletion => {
+                    // stay in completion mode
+                }
+            }
+
+            match *self.search_mode.lock().unwrap() {
+                SearchMode::Normal => unreachable!("Must have picked a mode by the time we search searching."),
+                SearchMode::InNormalHistory => {
+                    if self.forward {
+                        Some(Cmd::NextHistory)
+                    } else {
+                        Some(Cmd::PreviousHistory)
+                    }
+                }
+                SearchMode::InCompletion => {
+                    if self.forward {
+                        Some(Cmd::HistorySearchForward)
+                    } else {
+                        Some(Cmd::HistorySearchBackward)
+                    }
+                }
+            }
         }
     }
 }

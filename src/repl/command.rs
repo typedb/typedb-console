@@ -83,6 +83,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
             None => return Vec::with_capacity(0),
             Some(command) => command,
         };
+        let remaining = input.trim_start().strip_prefix(command).unwrap();
         if self.token == command {
             match inputs.enumerate().last() {
                 None => {
@@ -97,7 +98,7 @@ impl<Context> Command<Context> for CommandOption<Context> {
                     }
                 }
             }
-        } else if self.token.starts_with(command) {
+        } else if self.token.starts_with(command) && remaining.trim().is_empty() {
             vec![self.token.to_owned()]
         } else {
             Vec::with_capacity(0)
@@ -290,14 +291,14 @@ impl<Context> Command<Context> for Subcommands<Context> {
         }
 
         let command = input.trim_start().split_whitespace().next().unwrap();
+        let remaining_input = input.trim_start().strip_prefix(command).unwrap();
         if self.token == command {
-            let remaining_input = input.trim_start().strip_prefix(command).unwrap();
             if remaining_input.starts_with(char::is_whitespace) {
                 self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining_input.trim_start())).collect()
             } else {
                 Vec::with_capacity(0)
             }
-        } else if self.token.starts_with(command) {
+        } else if self.token.starts_with(command) && remaining_input.trim().is_empty() {
             vec![self.token.to_owned()]
         } else {
             Vec::with_capacity(0)

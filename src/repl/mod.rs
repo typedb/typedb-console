@@ -17,9 +17,10 @@ use std::{
 use rustyline::error::ReadlineError;
 
 use crate::repl::{
-    command::{Command, CommandDefault, CommandOption, Subcommands},
+    command::{Command, CommandDefault, CommandLeaf, Subcommand},
     line_reader::RustylineReader,
 };
+use crate::repl::command::{CommandResult, ExecutableCommand};
 
 pub(crate) mod command;
 pub(crate) mod line_reader;
@@ -28,11 +29,11 @@ pub(crate) trait ReplContext: Sized {
     fn current_repl(&self) -> &Repl<Self>;
 }
 
-pub(crate) type ReplResult = Result<(), Box<dyn Error + Send>>;
+pub(crate) type ReplResult<'a> = Result<Option<&'a str>, Box<dyn Error + Send>>;
 
 pub(crate) struct Repl<Context> {
     prompt: String,
-    commands: Subcommands<Context>,
+    commands: Subcommand<Context>,
     history_file: PathBuf,
     multiline_input: bool,
     on_finish: Option<fn(&mut Context) -> ()>,
@@ -48,9 +49,9 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         multiline_input: bool,
         on_finish: Option<fn(&mut Context) -> ()>,
     ) -> Self {
-        let subcommands = Subcommands::new("")
-            .add(CommandOption::new(Self::EXIT, "Exit", do_exit))
-            .add(CommandOption::new(Self::HELP, "Print help menu", help_menu));
+        let subcommands = Subcommand::new("")
+            .add(CommandLeaf::new(Self::EXIT, "Exit", do_exit))
+            .add(CommandLeaf::new(Self::HELP, "Print help menu", help_menu));
         Self { prompt, commands: subcommands, history_file, multiline_input, on_finish }
     }
 
@@ -64,24 +65,21 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         self
     }
 
-    pub(crate) fn interactive_once(&self, context: &mut Context) -> ControlFlow<(), ReplResult> {
+    pub(crate) fn get_input(&self) -> rustyline::Result<String> {
         let mut editor = RustylineReader::new(self.commands.clone(), self.history_file.clone(), self.multiline_input);
-        match editor.readline(&self.prompt) {
-            Ok(line) => {
-                if !line.trim().is_empty() {
-                    let multiline_input: Vec<_> = line.lines().collect();
-                    Continue(self.execute_once(context, &line))
-                } else {
-                    Continue(Ok(()))
-                }
-            }
-            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => Break(()),
-            Err(err) => Continue(Err(Box::new(err))),
-        }
+        editor.readline(&self.prompt)
     }
 
-    pub(crate) fn execute_once(&self, context: &mut Context, line: &str) -> ReplResult {
-        self.commands.execute(context, line)
+    // pub(crate) fn try_execute_one<'a>(&self, context: &mut Context, input: &'a str) -> ReplResult<'a> {
+    //     self.commands.execute_from(context, input)
+    // }
+    //
+    // pub(crate) fn execute_once<'a>(&self, context: &mut Context, line: &'a str) -> ReplResult<'a>{
+    //     self.commands.execute_exact(context, line)
+    // }
+
+    pub(crate) fn match_command<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>> {
+        self.commands.match_(input)
     }
 
     pub(crate) fn help(&self) -> String {
@@ -107,11 +105,11 @@ impl<Context: ReplContext + 'static> Repl<Context> {
     }
 }
 
-fn help_menu<Context: ReplContext + 'static>(context: &mut Context, _input: &[String]) -> ReplResult {
+fn help_menu<Context: ReplContext + 'static>(context: &mut Context, _input: &[String]) -> CommandResult {
     println!("{}", context.current_repl().help());
     Ok(())
 }
 
-fn do_exit<Context: ReplContext + 'static>(_context: &mut Context, _input: &[String]) -> ReplResult {
+fn do_exit<Context: ReplContext + 'static>(_context: &mut Context, _input: &[String]) -> CommandResult {
     exit(0);
 }

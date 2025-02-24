@@ -12,46 +12,152 @@ use std::{
     rc::Rc,
 };
 
-use rustyline::{
-    completion::{extract_word, Completer},
-    highlight::Highlighter,
-    hint::Hinter,
-};
+use rustyline::{completion::{Completer, extract_word}, highlight::Highlighter, hint::Hinter};
 
-use crate::repl::{line_reader::LineReaderHidden, ReplResult};
+use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
 pub(crate) trait Command<Context> {
-    // single-word token
-    fn token(&self) -> &'static str;
+    fn token(&self) -> &CommandToken;
 
     // recursively try to complete either this command, or any subcommand, based on the input
     // where the input was already matched against & excludes any parent commands
     fn compute_completions(&self, input: &str) -> Vec<String>;
 
-    fn is_complete_command(&self, input: &str) -> bool;
+    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>>;
 
-    // execute this command with the provided input
-    fn execute(&self, context: &mut Context, input: &str) -> ReplResult;
-
-    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_>;
+    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_>;
 }
 
-pub(crate) type CommandExecutor<Context> = fn(&mut Context, &[String]) -> ReplResult;
+pub(crate) trait ExecutableCommand<Context>: Command<Context> {
+    // execute this command with the provided input
+    fn execute(&self, context: &mut Context, args: &str) -> CommandResult;
+}
 
-pub(crate) struct CommandOption<Context> {
-    token: &'static str,
+pub(crate) type CommandExecutor<Context> = fn(&mut Context, &[String]) -> CommandResult;
+pub(crate) type CommandResult = Result<(), Box<dyn Error + Send>>;
+
+pub(crate) struct Subcommand<Context> {
+    token: CommandToken,
+    subcommands: Vec<Rc<dyn Command<Context>>>, // TODO: use a datastructure that sorts by token length in decreasing size
+    default: Option<Rc<CommandDefault<Context>>>,
+}
+
+impl<Context> Subcommand<Context> {
+    pub(crate) fn new(token: impl Into<CommandToken>) -> Self {
+        Self { token: token.into(), subcommands: Vec::new(), default: None }
+    }
+
+    pub(crate) fn add(mut self, command: impl Command<Context> + 'static) -> Self {
+        assert!(!command.token().token.is_empty());
+        if self.subcommands.iter().any(|cmd| cmd.token() == command.token()) {
+            panic!("Duplicate subcommands with token: {}", command.token());
+        }
+        self.subcommands.push(Rc::new(command));
+        self
+    }
+
+    pub(crate) fn add_default(mut self, command: CommandDefault<Context>) -> Self {
+        self.default = Some(Rc::new(command));
+        self
+    }
+}
+
+impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
+    fn token(&self) -> &CommandToken {
+        &self.token
+    }
+
+    fn compute_completions(&self, input: &str) -> Vec<String> {
+        if input.ends_with(char::is_whitespace) {
+            return Vec::with_capacity(0);
+        }
+        if let Some((_, remaining, _)) = self.token.match_(input) {
+            if remaining.starts_with(char::is_whitespace) || remaining == input {
+                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining.trim_start()))
+                    .chain(self.default.as_ref().iter().flat_map(|default| default.compute_completions(remaining.trim_start()).into_iter()))
+                    .collect()
+            } else {
+                Vec::with_capacity(0)
+            }
+        } else if self.token.completes(input) {
+            vec![self.token.token.to_owned()]
+        } else {
+            Vec::with_capacity(0)
+        }
+    }
+
+    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>> {
+        log(&format!("Checking matches for input: {}\n", input));
+        match self.token.match_(input) {
+            None => Ok(None),
+            Some((_token, remaining, token_end_index)) => {
+                log(&format!("Matched subcommand: '{}', remainder: '{}', remainder_start_index: {}\n", _token, remaining, token_end_index));
+                for subcommand in &self.subcommands {
+                    match subcommand.match_(remaining)? {
+                        None => continue,
+                        Some((command, remaining_after_subcommand, command_end_index)) => {
+                            log(&format!(
+                                "From: '{}', Matched subcommand: '{}', remaining: '{}', command_end_index: '{}'\n",
+                                remaining, command.token(), remaining_after_subcommand, command_end_index
+                            ));
+                            // since we only reveal the substring to the subcommand, we need to extend the index by whatever we removed from the start
+                            return Ok(Some((command, remaining_after_subcommand, token_end_index + command_end_index)));
+                        }
+                    }
+                }
+                match self.default.as_ref() {
+                    None => {
+                        Err(Box::new(ReplError { message:
+                            format!("Unrecognised '{}' subcommand: '{}', please type 'help' to see the help menu.", self.token, remaining.trim())
+                        }))
+                    }
+                    Some(default) => {
+                        default.match_(input)
+                    }
+                }
+            }
+        }
+    }
+
+    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
+        Box::new(
+            self.subcommands
+                .iter()
+                .rev()
+                .flat_map(|command| {
+                    command.usage_description().map(|(usage, description)| {
+                        if self.token().token.is_empty() {
+                            (usage, description)
+                        } else {
+                            (format!("{} {}", self.token, usage), description)
+                        }
+                    })
+                })
+                .chain(self.default.iter().flat_map(|default| default.usage_description())),
+        )
+    }
+}
+
+impl<Context> Clone for Subcommand<Context> {
+    fn clone(&self) -> Self {
+        Self { token: self.token, subcommands: self.subcommands.clone(), default: self.default.clone() }
+    }
+}
+
+pub(crate) struct CommandLeaf<Context> {
+    token: CommandToken,
     description: &'static str,
     arguments: Vec<CommandInput>,
     executor: CommandExecutor<Context>,
 }
 
-impl<Context> CommandOption<Context> {
-    pub(crate) fn new(token: &'static str, description: &'static str, executor: CommandExecutor<Context>) -> Self {
+impl<Context> CommandLeaf<Context> {
+    pub(crate) fn new(token: impl Into<CommandToken>, description: &'static str, executor: CommandExecutor<Context>) -> Self {
         Self::new_with_inputs(token, description, vec![], executor)
     }
 
     pub(crate) fn new_with_input(
-        token: &'static str,
+        token: impl Into<CommandToken>,
         description: &'static str,
         arguments: CommandInput,
         executor: CommandExecutor<Context>,
@@ -60,32 +166,27 @@ impl<Context> CommandOption<Context> {
     }
 
     pub(crate) fn new_with_inputs(
-        token: &'static str,
+        token: impl Into<CommandToken>,
         description: &'static str,
         arguments: Vec<CommandInput>,
         executor: CommandExecutor<Context>,
     ) -> Self {
-        Self { token, description, arguments, executor }
+        Self { token: token.into(), description, arguments, executor }
     }
 }
 
-impl<Context> Command<Context> for CommandOption<Context> {
-    fn token(&self) -> &'static str {
-        self.token
+impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
+    fn token(&self) -> &CommandToken {
+        &self.token
     }
 
     fn compute_completions(&self, input: &str) -> Vec<String> {
         if input.ends_with(char::is_whitespace) {
             return Vec::with_capacity(0);
         }
-        let mut inputs = input.trim_start().split_whitespace();
-        let command = match inputs.next() {
-            None => return Vec::with_capacity(0),
-            Some(command) => command,
-        };
-        let remaining = input.trim_start().strip_prefix(command).unwrap();
-        if self.token == command {
-            match inputs.enumerate().last() {
+        if let Some((_, remaining, _)) = self.token.match_(input) {
+            let args = remaining.trim_start().split_whitespace();
+            match args.enumerate().last() {
                 None => {
                     // no more inputs are available
                     Vec::with_capacity(0)
@@ -98,47 +199,25 @@ impl<Context> Command<Context> for CommandOption<Context> {
                     }
                 }
             }
-        } else if self.token.starts_with(command) && remaining.trim().is_empty() {
-            vec![self.token.to_owned()]
+        } else if self.token.completes(input) {
+            vec![self.token.token.to_owned()]
         } else {
             Vec::with_capacity(0)
         }
     }
 
-    fn is_complete_command(&self, input: &str) -> bool {
-        let mut inputs = input.trim_start().split_whitespace().peekable();
-        let command = match inputs.next() {
-            None => return false,
-            Some(command) => command,
-        };
-        self.token == command
+    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>> {
+        log(&format!("checking command leaf: {}\n", self.token));
+        Ok(self.token.match_(input)
+            .map(|(_token, remaining, token_end_index)| {
+                log(&format!("--> matched leaf: {} with remainder: '{}', and token end index: {}\n", self.token, remaining, token_end_index));
+                // split to the end of the line
+                let args_end = remaining.find("\n").unwrap_or_else(|| remaining.len());
+                (self as &dyn ExecutableCommand<Context>, &remaining[0..args_end], token_end_index + args_end)
+            }))
     }
 
-    fn execute<'a>(&'a self, context: &mut Context, mut input: &'a str) -> ReplResult {
-        let mut arguments: Vec<String> = Vec::new();
-        for (index, argument) in self.arguments.iter().enumerate() {
-            let (arg_value, remaining_input) = match argument.get(input) {
-                None => {
-                    if argument.is_hidden() {
-                        (argument.get_as_hidden().unwrap(), input)
-                    } else {
-                        return Err(Box::new(ReplError {
-                            message: format!("Missing argument {}: {}", index + 1, argument.usage),
-                        }));
-                    }
-                }
-                Some((arg_value, remaining_input)) => (arg_value.to_owned(), remaining_input),
-            };
-            arguments.push(arg_value);
-            input = remaining_input;
-        }
-        if !input.trim().is_empty() {
-            return Err(Box::new(ReplError { message: format!("Unexpected extra arguments: {}", input) }));
-        }
-        (self.executor)(context, &arguments)
-    }
-
-    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
+    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
         let mut usage = format!("{}", self.token);
         for arg in &self.arguments {
             usage = format!("{} <{}>", usage, arg.usage());
@@ -147,8 +226,36 @@ impl<Context> Command<Context> for CommandOption<Context> {
     }
 }
 
-pub(crate) type InputReaderFn = for<'a> fn(&'a str) -> Option<(&'a str, &'a str)>;
-pub(crate) type HiddenReaderFn = for<'a> fn(&'a str) -> Option<(&'a str, &'a str)>;
+impl<Context: ReplContext> ExecutableCommand<Context> for CommandLeaf<Context> {
+    fn execute(&self, context: &mut Context, mut args: &str) -> CommandResult {
+        let mut parsed_args: Vec<String> = Vec::new();
+        for (index, argument) in self.arguments.iter().enumerate() {
+            let (arg_value, remaining_input) = match argument.read_end_index_from(args) {
+                Some(end_index) => {
+                    (args[0..end_index].trim().to_owned(), &args[end_index..])
+                }
+                None => {
+                    if argument.is_hidden() {
+                        (argument.request_hidden()?, args)
+                    } else {
+                        return Err(Box::new(ReplError {
+                            message: format!("Missing argument {}: {}", index + 1, argument.usage),
+                        }));
+                    }
+                }
+            };
+            parsed_args.push(arg_value);
+            args = remaining_input;
+        }
+        if !args.trim().is_empty() {
+            return Err(Box::new(ReplError { message: format!("Unexpected extra arguments: {}", args) }));
+        }
+        log(&format!("Executing '{}' with arguments {:?}\n", self.token, parsed_args));
+        (self.executor)(context, &parsed_args)
+    }
+}
+
+pub(crate) type InputReaderFn = for<'a> fn(&'a str) -> Option<usize>;
 // since we can't pass the context in through RustyLine's completion/hinting system, we have to hack around it
 // this type lets us construct a closure capturing whatever we want
 pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
@@ -156,7 +263,7 @@ pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
 pub(crate) struct CommandInput {
     usage: &'static str,
     reader: InputReaderFn,
-    hidden_reader: Option<HiddenReaderFn>,
+    hidden_reader: Option<InputReaderFn>,
     completer: Option<Box<InputCompleterFn>>,
 }
 
@@ -164,13 +271,13 @@ impl CommandInput {
     pub(crate) fn new(
         usage: &'static str,
         reader: InputReaderFn,
-        hidden_reader: Option<HiddenReaderFn>,
+        hidden_reader: Option<InputReaderFn>,
         completer: Option<Box<InputCompleterFn>>,
     ) -> Self {
         Self { usage, reader, hidden_reader, completer }
     }
 
-    fn get<'a>(&self, input: &'a str) -> Option<(&'a str, &'a str)> {
+    fn read_end_index_from<'a>(&self, input: &'a str) -> Option<usize> {
         (self.reader)(input)
     }
 
@@ -178,15 +285,29 @@ impl CommandInput {
         self.hidden_reader.is_some()
     }
 
-    fn get_as_hidden(&self) -> Result<String, ReplError> {
-        Ok(LineReaderHidden::new().readline(&format!("{}: ", self.usage)))
+    fn request_hidden(&self) -> Result<String, Box<dyn Error + Send>> {
+        match self.hidden_reader.as_ref() {
+            Some(reader) => {
+                let string = LineReaderHidden::new().readline(&format!("{}: ", self.usage));
+                let input_end = match reader(&string) {
+                    None => return Err(Box::new(ReplError { message: format!("Could not read input for '{}'", self.usage) })),
+                    Some(end) => end,
+                };
+                Ok(string[0..input_end].to_owned())
+            }
+            None => {
+                Err(Box::new(ReplError {
+                    message: format!("{} cannot be requested as a hidden parameter and must be entered as part of the command.", self.usage)
+                }))
+            }
+        }
     }
 
     // Return completions that are longer than the input
     fn completions(&self, input: &str) -> Vec<String> {
-        let input = match self.get(input) {
+        let input = match self.read_end_index_from(input) {
             None => return Vec::with_capacity(0),
-            Some((input, _)) => input,
+            Some(index) => &input[0..index],
         };
         match &self.completer {
             None => Vec::with_capacity(0),
@@ -203,40 +324,24 @@ impl CommandInput {
     }
 }
 
-pub(crate) fn get_word(input: &str) -> Option<(&str, &str)> {
+pub(crate) fn get_word(input: &str) -> Option<usize> {
     if input.is_empty() {
         None
     } else {
-        Some(input.trim_start().split_once(char::is_whitespace).unwrap_or((input, "")))
+        match input.trim_start().find(char::is_whitespace) {
+            None => Some(input.len()),
+            Some(pos) => Some(pos)
+        }
     }
 }
 
-pub(crate) fn get_multiline_query(input: &str) -> Option<(&str, &str)> {
-    let mut previous_newline: usize = 0;
-    while let Some(newline_pos) = input.find("\n") {
-        // let before = &input[0..newline_pos];
-        // let after = &input[newline_pos..];
-        let line_before = &input[previous_newline..newline_pos];
-        if line_before.trim().is_empty() {
-            return (current_query_range
-        }
-
-    }
-
-
-    let mut lines = input.lines();
-    let last_line = match lines.next() {
-        None => return None,
-        Some(line) => line,
-    };
-    if last_line.trim().is_empty() {
-
-    }
-
-    Some((input, ""))
+pub(crate) fn get_until_empty_line(input: &str) -> Option<usize> {
+    // TODO: enhance to allow newlines with whitespace characters included
+    input.find("\n\n")
 }
 
 pub(crate) struct CommandDefault<Context> {
+    token: CommandToken,
     description: &'static str,
     reader: CommandInput,
     executor: CommandExecutor<Context>,
@@ -244,160 +349,93 @@ pub(crate) struct CommandDefault<Context> {
 
 impl<Context> CommandDefault<Context> {
     pub(crate) fn new(description: &'static str, reader: CommandInput, executor: CommandExecutor<Context>) -> Self {
-        Self { description, reader, executor }
-    }
-
-    fn execute(&self, context: &mut Context, input: &str) -> ReplResult {
-        let (argument, remainder) = match self.reader.get(input) {
-            None => {
-                if self.reader.is_hidden() {
-                    (self.reader.get_as_hidden().unwrap(), input)
-                } else {
-                    return Err(Box::new(ReplError {
-                        message: format!("'{}' could not parse from input: {}", self.reader.usage(), input),
-                    }));
-                }
-            }
-            Some((argument, remainder)) => (argument.to_owned(), remainder),
-        };
-        if !remainder.trim().is_empty() {
-            return Err(Box::new(ReplError {
-                message: format!("Unexpected extra inputs for {}: {}", self.description, remainder),
-            }));
-        }
-        (self.executor)(context, &[argument])
-    }
-
-    fn is_complete_command(&self, input: &str) -> bool {
-        self.reader.get(input)
-    }
-
-    fn usage_description(&self) -> (String, &'static str) {
-        ("*".to_owned(), self.description)
+        Self { token: CommandToken::new(""), description, reader, executor }
     }
 }
 
-pub(crate) struct Subcommands<Context> {
-    token: &'static str,
-    subcommands: Vec<Rc<dyn Command<Context>>>,
-    default: Option<Rc<CommandDefault<Context>>>,
-}
-
-impl<Context> Subcommands<Context> {
-    pub(crate) fn new(token: &'static str) -> Self {
-        Self { token, subcommands: Vec::new(), default: None }
-    }
-
-    pub(crate) fn add(mut self, command: impl Command<Context> + 'static) -> Self {
-        if self.subcommands.iter().any(|cmd| cmd.token() == command.token()) {
-            panic!("Duplicate subcommands with token: {}", command.token());
-        }
-        self.subcommands.push(Rc::new(command));
-        self
-    }
-
-    pub(crate) fn add_default(mut self, command: CommandDefault<Context>) -> Self {
-        self.default = Some(Rc::new(command));
-        self
-    }
-}
-
-impl<Context> Command<Context> for Subcommands<Context> {
-    fn token(&self) -> &'static str {
-        self.token
+impl<Context: ReplContext> Command<Context> for CommandDefault<Context> {
+    fn token(&self) -> &CommandToken {
+        &self.token
     }
 
     fn compute_completions(&self, input: &str) -> Vec<String> {
-        if input.ends_with(char::is_whitespace) {
-            return Vec::with_capacity(0);
-        }
-        if self.token.is_empty() {
-            return self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(input)).collect();
-        }
-
-        let command = input.trim_start().split_whitespace().next().unwrap();
-        let remaining_input = input.trim_start().strip_prefix(command).unwrap();
-        if self.token == command {
-            if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining_input.trim_start())).collect()
-            } else {
-                Vec::with_capacity(0)
-            }
-        } else if self.token.starts_with(command) && remaining_input.trim().is_empty() {
-            vec![self.token.to_owned()]
-        } else {
-            Vec::with_capacity(0)
-        }
+        Vec::with_capacity(0)
     }
 
-    fn is_complete_command(&self, input: &str) -> bool {
-        if self.token.is_empty() {
-            return self.subcommands.iter().any(|cmd| cmd.is_complete_command(input));
-        }
-
-        let command = input.trim_start().split_whitespace().next().unwrap();
-        if self.token == command {
-            let remaining_input = input.trim_start().strip_prefix(command).unwrap();
-            if remaining_input.starts_with(char::is_whitespace) {
-                self.subcommands.iter().any(|cmd| cmd.is_complete_command(remaining_input.trim_start()))
-            } else {
-                false
-            }
-        } else if let Some(default) = self.default.as_ref() {
-            default.is_complete_command(input)
-        } else {
-            false
-        }
-    }
-
-    fn execute(&self, context: &mut Context, input: &str) -> ReplResult {
-        let (command, remainder) = match get_word(input) {
-            None => {
-                return Err(Box::new(ReplError {
-                    message: format!(
-                        "Failed to read {} command from input {}, please type 'help' to see the help menu.",
-                        self.token, input
-                    ),
-                }));
-            }
-            Some((command, remainder)) => (command.trim(), remainder),
-        };
-        for subcommand in &self.subcommands {
-            if command == subcommand.token() {
-                return subcommand.execute(context, remainder.trim_start());
-            }
-        }
-        if let Some(default) = &self.default {
-            default.execute(context, input)
-        } else {
-            Err(Box::new(ReplError {
-                message: format!("Unrecognised command: {}, please type 'help' to see the help menu.", input),
+    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>> {
+        // self.reader.get(input).is_some()
+        Ok(self.reader.read_end_index_from(input)
+            .map(|input_end_index| {
+                log(&format!("--> matched default: {}\n", self.description));
+                (self as &dyn ExecutableCommand<Context>, &input[0..input_end_index], input_end_index)
             }))
-        }
     }
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
-        Box::new(
-            self.subcommands
-                .iter()
-                .rev()
-                .flat_map(|command| {
-                    command.usage_description().map(|(usage, description)| {
-                        if self.token().is_empty() {
-                            (usage, description)
-                        } else {
-                            (format!("{} {}", self.token, usage), description)
-                        }
-                    })
-                })
-                .chain(self.default.iter().map(|default| default.usage_description())),
-        )
+    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
+        Box::new([("*".to_owned(), self.description)].into_iter())
     }
 }
 
-impl<Context> Clone for Subcommands<Context> {
-    fn clone(&self) -> Self {
-        Self { token: self.token, subcommands: self.subcommands.clone(), default: self.default.clone() }
+impl<Context: ReplContext> ExecutableCommand<Context> for CommandDefault<Context> {
+    fn execute(&self, context: &mut Context, args: &str) -> CommandResult {
+        (self.executor)(context, &[args.to_owned()])
+    }
+}
+
+pub fn log(string: &str) {
+    match std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("output")
+        .and_then(|mut file| std::io::Write::write_all(&mut file, string.as_bytes()))
+    {
+        Ok(_) => {}
+        Err(_) => {}
+    };
+}
+
+fn whitespace_without_newline(c: char) -> bool {
+    c.is_whitespace() && c != '\n'
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct CommandToken {
+    token: &'static str,
+}
+
+impl CommandToken {
+    fn new(token: &'static str) -> Self {
+        Self { token }
+    }
+
+    fn match_<'a>(&self, input: &'a str) -> Option<(&'a str, &'a str, usize)> {
+        match input.find(self.token) {
+            None => None,
+            Some(pos) => {
+                if (&input[0..pos]).trim_matches(whitespace_without_newline).is_empty() {
+                    let end = pos + self.token.len();
+                    Some((&input[0..end], &input[end..], end))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    fn completes(&self, input: &str) -> bool {
+        self.token.starts_with(input.trim())
+    }
+}
+
+impl Into<CommandToken> for &'static str {
+    fn into(self) -> CommandToken {
+        CommandToken::new(self)
+    }
+}
+
+impl Display for CommandToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.token)
     }
 }
 
@@ -405,13 +443,13 @@ pub(crate) trait CommandDefinitions: Highlighter + Hinter + Completer {
     fn is_complete_command(&self, input: &str) -> bool;
 }
 
-impl<Context> CommandDefinitions for Subcommands<Context> {
+impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
     fn is_complete_command(&self, input: &str) -> bool {
-        Command::is_complete_command(self, input)
+        matches!(Command::match_(self, input), Ok(Some(_)))
     }
 }
 
-impl<Context> Completer for Subcommands<Context> {
+impl<Context: ReplContext> Completer for Subcommand<Context> {
     type Candidate = String;
 
     fn complete(
@@ -429,7 +467,7 @@ impl<Context> Completer for Subcommands<Context> {
     }
 }
 
-impl<Context> Hinter for Subcommands<Context> {
+impl<Context: ReplContext> Hinter for Subcommand<Context> {
     type Hint = String;
 
     fn hint(&self, line: &str, pos: usize, _ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
@@ -446,7 +484,7 @@ impl<Context> Hinter for Subcommands<Context> {
     }
 }
 
-impl<Context> Highlighter for Subcommands<Context> {
+impl<Context: ReplContext> Highlighter for Subcommand<Context> {
     fn highlight_hint<'h>(&self, hint: &'h str) -> Cow<'h, str> {
         Cow::Owned(format!("\x1b[37m{}\x1b[0m", hint))
     }

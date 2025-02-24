@@ -23,6 +23,7 @@ use home::home_dir;
 use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 use ControlFlow::Break;
+use rustyline::error::ReadlineError;
 
 use crate::{
     cli::Args,
@@ -33,12 +34,13 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_multiline_query, get_word, CommandDefault, CommandInput, CommandOption, Subcommands},
+        command::{get_until_empty_line, get_word, CommandDefault, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext, ReplResult,
     },
     runtime::BackgroundRuntime,
 };
+use crate::repl::command::{CommandResult, ExecutableCommand, log, ReplError};
 
 mod cli;
 mod completions;
@@ -170,22 +172,56 @@ fn execute_commands(context: &mut ConsoleContext, commands: &[String]) {
     }
 }
 
-fn execute_one(context: &mut ConsoleContext, input: &str) -> ReplResult {
-    let current_repl = match context.repl_stack.last() {
-        None => {
-            println!("Console session has finished.");
-            return Err(Box::new(EmptyError {}));
-        }
-        Some(repl) => repl.clone(),
-    };
-    println!("{}{}", &current_repl.prompt(), input);
-    match current_repl.execute_once(context, input) {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            println!("{}", err);
-            Err(err)
-        }
+fn execute_one<'a>(context: &mut ConsoleContext, input: &'a str) -> ReplResult<'a> {
+    // let current_repl = match context.repl_stack.last() {
+    //     None => {
+    //         println!("Console session has finished.");
+    //         return Err(Box::new(EmptyError {}));
+    //     }
+    //     Some(repl) => repl.clone(),
+    // };
+    // println!("{}{}", &current_repl.prompt(), input);
+    // execute_commands_all(context, input)
+    todo!()
+}
+
+fn execute_commands_all<'a>(context: &mut ConsoleContext, mut input: &'a str) -> ReplResult<'a> {
+    log(&format!("executing all commands from input: '{}'", input));
+    let mut multiple_commands = None;
+    while !context.repl_stack.is_empty() && !input.trim().is_empty() {
+        let repl_index = context.repl_stack.len() - 1;
+        let current_repl = context.repl_stack[repl_index].clone();
+
+        input = match current_repl.match_command(input) {
+            Ok(None) => {
+                return Err(Box::new(ReplError { message: format!("Unrecognised command: {}", input )}))
+            }
+            Ok(Some((command, arguments, next_command_index))) => {
+                let command_string = &input[0..next_command_index];
+                if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
+                    multiple_commands = Some(true);
+                }
+
+                if multiple_commands.is_some_and(|b| b) {
+                    println!("{} {}", "+".repeat(repl_index + 1), command_string);
+                }
+                match command.execute(context, arguments) {
+                    Ok(_) => &input[next_command_index..],
+                    Err(err) => {
+                        println!("Error executing command: '{}'\nError: {}", command_string, err);
+                        return Err(err);
+                    }
+                }
+            }
+            Err(err) => {
+                println!("{}", err);
+                return Err(err);
+            }
+        };
+        input = input.trim_start();
+        log(&format!("Finished processing command, remaining input: {}\n", input));
     }
+    Ok(Some(&"")) // TODO
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
@@ -193,13 +229,16 @@ fn execute_interactive(context: &mut ConsoleContext) {
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();
-        match current_repl.interactive_once(context) {
-            Continue(repl_result) => {
-                if let Err(err) = repl_result {
-                    println!("{}", err);
+        let result = current_repl.get_input();
+        match result {
+            Ok(input) => {
+                if !input.trim().is_empty() {
+                    execute_commands_all(context, &input);
+                } else {
+                    continue;
                 }
             }
-            Break(_) => {
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
                 if context.repl_stack.len() == repl_index + 1 {
                     // TODO: extra way to eliminate the current repl...
                     //  ideally, every command would signal with a new Repl or to pop one off, so stack manipulation is these control loops
@@ -207,31 +246,34 @@ fn execute_interactive(context: &mut ConsoleContext) {
                     last.unwrap().finished(context);
                 } else {
                     // this is unexpected... quit
-                    exit(0)
+                    exit(1)
                 }
+            },
+            Err(err) => {
+                println!("{}", err);
             }
         }
     }
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
-    let database_commands = Subcommands::new("database")
-        .add(CommandOption::new("list", "List databases on the server.", database_list))
-        .add(CommandOption::new_with_input(
+    let database_commands = Subcommand::new("database")
+        .add(CommandLeaf::new("list", "List databases on the server.", database_list))
+        .add(CommandLeaf::new_with_input(
             "create",
             "Create a new database with the given name.",
             CommandInput::new("db", get_word, None, None),
             database_create,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "delete",
             "Delete the database with the given name.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_delete,
         ));
 
-    let user_commands = Subcommands::new("user")
-        .add(CommandOption::new_with_inputs(
+    let user_commands = Subcommand::new("user")
+        .add(CommandLeaf::new_with_inputs(
             "create",
             "Create new user.",
             vec![
@@ -240,13 +282,13 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             ],
             user_create,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "delete",
             "Delete existing user.",
             CommandInput::new("name", get_word, None, None),
             user_delete,
         ))
-        .add(CommandOption::new_with_inputs(
+        .add(CommandLeaf::new_with_inputs(
             "update-password",
             "Set existing user's password.",
             vec![
@@ -256,20 +298,20 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             user_update_password,
         ));
 
-    let transaction_commands = Subcommands::new("transaction")
-        .add(CommandOption::new_with_input(
+    let transaction_commands = Subcommand::new("transaction")
+        .add(CommandLeaf::new_with_input(
             "read",
             "Open read transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             transaction_read,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "write",
             "Open write transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             transaction_write,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "schema",
             "Open schema transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
@@ -290,22 +332,22 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
     let db_prompt = format!("{}::{}{}", database, transaction_type_str(transaction_type), PROMPT);
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(TRANSACTION_REPL_HISTORY);
     let repl = Repl::new(db_prompt, history_path, true, Some(on_transaction_repl_finished))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "commit",
             "Commit the current transaction.",
             transaction_commit,
         ))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "rollback",
             "Roll back the current transaction to the initial snapshot state.",
             transaction_rollback,
         ))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "close",
             "Close the current transaction.",
             transaction_close,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "source",
             "Execute a file containing a sequence of TypeQL queries. Queries may be split over multiple lines using backslash ('\\')",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
@@ -313,7 +355,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         ))
         .add_default(CommandDefault::new(
             "Execute query string.",
-            CommandInput::new("query", get_multiline_query, None, None),
+            CommandInput::new("query", get_until_empty_line, None, None),
             transaction_query,
         ));
     repl

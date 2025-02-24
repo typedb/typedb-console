@@ -17,8 +17,9 @@ use crate::{
     repl::{command::ReplError, ReplResult},
     transaction_repl, ConsoleContext, MULTILINE_INPUT_SYMBOL,
 };
+use crate::repl::command::CommandResult;
 
-pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let databases = context
         .background_runtime
@@ -30,7 +31,7 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
     Ok(())
 }
 
-pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
     context
@@ -41,7 +42,7 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
-pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
     context
@@ -55,7 +56,7 @@ pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
-pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     let password = input[1].clone();
@@ -67,7 +68,7 @@ pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> Rep
     Ok(())
 }
 
-pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     context.background_runtime.run(async move {
@@ -86,7 +87,7 @@ pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> Rep
     Ok(())
 }
 
-pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     let new_password = input[1].clone();
@@ -118,7 +119,7 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     Ok(())
 }
 
-pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -132,7 +133,7 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
     Ok(())
 }
 
-pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -146,7 +147,7 @@ pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) 
     Ok(())
 }
 
-pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -160,7 +161,7 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
     Ok(())
 }
 
-pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String])-> CommandResult {
     match context.background_runtime.run(context.transaction.take().unwrap().commit()) {
         Ok(_) => {
             println!("Successfully committed transaction.");
@@ -174,7 +175,7 @@ pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]
     }
 }
 
-pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])-> CommandResult {
     let transaction = context.transaction.take().unwrap(); // drop
     let message = match transaction.type_() {
         TransactionType::Read => "Transaction closed",
@@ -185,7 +186,7 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
     Ok(())
 }
 
-pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String])-> CommandResult {
     let transaction = context.transaction.take().unwrap();
     let (transaction, result) = context.background_runtime.run(async move {
         let result = transaction.rollback().await;
@@ -205,7 +206,7 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
     }
 }
 
-pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])-> CommandResult {
     let file_str = &input[0];
     let path = Path::new(file_str);
     if !path.exists() {
@@ -257,7 +258,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
     Ok(())
 }
 
-pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> ReplResult {
+pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>])-> CommandResult {
     let query = input[0].as_ref().to_owned();
     execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }

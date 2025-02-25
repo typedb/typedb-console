@@ -112,26 +112,14 @@ impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
         input: &'a str,
         coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        log(&format!("Checking matches for input: {}\n", input));
         match self.token.match_(input) {
             None => Ok(None),
             Some((_token, remaining, token_end_index)) => {
-                log(&format!(
-                    "Matched subcommand: '{}', remainder: '{}', remainder_start_index: {}\n",
-                    _token, remaining, token_end_index
-                ));
                 // rev forces longest match first
                 for subcommand in self.subcommands.iter().rev() {
                     match subcommand.match_first(remaining, coerce_to_one_line)? {
                         None => continue,
                         Some((command, remaining_after_subcommand, command_end_index)) => {
-                            log(&format!(
-                                "From: '{}', Matched subcommand: '{}', remaining: '{:?}', command_end_index: '{}'\n",
-                                remaining,
-                                command.token(),
-                                remaining_after_subcommand,
-                                command_end_index
-                            ));
                             // since we only reveal the substring to the subcommand
                             // we need to extend the index by whatever we removed from the start
                             return Ok(Some((
@@ -243,14 +231,8 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         input: &'a str,
         coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        log(&format!("checking command leaf: {}\n", self.token));
         match self.token.match_(input) {
             Some((_token, mut remaining, token_end_index)) => {
-                log(&format!(
-                    "--> matched leaf: {} with remainder: '{}', and token end index: {}\n",
-                    self.token, remaining, token_end_index
-                ));
-
                 let mut parsed_args: Vec<String> = Vec::new();
                 let mut command_end_index = token_end_index;
                 for (index, argument) in self.arguments.iter().enumerate() {
@@ -294,7 +276,6 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
 
 impl<Context: ReplContext> ExecutableCommand<Context> for CommandLeaf<Context> {
     fn execute(&self, context: &mut Context, mut args: Vec<String>) -> CommandResult {
-        log(&format!("Executing '{}' with arguments {:?}\n", self.token, args));
         (self.executor)(context, &args)
     }
 }
@@ -395,22 +376,6 @@ pub(crate) fn get_or_until_empty_line(input: &str, coerce_to_one_line: bool) -> 
     }
 }
 
-pub fn log(string: &str) {
-    match std::fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("output")
-        .and_then(|mut file| std::io::Write::write_all(&mut file, string.as_bytes()))
-    {
-        Ok(_) => {}
-        Err(_) => {}
-    };
-}
-
-fn whitespace_without_newline(c: char) -> bool {
-    c.is_whitespace() && c != '\n'
-}
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(crate) struct CommandToken {
     token: &'static str,
@@ -484,12 +449,10 @@ impl<Context: ReplContext> Hinter for Subcommand<Context> {
     type Hint = String;
 
     fn hint(&self, line: &str, pos: usize, _ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
-        log(&format!("1 Looking for candidates for: '{}'\n", line));
         let (_, candidates) = self.complete(line, pos, _ctx).ok()?;
         let (_, last_word) = extract_word(line, pos, None, char::is_whitespace);
 
         if candidates.len() == 1 {
-            log(&format!("1 Candidate found: '{}'. Last word in line: '{}'\n", &candidates[0], last_word));
             let candidate = candidates.into_iter().next().unwrap();
             if candidate.len() < last_word.len() {
                 None

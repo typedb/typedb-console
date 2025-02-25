@@ -166,7 +166,6 @@ fn execute_commands_all(
     coerce_to_one_line: bool,
     must_log_command: bool,
 ) -> Result<(), EmptyError> {
-    log(&format!("executing all commands from input: '{}'", input));
     let mut multiple_commands = None;
     while !context.repl_stack.is_empty() && !input.trim().is_empty() {
         let repl_index = context.repl_stack.len() - 1;
@@ -200,7 +199,6 @@ fn execute_commands_all(
             }
         };
         input = input.trim_start();
-        log(&format!("Finished processing command, remaining input: {}\n", input));
     }
     Ok(())
 }

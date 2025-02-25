@@ -193,7 +193,7 @@ We can define a script file that contains the list of commands to run, then invo
 Script files take exactly the same format as scripts pasted directly in the REPL.
 Importantly, this means that the **end of a query is delimited by an empty newline**.
 
-For example, a script `commands.stql`
+For example, a script `commands.tqls`
 ```
 database create test
 transaction schema test
@@ -213,7 +213,7 @@ database delete test
 
 Will produce the following output:
 ```
-./typedb console --username="user" --password="password" --script=commands.stql     
+./typedb console --username="user" --password="password" --script=commands.tqls     
 + database create test
 Successfully created database.
 + transaction schema test

@@ -11,7 +11,6 @@ use std::{
     fs::File,
     io,
     io::BufRead,
-    ops::{ControlFlow, ControlFlow::Continue},
     path::Path,
     process::exit,
     rc::Rc,
@@ -20,9 +19,9 @@ use std::{
 
 use clap::Parser;
 use home::home_dir;
+use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
-use ControlFlow::Break;
 
 use crate::{
     cli::Args,
@@ -33,9 +32,9 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_all, get_word, CommandDefault, CommandInput, CommandOption, Subcommands},
+        command::{get_to_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
-        Repl, ReplContext, ReplResult,
+        Repl, ReplContext,
     },
     runtime::BackgroundRuntime,
 };
@@ -50,7 +49,6 @@ mod runtime;
 pub const VERSION: &str = include_str!("../VERSION");
 
 const PROMPT: &'static str = ">> ";
-const MULTILINE_INPUT_SYMBOL: &'static str = "\\";
 const ENTRY_REPL_HISTORY: &'static str = ".typedb_console_repl_history";
 const TRANSACTION_REPL_HISTORY: &'static str = "typedb_console_transaction_repl_history";
 const DIAGNOSTICS_REPORTING_URI: &'static str =
@@ -111,22 +109,22 @@ fn main() {
     let mut context =
         ConsoleContext { repl_stack: vec![Rc::new(repl)], background_runtime: runtime, transaction: None, driver };
 
-    if !args.command.is_empty() && !args.file.is_empty() {
+    if !args.command.is_empty() && !args.script.is_empty() {
         println!("Error: Cannot specify both commands and files");
         exit(1);
     } else if !args.command.is_empty() {
-        execute_commands(&mut context, &args.command);
-    } else if !args.file.is_empty() {
-        execute_files(&mut context, &args.file);
+        execute_command_list(&mut context, &args.command);
+    } else if !args.script.is_empty() {
+        execute_scripts(&mut context, &args.script);
     } else {
         execute_interactive(&mut context);
     }
 }
 
-fn execute_files(context: &mut ConsoleContext, files: &[String]) {
+fn execute_scripts(context: &mut ConsoleContext, files: &[String]) {
     for file_path in files {
         if let Ok(file) = File::open(&file_path) {
-            execute_file(context, &file_path, io::BufReader::new(file).lines())
+            execute_script(context, &file_path, io::BufReader::new(file).lines())
         } else {
             println!("Error opening file: {}", file_path);
             exit(1);
@@ -134,24 +132,13 @@ fn execute_files(context: &mut ConsoleContext, files: &[String]) {
     }
 }
 
-fn execute_file(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<Item = Result<String, io::Error>>) {
-    let inputs = inputs.enumerate();
-    let mut current: Vec<String> = Vec::new();
-    for (index, input) in inputs {
+fn execute_script(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<Item = Result<String, io::Error>>) {
+    let mut combined_input = String::new();
+    for (index, input) in inputs.enumerate() {
         match input {
-            Ok(mut input) => {
-                if input.ends_with(&MULTILINE_INPUT_SYMBOL) {
-                    input.truncate(input.len() - 1);
-                    current.push(input);
-                } else {
-                    current.push(input);
-                    let input = current.join("\n");
-                    if let Err(_) = execute_one(context, &input) {
-                        println!("### Stopped executing file '{}' at line: {}", file, index + 1);
-                        return;
-                    }
-                    current.clear();
-                }
+            Ok(line) => {
+                combined_input.push('\n');
+                combined_input.push_str(&line);
             }
             Err(_) => {
                 println!("### Error reading file '{}' line: {}", file, index + 1);
@@ -159,31 +146,15 @@ fn execute_file(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<
             }
         }
     }
+    // we could choose to implement this as line-by-line instead of as an interactive-compatible script
+    let _ = execute_commands(context, &combined_input, false, true);
 }
 
-fn execute_commands(context: &mut ConsoleContext, commands: &[String]) {
+fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
     for command in commands {
-        if let Err(_) = execute_one(context, command) {
+        if let Err(_) = execute_commands(context, command, true, true) {
             println!("### Stopped executing at command: {}", command);
             exit(1);
-        }
-    }
-}
-
-fn execute_one(context: &mut ConsoleContext, input: &str) -> ReplResult {
-    let current_repl = match context.repl_stack.last() {
-        None => {
-            println!("Console session has finished.");
-            return Err(Box::new(EmptyError {}));
-        }
-        Some(repl) => repl.clone(),
-    };
-    println!("{}{}", &current_repl.prompt(), input);
-    match current_repl.execute_once(context, input) {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            println!("{}", err);
-            Err(err)
         }
     }
 }
@@ -193,13 +164,17 @@ fn execute_interactive(context: &mut ConsoleContext) {
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();
-        match current_repl.interactive_once(context) {
-            Continue(repl_result) => {
-                if let Err(err) = repl_result {
-                    println!("{}", err);
+        let result = current_repl.get_input();
+        match result {
+            Ok(input) => {
+                if !input.trim().is_empty() {
+                    // the execute_all will drive the error handling and printing
+                    let _ = execute_commands(context, &input, false, false);
+                } else {
+                    continue;
                 }
             }
-            Break(_) => {
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
                 if context.repl_stack.len() == repl_index + 1 {
                     // TODO: extra way to eliminate the current repl...
                     //  ideally, every command would signal with a new Repl or to pop one off, so stack manipulation is these control loops
@@ -207,31 +182,77 @@ fn execute_interactive(context: &mut ConsoleContext) {
                     last.unwrap().finished(context);
                 } else {
                     // this is unexpected... quit
-                    exit(0)
+                    exit(1)
                 }
+            }
+            Err(err) => {
+                println!("{}", err);
             }
         }
     }
 }
 
+fn execute_commands(
+    context: &mut ConsoleContext,
+    mut input: &str,
+    coerce_each_command_to_one_line: bool,
+    must_log_command: bool,
+) -> Result<(), EmptyError> {
+    let mut multiple_commands = None;
+    while !context.repl_stack.is_empty() && !input.trim().is_empty() {
+        let repl_index = context.repl_stack.len() - 1;
+        let current_repl = context.repl_stack[repl_index].clone();
+
+        input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
+            Ok(None) => {
+                println!("Unrecognised command: {}", input);
+                return Err(EmptyError {});
+            }
+            Ok(Some((command, arguments, next_command_index))) => {
+                let command_string = &input[0..next_command_index];
+                if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
+                    multiple_commands = Some(true);
+                }
+
+                if must_log_command || multiple_commands.is_some_and(|b| b) {
+                    println!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
+                }
+                match command.execute(context, arguments) {
+                    Ok(_) => &input[next_command_index..],
+                    Err(err) => {
+                        println!("Error executing command: '{}'\n{}", command_string.trim(), err);
+                        return Err(EmptyError {});
+                    }
+                }
+            }
+            Err(err) => {
+                println!("{}", err);
+                return Err(EmptyError {});
+            }
+        };
+        input = input.trim_start();
+    }
+    Ok(())
+}
+
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
-    let database_commands = Subcommands::new("database")
-        .add(CommandOption::new("list", "List databases on the server.", database_list))
-        .add(CommandOption::new_with_input(
+    let database_commands = Subcommand::new("database")
+        .add(CommandLeaf::new("list", "List databases on the server.", database_list))
+        .add(CommandLeaf::new_with_input(
             "create",
             "Create a new database with the given name.",
             CommandInput::new("db", get_word, None, None),
             database_create,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "delete",
             "Delete the database with the given name.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_delete,
         ));
 
-    let user_commands = Subcommands::new("user")
-        .add(CommandOption::new_with_inputs(
+    let user_commands = Subcommand::new("user")
+        .add(CommandLeaf::new_with_inputs(
             "create",
             "Create new user.",
             vec![
@@ -240,13 +261,13 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             ],
             user_create,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "delete",
             "Delete existing user.",
             CommandInput::new("name", get_word, None, None),
             user_delete,
         ))
-        .add(CommandOption::new_with_inputs(
+        .add(CommandLeaf::new_with_inputs(
             "update-password",
             "Set existing user's password.",
             vec![
@@ -256,20 +277,20 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             user_update_password,
         ));
 
-    let transaction_commands = Subcommands::new("transaction")
-        .add(CommandOption::new_with_input(
+    let transaction_commands = Subcommand::new("transaction")
+        .add(CommandLeaf::new_with_input(
             "read",
             "Open read transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             transaction_read,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "write",
             "Open write transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             transaction_write,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "schema",
             "Open schema transaction.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
@@ -290,30 +311,32 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
     let db_prompt = format!("{}::{}{}", database, transaction_type_str(transaction_type), PROMPT);
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(TRANSACTION_REPL_HISTORY);
     let repl = Repl::new(db_prompt, history_path, true, Some(on_transaction_repl_finished))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "commit",
             "Commit the current transaction.",
             transaction_commit,
         ))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "rollback",
             "Roll back the current transaction to the initial snapshot state.",
             transaction_rollback,
         ))
-        .add(CommandOption::new(
+        .add(CommandLeaf::new(
             "close",
             "Close the current transaction.",
             transaction_close,
         ))
-        .add(CommandOption::new_with_input(
+        .add(CommandLeaf::new_with_input(
             "source",
             "Execute a file containing a sequence of TypeQL queries. Queries may be split over multiple lines using backslash ('\\')",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))
-        .add_default(CommandDefault::new(
+        // default: no token
+        .add(CommandLeaf::new_with_input(
+            "",
             "Execute query string.",
-            CommandInput::new("query", get_all, None, None),
+            CommandInput::new("query", get_to_empty_line, None, None),
             transaction_query,
         ));
     repl

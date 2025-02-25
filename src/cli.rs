@@ -14,11 +14,11 @@ pub struct Args {
     #[arg(long, value_name = "command")]
     pub command: Vec<String>,
 
-    /// Executes all console commands directly from the file in the order of each specified file.
+    /// Executes all console commands directly from the script(s) in the order of each specified script.
     /// Exits if any script errors at any point.
-    /// Files can use backslashes ('\') to make execute multiple lines as a single command
-    #[arg(long, value_name = "path to file")]
-    pub file: Vec<String>,
+    /// Files must follow the convention of terminating queries with an empty newline
+    #[arg(long, value_name = "path to script file")]
+    pub script: Vec<String>,
 
     /// TypeDB address to connect to. If using TLS encryption, this must start with "https://"
     #[arg(long, value_name = "host:port")]

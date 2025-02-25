@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fs::File, io::BufRead, path::Path, process::exit, rc::Rc};
+use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
 use typedb_driver::{
@@ -14,11 +14,11 @@ use typedb_driver::{
 
 use crate::{
     printer::{print_document, print_row},
-    repl::{command::ReplError, ReplResult},
-    transaction_repl, ConsoleContext, MULTILINE_INPUT_SYMBOL,
+    repl::command::{get_to_empty_line, CommandResult, ReplError},
+    transaction_repl, ConsoleContext,
 };
 
-pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let databases = context
         .background_runtime
@@ -30,7 +30,7 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
     Ok(())
 }
 
-pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
     context
@@ -41,7 +41,7 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
-pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();
     context
@@ -55,7 +55,7 @@ pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
-pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     let password = input[1].clone();
@@ -67,7 +67,7 @@ pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> Rep
     Ok(())
 }
 
-pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     context.background_runtime.run(async move {
@@ -86,7 +86,7 @@ pub(crate) fn user_delete(context: &mut ConsoleContext, input: &[String]) -> Rep
     Ok(())
 }
 
-pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();
     let new_password = input[1].clone();
@@ -118,7 +118,7 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     Ok(())
 }
 
-pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -132,7 +132,7 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
     Ok(())
 }
 
-pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -146,7 +146,7 @@ pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) 
     Ok(())
 }
 
-pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
@@ -160,7 +160,7 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
     Ok(())
 }
 
-pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     match context.background_runtime.run(context.transaction.take().unwrap().commit()) {
         Ok(_) => {
             println!("Successfully committed transaction.");
@@ -174,7 +174,7 @@ pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]
     }
 }
 
-pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let transaction = context.transaction.take().unwrap(); // drop
     let message = match transaction.type_() {
         TransactionType::Read => "Transaction closed",
@@ -185,7 +185,7 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
     Ok(())
 }
 
-pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String]) -> ReplResult {
+pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let transaction = context.transaction.take().unwrap();
     let (transaction, result) = context.background_runtime.run(async move {
         let result = transaction.rollback().await;
@@ -205,7 +205,7 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
     }
 }
 
-pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> ReplResult {
+pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let file_str = &input[0];
     let path = Path::new(file_str);
     if !path.exists() {
@@ -216,48 +216,53 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
         );
     }
 
-    let file = File::open(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    let lines = std::io::BufReader::new(file).lines();
+    let contents = read_to_string(path).map_err(|err| {
+        Box::new(ReplError { message: format!("Error reading file '{}': {}", file_str, err) }) as Box<dyn Error + Send>
+    })?;
 
+    let mut input: &str = &contents;
     let mut query_count = 0;
-    let mut current: Vec<String> = Vec::new();
-    for (index, input) in lines.enumerate() {
-        match input {
-            Ok(mut input) => {
-                if input.trim().is_empty() {
-                    continue;
-                } else if input.ends_with(&MULTILINE_INPUT_SYMBOL) {
-                    input.truncate(input.len() - 1);
-                    current.push(input);
-                } else {
-                    current.push(input);
-                    let query = current.join("\n");
-                    if let Err(err) = execute_query(context, query, false) {
-                        return Err(Box::new(ReplError {
-                            message: format!(
-                                "{}\n### Stopped executing sourced file '{}' at line: {}",
-                                err.message(),
-                                file_str,
-                                index + 1
-                            ),
-                        }) as Box<dyn Error + Send>);
-                    }
-                    current.clear();
-                    query_count += 1;
-                }
-            }
-            Err(_) => {
+    while let Some(query_end_index) = get_to_empty_line(&input, false) {
+        let query = &input[0..query_end_index];
+        match execute_query(context, query.to_owned(), false) {
+            Err(err) => {
                 return Err(Box::new(ReplError {
-                    message: format!("Error reading file '{}' at line: {}", file_str, index + 1),
-                }) as Box<dyn Error + Send>);
+                    message: format!(
+                        "{}\n### Stopped executing sourced file '{}' at query {}: {}",
+                        err.message(),
+                        file_str,
+                        query_count + 1,
+                        query
+                    ),
+                }) as Box<dyn Error + Send>)
             }
+            Ok(_) => {
+                input = &input[query_end_index + 1..];
+                query_count += 1;
+            }
+        }
+    }
+    if !input.is_empty() {
+        match execute_query(context, input.to_owned(), false) {
+            Err(err) => {
+                return Err(Box::new(ReplError {
+                    message: format!(
+                        "{}\n### Stopped executing sourced file '{}' at query {}: {}",
+                        err.message(),
+                        file_str,
+                        query_count + 1,
+                        input
+                    ),
+                }) as Box<dyn Error + Send>)
+            }
+            Ok(_) => query_count += 1,
         }
     }
     println!("Successfully executed {} queries.", query_count);
     Ok(())
 }
 
-pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> ReplResult {
+pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> CommandResult {
     let query = input[0].as_ref().to_owned();
     execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }

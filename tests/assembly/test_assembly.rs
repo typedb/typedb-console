@@ -18,6 +18,11 @@ const TYPEDB_CONSOLE_SUBCOMMAND: &str = "console";
 
 #[test]
 fn test_console() -> Result<(), Box<dyn Error>> {
+    /*
+    NOTE: subprocesses make the logging and debugging from this test difficult
+          the simplest way to bisect issues is to run TypeDB server externally, and remove it from here
+    */
+
     // can't drop server_runner, or it will delete the temp dir
     let (_server_runner, mut server_process) = run_typedb_server();
 

@@ -29,8 +29,7 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let mut builder = Config::builder().completion_type(CompletionType::Circular);
-        let config = builder.build();
+        let config = Config::builder().completion_type(CompletionType::Circular).build();
         let history = FileHistory::new();
 
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap
@@ -64,7 +63,8 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
             Ok(line) => {
                 let _ = self.editor.history_mut().add(line.trim_end());
                 let _ = self.editor.append_history(&self.history_file);
-                Ok(line)
+                // Rustyline removes the last newline - we'll add back so the input matches what one would get from a  file
+                Ok(format!("{}\n", line))
             }
             Err(err) => Err(err),
         }
@@ -140,7 +140,7 @@ struct SearchHistoryModeReset {
 }
 
 impl ConditionalEventHandler for SearchHistoryModeReset {
-    fn handle(&self, evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
+    fn handle(&self, evt: &Event, _n: RepeatCount, _positive: bool, _ctx: &rustyline::EventContext) -> Option<Cmd> {
         if let Event::KeySeq(keys) = evt {
             if !(keys.contains(&KeyEvent(KeyCode::Up, Modifiers::NONE))
                 || keys.contains(&KeyEvent(KeyCode::Down, Modifiers::NONE)))
@@ -214,9 +214,7 @@ impl<'a, D: CommandDefinitions> Validator for MultilineValidator<'a, D> {
         We only see 'match' without the newline. However, we can assume there is a newline at the end by the time we get here.
         As a result, when we want to validate a double-newline entry the user, we just have to check if the last character is newline!
         */
-        if ctx.input().trim_matches(|c: char| c.is_whitespace() && c != '\n').ends_with("\n")
-            || self.definitions.is_complete_command(ctx.input())
-        {
+        if self.definitions.is_complete_command(&format!("{}\n", ctx.input())) {
             Ok(ValidationResult::Valid(None))
         } else {
             Ok(ValidationResult::Incomplete)
@@ -231,7 +229,7 @@ impl LineReaderHidden {
         Self {}
     }
 
-    pub(crate) fn readline(&mut self, prompt: &str) -> String {
+    pub(crate) fn readline(&self, prompt: &str) -> String {
         rpassword::prompt_password(prompt).unwrap()
     }
 }

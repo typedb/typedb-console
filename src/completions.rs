@@ -31,7 +31,7 @@ pub(crate) fn database_name_completer(
 }
 
 pub(crate) fn file_completer(input: &str) -> Vec<String> {
-    match glob(input) {
+    match glob(&format!("{}*", input)) {
         Ok(paths) => paths.filter_map(Result::ok).map(|path| path.to_string_lossy().into_owned()).collect(),
         Err(_) => Vec::new(),
     }

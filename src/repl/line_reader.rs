@@ -63,7 +63,7 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
             Ok(line) => {
                 let _ = self.editor.history_mut().add(line.trim_end());
                 let _ = self.editor.append_history(&self.history_file);
-                // Rustyline removes the last newline, which we'll add back
+                // Rustyline removes the last newline - we'll add back so the input matches what one would get from a  file
                 Ok(format!("{}\n", line))
             }
             Err(err) => Err(err),

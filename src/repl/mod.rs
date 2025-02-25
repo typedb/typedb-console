@@ -6,6 +6,8 @@
 
 use std::{error::Error, path::PathBuf, process::exit};
 
+use rustyline::{history::MemHistory, Config};
+
 use crate::repl::{
     command::{Command, CommandLeaf, CommandResult, ExecutableCommand, Subcommand},
     line_reader::RustylineReader,
@@ -31,6 +33,7 @@ pub(crate) struct Repl<Context> {
 impl<Context: ReplContext + 'static> Repl<Context> {
     const HELP: &'static str = "help";
     const EXIT: &'static str = "exit";
+    const CLEAR: &'static str = "clear";
 
     pub(crate) fn new(
         prompt: String,
@@ -38,11 +41,10 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         multiline_input: bool,
         on_finish: Option<fn(&mut Context) -> ()>,
     ) -> Self {
-        let subcommands = Subcommand::new("").add(CommandLeaf::new(Self::EXIT, "Exit", do_exit)).add(CommandLeaf::new(
-            Self::HELP,
-            "Print help menu",
-            help_menu,
-        ));
+        let subcommands = Subcommand::new("")
+            .add(CommandLeaf::new(Self::EXIT, "Exit", do_exit))
+            .add(CommandLeaf::new(Self::HELP, "Print help menu", help_menu))
+            .add(CommandLeaf::new(Self::CLEAR, "Clear the console.", clear));
         Self { prompt, commands: subcommands, history_file, multiline_input, on_finish }
     }
 
@@ -56,19 +58,12 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         editor.readline(&self.prompt)
     }
 
-    // pub(crate) fn try_execute_one<'a>(&self, context: &mut Context, input: &'a str) -> ReplResult<'a> {
-    //     self.commands.execute_from(context, input)
-    // }
-    //
-    // pub(crate) fn execute_once<'a>(&self, context: &mut Context, line: &'a str) -> ReplResult<'a>{
-    //     self.commands.execute_exact(context, line)
-    // }
-
-    pub(crate) fn match_command<'a>(
+    pub(crate) fn match_first_command<'a>(
         &self,
         input: &'a str,
+        coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        self.commands.match_(input)
+        self.commands.match_first(input, coerce_to_one_line)
     }
 
     pub(crate) fn help(&self) -> String {
@@ -92,6 +87,13 @@ impl<Context: ReplContext + 'static> Repl<Context> {
             on_finish(context)
         }
     }
+}
+
+fn clear<Context: ReplContext + 'static>(_context: &mut Context, _input: &[String]) -> CommandResult {
+    let mut editor: rustyline::Editor<(), _> =
+        rustyline::Editor::with_history(Config::default(), MemHistory::new()).unwrap();
+    let _ = editor.clear_screen();
+    Ok(())
 }
 
 fn help_menu<Context: ReplContext + 'static>(context: &mut Context, _input: &[String]) -> CommandResult {

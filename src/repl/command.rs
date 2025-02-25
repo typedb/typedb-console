@@ -448,13 +448,18 @@ impl<Context: ReplContext> Hinter for Subcommand<Context> {
     type Hint = String;
 
     fn hint(&self, line: &str, pos: usize, _ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
+        log(&format!("1 Looking for candidates for: '{}'\n", line));
         let (_, candidates) = self.complete(line, pos, _ctx).ok()?;
         let (_, last_word) = extract_word(line, pos, None, char::is_whitespace);
 
         if candidates.len() == 1 {
+            log(&format!("1 Candidate found: '{}'. Last word in line: '{}'\n", &candidates[0], last_word));
             let candidate = candidates.into_iter().next().unwrap();
-            let hint = candidate[last_word.len()..].to_owned();
-            Some(hint)
+            if candidate.len() < last_word.len() {
+                None
+            } else {
+                Some(candidate[last_word.len()..].to_owned())
+            }
         } else {
             None
         }

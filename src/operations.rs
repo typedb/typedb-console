@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fs::read_to_string,
-    path::Path,
-    process::exit,
-    rc::Rc,
-};
+use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
 use typedb_driver::{
@@ -19,8 +13,9 @@ use typedb_driver::{
 };
 
 use crate::{
-    ConsoleContext,
-    printer::{print_document, print_row}, repl::command::{CommandResult, get_to_empty_line, ReplError}, transaction_repl,
+    printer::{print_document, print_row},
+    repl::command::{get_to_empty_line, CommandResult, ReplError},
+    transaction_repl, ConsoleContext,
 };
 
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {

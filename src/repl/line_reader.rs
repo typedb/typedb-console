@@ -14,12 +14,11 @@ use rustyline::{
     completion::Completer,
     highlight::Highlighter,
     hint::Hinter,
-    history::FileHistory,
+    history::{FileHistory, History},
     validate::{ValidationContext, ValidationResult, Validator},
     Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
     Modifiers, Movement, RepeatCount,
 };
-use rustyline::history::History;
 
 use crate::repl::command::CommandDefinitions;
 

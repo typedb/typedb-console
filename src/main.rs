@@ -92,7 +92,7 @@ fn main() {
     }
     let runtime = BackgroundRuntime::new();
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
-    let driver = match runtime.run(TypeDBDriver::new_core(
+    let driver = match runtime.run(TypeDBDriver::new(
         args.address,
         Credentials::new(&args.username, args.password.as_ref().unwrap()),
         DriverOptions::new(!args.tls_disabled, tls_root_ca_path).unwrap(),

@@ -11,7 +11,7 @@ use std::{
     fs::File,
     io,
     io::BufRead,
-    ops::{ControlFlow, ControlFlow::Continue},
+    ops::ControlFlow,
     path::Path,
     process::exit,
     rc::Rc,
@@ -20,10 +20,9 @@ use std::{
 
 use clap::Parser;
 use home::home_dir;
+use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
-use ControlFlow::Break;
-use rustyline::error::ReadlineError;
 
 use crate::{
     cli::Args,
@@ -34,13 +33,13 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_until_empty_line, get_word, CommandDefault, CommandInput, CommandLeaf, Subcommand},
+        command::{CommandDefault, CommandInput, CommandLeaf, get_until_empty_line, get_word, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext, ReplResult,
     },
     runtime::BackgroundRuntime,
 };
-use crate::repl::command::{CommandResult, ExecutableCommand, log, ReplError};
+use crate::repl::command::{ExecutableCommand, log, ReplError};
 
 mod cli;
 mod completions;
@@ -201,7 +200,7 @@ fn execute_commands_all<'a>(context: &mut ConsoleContext, mut input: &'a str) ->
                 if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
                     multiple_commands = Some(true);
                 }
-
+                
                 if multiple_commands.is_some_and(|b| b) {
                     println!("{} {}", "+".repeat(repl_index + 1), command_string);
                 }
@@ -353,7 +352,8 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))
-        .add_default(CommandDefault::new(
+        .add(CommandLeaf::new_with_input(
+            "",
             "Execute query string.",
             CommandInput::new("query", get_until_empty_line, None, None),
             transaction_query,

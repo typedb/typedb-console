@@ -5,16 +5,11 @@
  */
 
 use std::{
-    error::Error,
-    ops::{
-        ControlFlow,
-        ControlFlow::{Break, Continue},
-    },
+    error::Error
+    ,
     path::PathBuf,
     process::exit,
 };
-
-use rustyline::error::ReadlineError;
 
 use crate::repl::{
     command::{Command, CommandDefault, CommandLeaf, Subcommand},
@@ -60,11 +55,6 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         self
     }
 
-    pub(crate) fn add_default(mut self, command: CommandDefault<Context>) -> Self {
-        self.commands = self.commands.add_default(command);
-        self
-    }
-
     pub(crate) fn get_input(&self) -> rustyline::Result<String> {
         let mut editor = RustylineReader::new(self.commands.clone(), self.history_file.clone(), self.multiline_input);
         editor.readline(&self.prompt)
@@ -78,7 +68,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
     //     self.commands.execute_exact(context, line)
     // }
 
-    pub(crate) fn match_command<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, &'a str, usize)>, Box<dyn Error + Send>> {
+    pub(crate) fn match_command<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         self.commands.match_(input)
     }
 

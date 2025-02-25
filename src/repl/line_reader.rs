@@ -10,9 +10,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use rustyline::{completion::Completer, highlight::Highlighter, hint::Hinter, history::FileHistory, validate::{ValidationContext, ValidationResult, Validator}, Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
-    Modifiers, Movement, RepeatCount};
-use rustyline::history::{History, MemHistory};
+use rustyline::{Cmd, completion::Completer, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, highlight::Highlighter, hint::Hinter, history::FileHistory, KeyCode, KeyEvent, Modifiers,
+                Movement, RepeatCount, validate::{ValidationContext, ValidationResult, Validator}};
+use rustyline::history::History;
 
 use crate::repl::command::CommandDefinitions;
 

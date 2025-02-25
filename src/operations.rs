@@ -13,9 +13,9 @@ use typedb_driver::{
 };
 
 use crate::{
-    printer::{print_document, print_row},
-    repl::{command::ReplError, ReplResult},
-    transaction_repl, ConsoleContext, MULTILINE_INPUT_SYMBOL,
+    ConsoleContext,
+    MULTILINE_INPUT_SYMBOL,
+    printer::{print_document, print_row}, repl::command::ReplError, transaction_repl,
 };
 use crate::repl::command::CommandResult;
 

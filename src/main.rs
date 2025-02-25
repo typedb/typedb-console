@@ -32,7 +32,7 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_or_until_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
+        command::{get_to_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
@@ -114,7 +114,7 @@ fn main() {
         println!("Error: Cannot specify both commands and files");
         exit(1);
     } else if !args.command.is_empty() {
-        execute_commands(&mut context, &args.command);
+        execute_command_list(&mut context, &args.command);
     } else if !args.script.is_empty() {
         execute_scripts(&mut context, &args.script);
     } else {
@@ -148,59 +148,16 @@ fn execute_script(context: &mut ConsoleContext, file: &str, inputs: impl Iterato
         }
     }
     // we could choose to implement this as line-by-line instead of as an interactive-compatible script
-    let _ = execute_commands_all(context, &combined_input, false, true);
+    let _ = execute_commands(context, &combined_input, false, true);
 }
 
-fn execute_commands(context: &mut ConsoleContext, commands: &[String]) {
+fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
     for command in commands {
-        if let Err(_) = execute_commands_all(context, command, true, true) {
+        if let Err(_) = execute_commands(context, command, true, true) {
             println!("### Stopped executing at command: {}", command);
             exit(1);
         }
     }
-}
-
-fn execute_commands_all(
-    context: &mut ConsoleContext,
-    mut input: &str,
-    coerce_to_one_line: bool,
-    must_log_command: bool,
-) -> Result<(), EmptyError> {
-    let mut multiple_commands = None;
-    while !context.repl_stack.is_empty() && !input.trim().is_empty() {
-        let repl_index = context.repl_stack.len() - 1;
-        let current_repl = context.repl_stack[repl_index].clone();
-
-        input = match current_repl.match_first_command(input, coerce_to_one_line) {
-            Ok(None) => {
-                println!("Unrecognised command: {}", input);
-                return Err(EmptyError {});
-            }
-            Ok(Some((command, arguments, next_command_index))) => {
-                let command_string = &input[0..next_command_index];
-                if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
-                    multiple_commands = Some(true);
-                }
-
-                if must_log_command || multiple_commands.is_some_and(|b| b) {
-                    println!("{} {}", "+".repeat(repl_index + 1), command_string);
-                }
-                match command.execute(context, arguments) {
-                    Ok(_) => &input[next_command_index..],
-                    Err(err) => {
-                        println!("Error executing command: '{}'\n{}", command_string, err);
-                        return Err(EmptyError {});
-                    }
-                }
-            }
-            Err(err) => {
-                println!("{}", err);
-                return Err(EmptyError {});
-            }
-        };
-        input = input.trim_start();
-    }
-    Ok(())
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
@@ -213,7 +170,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
             Ok(input) => {
                 if !input.trim().is_empty() {
                     // the execute_all will drive the error handling and printing
-                    let _ = execute_commands_all(context, &input, false, false);
+                    let _ = execute_commands(context, &input, false, false);
                 } else {
                     continue;
                 }
@@ -234,6 +191,49 @@ fn execute_interactive(context: &mut ConsoleContext) {
             }
         }
     }
+}
+
+fn execute_commands(
+    context: &mut ConsoleContext,
+    mut input: &str,
+    coerce_each_command_to_one_line: bool,
+    must_log_command: bool,
+) -> Result<(), EmptyError> {
+    let mut multiple_commands = None;
+    while !context.repl_stack.is_empty() && !input.trim().is_empty() {
+        let repl_index = context.repl_stack.len() - 1;
+        let current_repl = context.repl_stack[repl_index].clone();
+
+        input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
+            Ok(None) => {
+                println!("Unrecognised command: {}", input);
+                return Err(EmptyError {});
+            }
+            Ok(Some((command, arguments, next_command_index))) => {
+                let command_string = &input[0..next_command_index];
+                if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
+                    multiple_commands = Some(true);
+                }
+
+                if must_log_command || multiple_commands.is_some_and(|b| b) {
+                    println!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
+                }
+                match command.execute(context, arguments) {
+                    Ok(_) => &input[next_command_index..],
+                    Err(err) => {
+                        println!("Error executing command: '{}'\n{}", command_string.trim(), err);
+                        return Err(EmptyError {});
+                    }
+                }
+            }
+            Err(err) => {
+                println!("{}", err);
+                return Err(EmptyError {});
+            }
+        };
+        input = input.trim_start();
+    }
+    Ok(())
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
@@ -337,7 +337,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", get_or_until_empty_line, None, None),
+            CommandInput::new("query", get_to_empty_line, None, None),
             transaction_query,
         ));
     repl

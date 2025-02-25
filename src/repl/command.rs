@@ -366,13 +366,25 @@ pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> 
     }
 }
 
-pub(crate) fn get_or_until_empty_line(input: &str, coerce_to_one_line: bool) -> Option<usize> {
+pub(crate) fn get_to_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
     if coerce_to_one_line {
         Some(input.len())
     } else {
-        // TODO: enhance to allow newlines with whitespace characters included
-        const PATTERN: &str = "\n\n";
-        input.find(PATTERN).map(|pos| pos + PATTERN.len())
+        const PATTERN: &str = "\n";
+        let mut pos = 0;
+        while let Some(newline_pos) = input.find(PATTERN) {
+            let next_newline_pos = match input[newline_pos + 1..].find(PATTERN) {
+                None => return None,
+                Some(next_newline_pos) => newline_pos + 1 + next_newline_pos,
+            };
+            pos += newline_pos;
+            if input[newline_pos..next_newline_pos].trim().is_empty() {
+                return Some(pos);
+            }
+            input = &input[newline_pos + 1..];
+            pos += 1;
+        }
+        None
     }
 }
 

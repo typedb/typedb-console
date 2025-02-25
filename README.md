@@ -22,7 +22,7 @@ cargo run -- --username=<username> --address=<address>
 
 Or to use bazel, use:
 ```bash
-bazel run //:console-binary-native -- --username=<username> --address=<address>
+bazel run //:console-native -- --username=<username> --address=<address>
 ```
 
 TypeDB console binaries are platform-specific, so cannot be moved across platforms - please use the correct
@@ -34,7 +34,7 @@ You can provide several command arguments when running console in the terminal.
 
 - `--username=<username>` : TypeDB server username to log in with (mandatory).
 - `--address=<address>` : TypeDB server address to which the console will connect to (mandatory). Ensure it is prefixed with `https://` when using TLS.
-- `--file=<file>` : Run commands in the script file in non-interactive mode.
+- `--script=<path>` : Run commands in the script file in non-interactive mode.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
 - `-h, --help` : Show help message.
@@ -90,12 +90,13 @@ will also be autocompleted, while others, such as queries, will not.
 
 **IMPORTANT: For TypeDB Console 2.x users, this command has changed order! It used to be `transaction <db> read|write|schema`**. Now, the `<db>` and `read|write|schema` order is reversed!
 
+- `clear` : Clear the console
 - `help` : Print help menu
 - `exit` : Exit console
 
 ### Transaction-level commands
 
-- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you hit enter twice.
+- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you **hit enter twice**.
   ```
   my-typedb-database::schema>> define
                               attribute name, value string;
@@ -124,62 +125,132 @@ will also be autocompleted, while others, such as queries, will not.
   my-typedb-database::schema> close
   Transaction closed without committing changes
   ```
+- `clear` : Clear the console
 - `help` : Print this help menu
 - `exit` : Exit console
 
-### Non-interactive mode
+### Interactive scripts
 
-To invoke console in a non-interactive manner, we can define a script file that contains the list of commands to run, then invoke console with `./typedb console --file=<file>`. We can also specify ordered commands to run directly from the command line using `./typedb console --command=<command1> --command=<command2> ...`.
+It's possible to paste console scripts directly into any level of REPL:
 
-For example given the following command script file:
+```
+>> database create test
+transaction schema test
+    define entity person;
+    
+    commit
+transaction write test
+    insert $x isa person;
+    
+    commit
+database create test
+transaction read test
+match $x isa person;
 
+close
+```
+
+This will produce the following output:
+```
++ database create test
+Successfully created database.
++ transaction schema test
+++ define entity person;
+Finished schema query.
+++ commit
+Successfully committed transaction.
++ transaction write test
+++ insert $x isa person;
+Finished write query validation and compilation...
+Finished writes. Streaming rows...
+   --------
+    $x | isa person, iid 0x1e00000000000000000000
+   --------
+Finished. Total answers: 1
+++ commit
+Successfully committed transaction.
++ database create test
+Successfully created database.
++ transaction read test
+++ match $x isa person;
+Finished read query validation and compilation...
+Streaming rows...
+   --------
+    $x | isa person, iid 0x1e00000000000000000000
+   --------
+Finished. Total answers: 1
+++ close
+Transaction closed
+```
+
+
+### Non-interactive modes
+
+#### Scripts
+
+We can define a script file that contains the list of commands to run, then invoke console with `./typedb console --script=<path>`. 
+
+Script files take exactly the same format as scripts pasted directly in the REPL.
+Importantly, this means that the **end of a query is delimited by an empty newline**.
+
+For example, a script `commands.stql`
 ```
 database create test
 transaction schema test
     define entity person;
+    
     commit
 transaction write test
     insert $x isa person;
+    
     commit
 transaction read test
     match $x isa person;
+    
     close
 database delete test
 ```
 
-You will see the following output:
+Will produce the following output:
 ```
-./typedb console --username="user" --password="password" --file=commands.tql     
->> database create test
+./typedb console --username="user" --password="password" --script=commands.stql     
++ database create test
 Successfully created database.
->> transaction schema test
-test::schema>>     define entity person;
++ transaction schema test
+++ define entity person;
 Finished schema query.
-test::schema>>     commit
+++ commit
 Successfully committed transaction.
->> transaction write test
-test::write>>     insert $x isa person;
++ transaction write test
+++ insert $x isa person;
 Finished write query validation and compilation...
-Finished writes...
-Streaming answers...
+Finished writes. Streaming rows...
    --------
     $x | isa person, iid 0x1e00000000000000000000
    --------
-test::write>>     commit
+Finished. Total answers: 1
+++ commit
 Successfully committed transaction.
->> transaction read test
-test::read>>     match $x isa person;
++ transaction read test
+++ match $x isa person;
 Finished read query validation and compilation...
-Streaming answers...
+Streaming rows...
    --------
     $x | isa person, iid 0x1e00000000000000000000
    --------
-test::read>>     close
+Finished. Total answers: 1
+++ close
 Transaction closed
->> database delete test
++ database delete test
 Successfully deleted database.
-
 ```
 
 The indentation in the script file are only for visual guide and will be ignored by the console. 
-Each line in the script is executed as a single command, unless split over multiple lines using a backslash (\) character.
+
+#### Commands
+
+Instead of producing a script file, you can also specify ordered commands to run directly from the command line:
+`./typedb console --command=<command1> --command=<command2> ...`.
+
+These commands will be executed as full commands, one at a time.
+

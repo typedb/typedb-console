@@ -9,7 +9,7 @@ use std::sync::Arc;
 use glob::glob;
 use typedb_driver::TypeDBDriver;
 
-use crate::{BackgroundRuntime, repl::command::InputCompleterFn};
+use crate::{repl::command::InputCompleterFn, BackgroundRuntime};
 
 pub(crate) fn database_name_completer_fn(
     driver: Arc<TypeDBDriver>,

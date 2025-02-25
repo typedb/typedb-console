@@ -11,7 +11,6 @@ use std::{
     fs::File,
     io,
     io::BufRead,
-    ops::ControlFlow,
     path::Path,
     process::exit,
     rc::Rc,
@@ -33,13 +32,14 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{CommandDefault, CommandInput, CommandLeaf, get_until_empty_line, get_word, Subcommand},
+        command::{
+            get_until_empty_line, get_word, log, CommandInput, CommandLeaf, ExecutableCommand, ReplError, Subcommand,
+        },
         line_reader::LineReaderHidden,
         Repl, ReplContext, ReplResult,
     },
     runtime::BackgroundRuntime,
 };
-use crate::repl::command::{ExecutableCommand, log, ReplError};
 
 mod cli;
 mod completions;
@@ -192,15 +192,13 @@ fn execute_commands_all<'a>(context: &mut ConsoleContext, mut input: &'a str) ->
         let current_repl = context.repl_stack[repl_index].clone();
 
         input = match current_repl.match_command(input) {
-            Ok(None) => {
-                return Err(Box::new(ReplError { message: format!("Unrecognised command: {}", input )}))
-            }
+            Ok(None) => return Err(Box::new(ReplError { message: format!("Unrecognised command: {}", input) })),
             Ok(Some((command, arguments, next_command_index))) => {
                 let command_string = &input[0..next_command_index];
                 if multiple_commands.is_none() && !input[next_command_index..].trim().is_empty() {
                     multiple_commands = Some(true);
                 }
-                
+
                 if multiple_commands.is_some_and(|b| b) {
                     println!("{} {}", "+".repeat(repl_index + 1), command_string);
                 }
@@ -247,7 +245,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
                     // this is unexpected... quit
                     exit(1)
                 }
-            },
+            }
             Err(err) => {
                 println!("{}", err);
             }
@@ -352,6 +350,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))
+        // default: no token
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",

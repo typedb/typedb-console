@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error
-    ,
-    path::PathBuf,
-    process::exit,
-};
+use std::{error::Error, path::PathBuf, process::exit};
 
 use crate::repl::{
-    command::{Command, CommandDefault, CommandLeaf, Subcommand},
+    command::{Command, CommandLeaf, CommandResult, ExecutableCommand, Subcommand},
     line_reader::RustylineReader,
 };
-use crate::repl::command::{CommandResult, ExecutableCommand};
 
 pub(crate) mod command;
 pub(crate) mod line_reader;
@@ -44,9 +38,11 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         multiline_input: bool,
         on_finish: Option<fn(&mut Context) -> ()>,
     ) -> Self {
-        let subcommands = Subcommand::new("")
-            .add(CommandLeaf::new(Self::EXIT, "Exit", do_exit))
-            .add(CommandLeaf::new(Self::HELP, "Print help menu", help_menu));
+        let subcommands = Subcommand::new("").add(CommandLeaf::new(Self::EXIT, "Exit", do_exit)).add(CommandLeaf::new(
+            Self::HELP,
+            "Print help menu",
+            help_menu,
+        ));
         Self { prompt, commands: subcommands, history_file, multiline_input, on_finish }
     }
 
@@ -68,7 +64,10 @@ impl<Context: ReplContext + 'static> Repl<Context> {
     //     self.commands.execute_exact(context, line)
     // }
 
-    pub(crate) fn match_command<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
+    pub(crate) fn match_command<'a>(
+        &self,
+        input: &'a str,
+    ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         self.commands.match_(input)
     }
 

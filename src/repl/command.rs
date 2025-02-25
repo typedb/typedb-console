@@ -12,7 +12,11 @@ use std::{
     rc::Rc,
 };
 
-use rustyline::{completion::{Completer, extract_word}, highlight::Highlighter, hint::Hinter};
+use rustyline::{
+    completion::{extract_word, Completer},
+    highlight::Highlighter,
+    hint::Hinter,
+};
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -23,9 +27,12 @@ pub(crate) trait Command<Context> {
     // where the input was already matched against & excludes any parent commands
     fn compute_completions(&self, input: &str) -> Vec<String>;
 
-    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>>;
+    fn match_<'a>(
+        &self,
+        input: &'a str,
+    ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>>;
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_>;
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_>;
 }
 
 pub(crate) trait ExecutableCommand<Context>: Command<Context> {
@@ -66,8 +73,7 @@ impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
         }
         if let Some((_, remaining, _)) = self.token.match_(input) {
             if remaining.starts_with(char::is_whitespace) || remaining == input {
-                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining.trim_start()))
-                    .collect()
+                self.subcommands.iter().flat_map(|cmd| cmd.compute_completions(remaining.trim_start())).collect()
             } else {
                 Vec::with_capacity(0)
             }
@@ -78,47 +84,59 @@ impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
         }
     }
 
-    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
+    fn match_<'a>(
+        &self,
+        input: &'a str,
+    ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         log(&format!("Checking matches for input: {}\n", input));
         match self.token.match_(input) {
             None => Ok(None),
             Some((_token, remaining, token_end_index)) => {
-                log(&format!("Matched subcommand: '{}', remainder: '{}', remainder_start_index: {}\n", _token, remaining, token_end_index));
+                log(&format!(
+                    "Matched subcommand: '{}', remainder: '{}', remainder_start_index: {}\n",
+                    _token, remaining, token_end_index
+                ));
                 for subcommand in &self.subcommands {
                     match subcommand.match_(remaining)? {
                         None => continue,
                         Some((command, remaining_after_subcommand, command_end_index)) => {
                             log(&format!(
                                 "From: '{}', Matched subcommand: '{}', remaining: '{:?}', command_end_index: '{}'\n",
-                                remaining, command.token(), remaining_after_subcommand, command_end_index
+                                remaining,
+                                command.token(),
+                                remaining_after_subcommand,
+                                command_end_index
                             ));
                             // since we only reveal the substring to the subcommand, we need to extend the index by whatever we removed from the start
-                            return Ok(Some((command, remaining_after_subcommand, token_end_index + command_end_index)));
+                            return Ok(Some((
+                                command,
+                                remaining_after_subcommand,
+                                token_end_index + command_end_index,
+                            )));
                         }
                     }
                 }
-                Err(Box::new(ReplError { message:
-                    format!("Unrecognised '{}' subcommand: '{}', please type 'help' to see the help menu.", self.token, remaining.trim())
+                Err(Box::new(ReplError {
+                    message: format!(
+                        "Unrecognised '{}' subcommand: '{}', please type 'help' to see the help menu.",
+                        self.token,
+                        remaining.trim()
+                    ),
                 }))
             }
         }
     }
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
-        Box::new(
-            self.subcommands
-                .iter()
-                .rev()
-                .flat_map(|command| {
-                    command.usage_description().map(|(usage, description)| {
-                        if self.token().token.is_empty() {
-                            (usage, description)
-                        } else {
-                            (format!("{} {}", self.token, usage), description)
-                        }
-                    })
-                })
-        )
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
+        Box::new(self.subcommands.iter().rev().flat_map(|command| {
+            command.usage_description().map(|(usage, description)| {
+                if self.token().token.is_empty() {
+                    (usage, description)
+                } else {
+                    (format!("{} {}", self.token, usage), description)
+                }
+            })
+        }))
     }
 }
 
@@ -136,7 +154,11 @@ pub(crate) struct CommandLeaf<Context> {
 }
 
 impl<Context> CommandLeaf<Context> {
-    pub(crate) fn new(token: impl Into<CommandToken>, description: &'static str, executor: CommandExecutor<Context>) -> Self {
+    pub(crate) fn new(
+        token: impl Into<CommandToken>,
+        description: &'static str,
+        executor: CommandExecutor<Context>,
+    ) -> Self {
         Self::new_with_inputs(token, description, vec![], executor)
     }
 
@@ -190,11 +212,17 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         }
     }
 
-    fn match_<'a>(&self, input: &'a str) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
+    fn match_<'a>(
+        &self,
+        input: &'a str,
+    ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         log(&format!("checking command leaf: {}\n", self.token));
         match self.token.match_(input) {
             Some((_token, mut remaining, token_end_index)) => {
-                log(&format!("--> matched leaf: {} with remainder: '{}', and token end index: {}\n", self.token, remaining, token_end_index));
+                log(&format!(
+                    "--> matched leaf: {} with remainder: '{}', and token end index: {}\n",
+                    self.token, remaining, token_end_index
+                ));
 
                 let mut parsed_args: Vec<String> = Vec::new();
                 let mut command_end_index = token_end_index;
@@ -219,13 +247,11 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                 }
                 Ok(Some((self as &dyn ExecutableCommand<Context>, parsed_args, command_end_index)))
             }
-            None => {
-                Ok(None)
-            }
+            None => Ok(None),
         }
     }
 
-    fn usage_description(&self) -> Box<dyn Iterator<Item=(String, &'static str)> + '_> {
+    fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
         let mut usage = format!("{}", self.token);
         for arg in &self.arguments {
             usage = format!("{} <{}>", usage, arg.usage());
@@ -276,16 +302,21 @@ impl CommandInput {
             Some(reader) => {
                 let string = LineReaderHidden::new().readline(&format!("{}: ", self.usage));
                 let input_end = match reader(&string) {
-                    None => return Err(Box::new(ReplError { message: format!("Could not read input for '{}'", self.usage) })),
+                    None => {
+                        return Err(Box::new(ReplError {
+                            message: format!("Could not read input for '{}'", self.usage),
+                        }))
+                    }
                     Some(end) => end,
                 };
                 Ok(string[0..input_end].to_owned())
             }
-            None => {
-                Err(Box::new(ReplError {
-                    message: format!("{} cannot be requested as a hidden parameter and must be entered as part of the command.", self.usage)
-                }))
-            }
+            None => Err(Box::new(ReplError {
+                message: format!(
+                    "{} cannot be requested as a hidden parameter and must be entered as part of the command.",
+                    self.usage
+                ),
+            })),
         }
     }
 
@@ -317,7 +348,7 @@ pub(crate) fn get_word(input: &str) -> Option<usize> {
         let after_starting_whitespace = input.find(|c: char| !c.is_whitespace()).unwrap_or(0);
         match input[after_starting_whitespace..].find(char::is_whitespace) {
             None => Some(input.len()),
-            Some(pos) => Some(after_starting_whitespace + pos)
+            Some(pos) => Some(after_starting_whitespace + pos),
         }
     }
 }

@@ -20,8 +20,6 @@ pub(crate) trait ReplContext: Sized {
     fn current_repl(&self) -> &Repl<Self>;
 }
 
-pub(crate) type ReplResult<'a> = Result<Option<&'a str>, Box<dyn Error + Send>>;
-
 pub(crate) struct Repl<Context> {
     prompt: String,
     commands: Subcommand<Context>,
@@ -76,10 +74,6 @@ impl<Context: ReplContext + 'static> Repl<Context> {
             .map(|(usage, description)| format!("{:<width$}{}", usage, description, width = usage_width))
             .collect::<Vec<_>>()
             .join("\n")
-    }
-
-    pub(crate) fn prompt(&self) -> &str {
-        &self.prompt
     }
 
     pub(crate) fn finished(&self, context: &mut Context) {

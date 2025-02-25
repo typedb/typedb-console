@@ -275,7 +275,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
 }
 
 impl<Context: ReplContext> ExecutableCommand<Context> for CommandLeaf<Context> {
-    fn execute(&self, context: &mut Context, mut args: Vec<String>) -> CommandResult {
+    fn execute(&self, context: &mut Context, args: Vec<String>) -> CommandResult {
         (self.executor)(context, &args)
     }
 }

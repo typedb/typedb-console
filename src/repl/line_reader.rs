@@ -29,7 +29,7 @@ pub(crate) struct RustylineReader<H: Helper> {
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
     pub(crate) fn new(command_helper: H, history_file: PathBuf, multiline: bool) -> Self {
-        let mut config = Config::builder().completion_type(CompletionType::Circular).build();
+        let config = Config::builder().completion_type(CompletionType::Circular).build();
         let history = FileHistory::new();
 
         let mut editor = Editor::with_history(config, history).unwrap(); // TODO unwrap
@@ -140,7 +140,7 @@ struct SearchHistoryModeReset {
 }
 
 impl ConditionalEventHandler for SearchHistoryModeReset {
-    fn handle(&self, evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
+    fn handle(&self, evt: &Event, _n: RepeatCount, _positive: bool, _ctx: &rustyline::EventContext) -> Option<Cmd> {
         if let Event::KeySeq(keys) = evt {
             if !(keys.contains(&KeyEvent(KeyCode::Up, Modifiers::NONE))
                 || keys.contains(&KeyEvent(KeyCode::Down, Modifiers::NONE)))

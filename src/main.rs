@@ -32,7 +32,7 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_or_until_empty_line, get_word, log, CommandInput, CommandLeaf, ExecutableCommand, Subcommand},
+        command::{get_or_until_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
@@ -148,7 +148,7 @@ fn execute_script(context: &mut ConsoleContext, file: &str, inputs: impl Iterato
         }
     }
     // we could choose to implement this as line-by-line instead of as an interactive-compatible script
-    execute_commands_all(context, &combined_input, false, true);
+    let _ = execute_commands_all(context, &combined_input, false, true);
 }
 
 fn execute_commands(context: &mut ConsoleContext, commands: &[String]) {

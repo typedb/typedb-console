@@ -105,7 +105,7 @@ will also be autocompleted, while others, such as queries, will not.
   Finished schema query.
   >>
   ```
-- `source <file>` : Run TypeQL queries in a file, which you can refer to using relative or absolute path. Multiline TypeQL queries in these files must be indicated by using the backslash (\) character
+- `source <file>` : Run TypeQL queries in a file (_not a general console script_), which you can refer to using relative or absolute path. Queries must be terminated by an empty newline.
   ```
   my-typedb-database::schema> source ./schema.tql
   Successfully executed 1 queries.

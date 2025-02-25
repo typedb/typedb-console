@@ -355,7 +355,7 @@ impl CommandInput {
 }
 
 pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> {
-    if input.is_empty() {
+    if input.trim().is_empty() {
         None
     } else {
         let after_starting_whitespace = input.find(|c: char| !c.is_whitespace()).unwrap_or(0);

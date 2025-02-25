@@ -49,7 +49,6 @@ mod runtime;
 pub const VERSION: &str = include_str!("../VERSION");
 
 const PROMPT: &'static str = ">> ";
-const MULTILINE_INPUT_SYMBOL: &'static str = "\\";
 const ENTRY_REPL_HISTORY: &'static str = ".typedb_console_repl_history";
 const TRANSACTION_REPL_HISTORY: &'static str = "typedb_console_transaction_repl_history";
 const DIAGNOSTICS_REPORTING_URI: &'static str =

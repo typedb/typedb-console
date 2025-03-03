@@ -265,7 +265,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> CommandResult {
     let query = input[0].as_ref().to_owned();
     if query.trim().is_empty() {
-        return Ok(())
+        return Ok(());
     } else {
         execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
     }

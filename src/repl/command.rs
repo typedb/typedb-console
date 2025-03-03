@@ -231,7 +231,6 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         input: &'a str,
         coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        log(&format!("Trying to match leaf command {} ({}) from input: '{}'", self.token, self.description, input));
         match self.token.match_(input) {
             Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();
@@ -398,10 +397,8 @@ impl CommandToken {
         match input.find(self.token) {
             None => None,
             Some(pos) => {
-                log(&format!("Matched token...'{}' at pos {} ", self.token, pos));
                 if (&input[0..pos]).trim_matches(char::is_whitespace).is_empty() {
                     let end = pos + self.token.len();
-                    log(&format!("...Return matched token! Extracted token: '{}'", &input[0..end]));
                     Some((&input[0..end], &input[end..], end))
                 } else {
                     None
@@ -431,40 +428,18 @@ pub(crate) trait CommandDefinitions: Highlighter + Hinter + Completer {
     fn is_complete_command(&self, input: &str) -> bool;
 }
 
-pub(crate) fn log(input: &str) {
-    use std::fs::OpenOptions;
-    use std::io::Write;
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("output.log")
-        .unwrap();
-
-    writeln!(file, "{}", input).unwrap();
-}
-
-
 impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
     fn is_complete_command(&self, mut input: &str) -> bool {
         loop {
             match Command::match_first(self, input, false) {
-                Ok(None) => {
-                    log(&format!("No complete command from input: '{}'", input));
-                    return false
-                },
+                Ok(None) => return false,
                 Ok(Some((_executable, _args, end_index))) => {
-                    log(&format!("DID read command from input: '{}'", input));
                     input = &input[end_index..];
-                    log(&format!("... remaining input is empty: {} : '{}'", input.trim().is_empty(), input));
                     if input.trim().is_empty() {
                         return true;
                     }
                 }
-                Err(err) => {
-                    log(&format!("Parsed ERR: {}", err));
-                    return false
-                },
+                Err(err) => return false,
             }
         }
     }

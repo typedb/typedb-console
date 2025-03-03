@@ -51,7 +51,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         self
     }
 
-    pub(crate) fn get_input(&self) -> rustyline::Result<String> {
+    pub(crate) fn get_input(&self) -> (rustyline::Result<String>, Option<bool>) {
         let mut editor = RustylineReader::new(self.commands.clone(), self.history_file.clone(), self.multiline_input);
         editor.readline(&self.prompt)
     }

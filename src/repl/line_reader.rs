@@ -17,8 +17,8 @@ use rustyline::{
     hint::Hinter,
     history::{FileHistory, History},
     validate::{ValidationContext, ValidationResult, Validator},
-    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, ExternalPrinter, Helper,
-    KeyCode, KeyEvent, Modifiers, RepeatCount,
+    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
+    Modifiers, RepeatCount,
 };
 
 use crate::repl::command::CommandDefinitions;
@@ -74,10 +74,6 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
             }
             Err(err) => (Err(err), None),
         }
-    }
-
-    pub(crate) fn print_external(&mut self, message: String) {
-        self.editor.create_external_printer().unwrap().print(message).unwrap()
     }
 }
 

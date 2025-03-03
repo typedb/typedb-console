@@ -12,12 +12,13 @@ use std::{
 
 use rustyline::{
     completion::Completer,
+    error::ReadlineError,
     highlight::Highlighter,
     hint::Hinter,
     history::{FileHistory, History},
     validate::{ValidationContext, ValidationResult, Validator},
     Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
-    Modifiers, Movement, RepeatCount,
+    Modifiers, RepeatCount,
 };
 
 use crate::repl::command::CommandDefinitions;
@@ -25,6 +26,8 @@ use crate::repl::command::CommandDefinitions;
 pub(crate) struct RustylineReader<H: Helper> {
     history_file: PathBuf,
     editor: Editor<H, FileHistory>,
+
+    interrupt_content_empty_ref: Arc<Mutex<bool>>,
 }
 
 impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
@@ -42,10 +45,9 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
             Event::Any,
             EventHandler::Conditional(Box::new(SearchHistoryModeReset { search_mode: search_mode.clone() })),
         );
-        editor.bind_sequence(
-            Event::from(KeyEvent::ctrl('c')),
-            EventHandler::Conditional(Box::new(InterruptIfEmptyElseClear {})),
-        );
+        let interrupt_handler = InterruptIfEmptyElseClear::new();
+        let interrupt_content_empty_ref = interrupt_handler.content_empty_ref();
+        editor.bind_sequence(Event::from(KeyEvent::ctrl('c')), EventHandler::Conditional(Box::new(interrupt_handler)));
         editor.bind_sequence(
             Event::from(KeyEvent(KeyCode::Up, Modifiers::NONE)),
             EventHandler::Conditional(Box::new(SearchHistory { forward: false, search_mode: search_mode.clone() })),
@@ -55,18 +57,22 @@ impl<H: CommandDefinitions> RustylineReader<EditorHelper<H>> {
             EventHandler::Conditional(Box::new(SearchHistory { forward: true, search_mode })),
         );
         let _ = editor.load_history(&history_file);
-        Self { editor, history_file }
+        Self { editor, history_file, interrupt_content_empty_ref }
     }
 
-    pub(crate) fn readline(&mut self, prompt: &str) -> rustyline::Result<String> {
+    pub(crate) fn readline(&mut self, prompt: &str) -> (rustyline::Result<String>, Option<bool>) {
         match self.editor.readline(prompt) {
             Ok(line) => {
                 let _ = self.editor.history_mut().add(line.trim_end());
                 let _ = self.editor.append_history(&self.history_file);
                 // Rustyline removes the last newline - we'll add back so the input matches what one would get from a  file
-                Ok(format!("{}\n", line))
+                (Ok(format!("{}\n", line)), None)
             }
-            Err(err) => Err(err),
+            Err(ReadlineError::Interrupted) => {
+                let interrupt_empty = self.interrupt_content_empty_ref.lock().unwrap().clone();
+                (Err(ReadlineError::Interrupted), Some(interrupt_empty))
+            }
+            Err(err) => (Err(err), None),
         }
     }
 }
@@ -116,15 +122,26 @@ impl<H: CommandDefinitions> Validator for EditorHelper<H> {
     }
 }
 
-struct InterruptIfEmptyElseClear {}
+struct InterruptIfEmptyElseClear {
+    interrupted_input_empty: Arc<Mutex<bool>>,
+}
+
+impl InterruptIfEmptyElseClear {
+    fn new() -> Self {
+        Self { interrupted_input_empty: Arc::new(Mutex::new(true)) }
+    }
+
+    fn content_empty_ref(&self) -> Arc<Mutex<bool>> {
+        self.interrupted_input_empty.clone()
+    }
+}
 
 impl ConditionalEventHandler for InterruptIfEmptyElseClear {
     fn handle(&self, _evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
-        if ctx.line().is_empty() {
-            Some(Cmd::Interrupt)
-        } else {
-            Some(Cmd::Kill(Movement::WholeBuffer))
+        if !ctx.line().is_empty() {
+            *self.content_empty_ref().lock().unwrap() = false;
         }
+        Some(Cmd::Interrupt)
     }
 }
 
@@ -179,14 +196,13 @@ impl ConditionalEventHandler for SearchHistory {
                     // stay in completion mode
                 }
             }
-
             match *self.search_mode.lock().unwrap() {
                 SearchMode::Normal => unreachable!("Must have picked a mode by the time we search searching."),
                 SearchMode::InNormalHistory => {
                     if self.forward {
-                        Some(Cmd::NextHistory)
+                        Some(Cmd::LineDownOrNextHistory(1))
                     } else {
-                        Some(Cmd::PreviousHistory)
+                        Some(Cmd::LineUpOrPreviousHistory(1))
                     }
                 }
                 SearchMode::InCompletion => {

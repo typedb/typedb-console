@@ -14,7 +14,7 @@ use typedb_driver::{
 
 use crate::{
     printer::{print_document, print_row},
-    repl::command::{get_to_empty_line, CommandResult, ReplError},
+    repl::command::{index_after_empty_line, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
 };
 
@@ -222,7 +222,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
     let mut input: &str = &contents;
     let mut query_count = 0;
-    while let Some(query_end_index) = get_to_empty_line(&input, false) {
+    while let Some(query_end_index) = index_after_empty_line(&input, false) {
         let query = &input[0..query_end_index];
         match execute_query(context, query.to_owned(), false) {
             Err(err) => {
@@ -264,7 +264,11 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
 pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRef<str>]) -> CommandResult {
     let query = input[0].as_ref().to_owned();
-    execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    if query.trim().is_empty() {
+        return Ok(());
+    } else {
+        execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    }
 }
 
 const QUERY_TYPE_TEMPLATE: &'static str = "<QUERY TYPE>";

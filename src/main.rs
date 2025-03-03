@@ -32,7 +32,7 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_to_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
+        command::{get_word, index_after_empty_line, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
@@ -164,7 +164,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();
-        let result = current_repl.get_input();
+        let (result, interrupt_input_empty) = current_repl.get_input();
         match result {
             Ok(input) => {
                 if !input.trim().is_empty() {
@@ -175,11 +175,14 @@ fn execute_interactive(context: &mut ConsoleContext) {
                 }
             }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
-                if context.repl_stack.len() == repl_index + 1 {
+                let exit_once = interrupt_input_empty.unwrap_or(true);
+                if exit_once && context.repl_stack.len() == repl_index + 1 {
                     // TODO: extra way to eliminate the current repl...
                     //  ideally, every command would signal with a new Repl or to pop one off, so stack manipulation is these control loops
                     let last = context.repl_stack.pop();
                     last.unwrap().finished(context);
+                } else if !exit_once {
+                    // do nothing
                 } else {
                     // this is unexpected... quit
                     exit(1)
@@ -336,7 +339,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", get_to_empty_line, None, None),
+            CommandInput::new("query", index_after_empty_line, None, None),
             transaction_query,
         ));
     repl

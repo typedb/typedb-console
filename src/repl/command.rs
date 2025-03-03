@@ -114,18 +114,18 @@ impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         match self.token.match_(input) {
             None => Ok(None),
-            Some((_token, remaining, token_end_index)) => {
+            Some((_token, remaining, remaining_start_index)) => {
                 // rev forces longest match first
                 for subcommand in self.subcommands.iter().rev() {
                     match subcommand.match_first(remaining, coerce_to_one_line)? {
                         None => continue,
-                        Some((command, remaining_after_subcommand, command_end_index)) => {
+                        Some((command, remaining_after_subcommand, remaining_after_subcommand_index)) => {
                             // since we only reveal the substring to the subcommand
                             // we need to extend the index by whatever we removed from the start
                             return Ok(Some((
                                 command,
                                 remaining_after_subcommand,
-                                token_end_index + command_end_index,
+                                remaining_start_index + remaining_after_subcommand_index,
                             )));
                         }
                     }
@@ -232,18 +232,13 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         match self.token.match_(input) {
-            Some((_token, mut remaining, token_end_index)) => {
+            Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();
-                let mut command_end_index = token_end_index;
                 for (index, argument) in self.arguments.iter().enumerate() {
                     let (arg_value, remaining_input) = match argument.read_end_index_from(remaining, coerce_to_one_line)
                     {
                         Some(end_index) => {
-                            // if accepted 0 inputs, even if it is a match, we should not accept this command
-                            if remaining[0..end_index].is_empty() {
-                                return Ok(None);
-                            }
-                            command_end_index += end_index;
+                            remaining_start_index += end_index;
                             (remaining[0..end_index].trim().to_owned(), &remaining[end_index..])
                         }
                         None => {
@@ -259,7 +254,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                     parsed_args.push(arg_value);
                     remaining = remaining_input;
                 }
-                Ok(Some((self as &dyn ExecutableCommand<Context>, parsed_args, command_end_index)))
+                Ok(Some((self as &dyn ExecutableCommand<Context>, parsed_args, remaining_start_index)))
             }
             None => Ok(None),
         }
@@ -366,23 +361,23 @@ pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> 
     }
 }
 
-pub(crate) fn get_to_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
+pub(crate) fn index_after_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
     if coerce_to_one_line {
         Some(input.len())
     } else {
         const PATTERN: &str = "\n";
         let mut pos = 0;
         while let Some(newline_pos) = input.find(PATTERN) {
-            let next_newline_pos = match input[newline_pos + 1..].find(PATTERN) {
+            let after_newline_pos = newline_pos + 1;
+            let next_newline_pos = match input[after_newline_pos..].find(PATTERN) {
                 None => return None,
-                Some(next_newline_pos) => newline_pos + 1 + next_newline_pos,
+                Some(next_newline_pos) => after_newline_pos + next_newline_pos,
             };
-            pos += newline_pos;
-            if input[newline_pos..next_newline_pos].trim().is_empty() {
-                return Some(pos);
+            pos += after_newline_pos;
+            if input[after_newline_pos..next_newline_pos].trim().is_empty() {
+                return Some(next_newline_pos + 1);
             }
-            input = &input[newline_pos + 1..];
-            pos += 1;
+            input = &input[after_newline_pos..];
         }
         None
     }
@@ -434,8 +429,19 @@ pub(crate) trait CommandDefinitions: Highlighter + Hinter + Completer {
 }
 
 impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
-    fn is_complete_command(&self, input: &str) -> bool {
-        matches!(Command::match_first(self, input, false), Ok(Some(_)))
+    fn is_complete_command(&self, mut input: &str) -> bool {
+        loop {
+            match Command::match_first(self, input, false) {
+                Ok(None) => return false,
+                Ok(Some((_executable, _args, end_index))) => {
+                    input = &input[end_index..];
+                    if input.trim().is_empty() {
+                        return true;
+                    }
+                }
+                Err(err) => return false,
+            }
+        }
     }
 }
 

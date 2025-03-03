@@ -32,7 +32,7 @@ use crate::{
         user_delete, user_update_password,
     },
     repl::{
-        command::{get_to_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
+        command::{index_after_empty_line, get_word, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
@@ -336,7 +336,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", get_to_empty_line, None, None),
+            CommandInput::new("query", index_after_empty_line, None, None),
             transaction_query,
         ));
     repl

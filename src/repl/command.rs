@@ -237,9 +237,9 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                 for (index, argument) in self.arguments.iter().enumerate() {
                     let (arg_value, remaining_input) = match argument.read_end_index_from(remaining, coerce_to_one_line)
                     {
-                        Some(end_index) => {
-                            remaining_start_index += end_index;
-                            (remaining[0..end_index].trim().to_owned(), &remaining[end_index..])
+                        Some(next_index) => {
+                            remaining_start_index += next_index;
+                            (remaining[0..next_index].trim().to_owned(), &remaining[next_index..])
                         }
                         None => {
                             if argument.is_hidden() {
@@ -433,8 +433,8 @@ impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
         loop {
             match Command::match_first(self, input, false) {
                 Ok(None) => return false,
-                Ok(Some((_executable, _args, end_index))) => {
-                    input = &input[end_index..];
+                Ok(Some((_executable, _args, next_command_index))) => {
+                    input = &input[next_command_index..];
                     if input.trim().is_empty() {
                         return true;
                     }

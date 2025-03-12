@@ -222,9 +222,9 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
     let mut input: &str = &contents;
     let mut query_count = 0;
-    while let Some(query_end_index) = index_after_empty_line(&input, false) {
-        let query = &input[0..query_end_index];
-        match execute_query(context, query.to_owned(), false) {
+    while let Some(next_query_index) = index_after_empty_line(&input, false) {
+        let query = &input[0..next_query_index];
+        match execute_query(context, query.to_owned(), true) {
             Err(err) => {
                 return Err(Box::new(ReplError {
                     message: format!(
@@ -237,7 +237,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
                 }) as Box<dyn Error + Send>)
             }
             Ok(_) => {
-                input = &input[query_end_index + 1..];
+                input = &input[next_query_index..];
                 query_count += 1;
             }
         }

@@ -375,7 +375,8 @@ pub(crate) fn index_after_empty_line(mut input: &str, coerce_to_one_line: bool) 
             };
             pos += after_newline_pos;
             if input[after_newline_pos..next_newline_pos].trim().is_empty() {
-                return Some(next_newline_pos + 1);
+                // pos is at the same character as after_newline_pos in the original input
+                return Some(pos + (next_newline_pos - after_newline_pos) + 1);
             }
             input = &input[after_newline_pos..];
         }

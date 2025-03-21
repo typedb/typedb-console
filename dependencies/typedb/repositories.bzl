@@ -8,12 +8,12 @@ def typedb_dependencies():
     git_repository(
         name = "typedb_dependencies",
         remote = "https://github.com/typedb/typedb-dependencies",
-        commit = "b4238789491bc0976407fe78a17d0a906f69c186", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        commit = "5c2d4dcc25493be9d35356075372229a6d2ba2a9", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typedb_driver():
     git_repository(
         name = "typedb_driver",
         remote = "https://github.com/typedb/typedb-driver",
-        commit = "1cdc53008dd5ce578cb0224beb358cbe1bdbacd4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        tag = "3.1.0-rc1",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )

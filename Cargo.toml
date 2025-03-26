@@ -30,7 +30,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.30"
+		version = "4.5.31"
 		default-features = false
 
 	[dependencies.glob]
@@ -40,7 +40,7 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
-		rev = "1cdc53008dd5ce578cb0224beb358cbe1bdbacd4"
+		rev = "39b32fa64decadd2486f9a605443b3248d03126b"
 		git = "https://github.com/typedb/typedb-driver"
 		default-features = false
 
@@ -51,7 +51,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.139"
+		version = "1.0.140"
 		default-features = false
 
 	[dependencies.rpassword]

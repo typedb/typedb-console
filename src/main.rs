@@ -32,12 +32,13 @@ use crate::{
         user_delete, user_list, user_update_password,
     },
     repl::{
-        command::{get_word, index_after_empty_line, CommandInput, CommandLeaf, Subcommand},
+        command::{get_word, parse_query_or_index_after_empty_line, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
     runtime::BackgroundRuntime,
 };
+use crate::repl::command::log;
 
 mod cli;
 mod completions;
@@ -164,6 +165,7 @@ fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
+    const BRACKETED_PASTE_MODE_START: &str = "\x1b[200~" ;
     println!("\nWelcome to TypeDB Console!\n");
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
@@ -172,8 +174,14 @@ fn execute_interactive(context: &mut ConsoleContext) {
         match result {
             Ok(input) => {
                 if !input.trim().is_empty() {
+                    log(&format!("{:?}", input.as_bytes()));
+                    let is_pasted = input.starts_with(BRACKETED_PASTE_MODE_START);
                     // the execute_all will drive the error handling and printing
-                    let _ = execute_commands(context, &input, false, false);
+                    if is_pasted {
+                        let _ = execute_commands(context, &input, false, false);
+                    } else {
+                        let _ = execute_commands(context, &input, false, false);
+                    }
                 } else {
                     continue;
                 }
@@ -344,7 +352,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", index_after_empty_line, None, None),
+            CommandInput::new("query", parse_query_or_index_after_empty_line, None, None),
             transaction_query,
         ));
     repl

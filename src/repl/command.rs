@@ -297,7 +297,7 @@ impl CommandInput {
         Self { usage, reader, hidden_reader, completer }
     }
 
-    fn read_end_index_from<'a>(&self, input: &'a str, coerce_to_one_line: bool) -> Option<usize> {
+    fn read_end_index_from(&self, input: &str, coerce_to_one_line: bool) -> Option<usize> {
         (self.reader)(input, coerce_to_one_line)
     }
 
@@ -361,27 +361,68 @@ pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> 
     }
 }
 
-pub(crate) fn index_after_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
+pub(crate) fn log(input: &str) -> std::io::Result<()> {
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    let mut file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("/tmp/tmp.log")?;
+
+    writeln!(file, "{}", input)?;
+    Ok(())
+}
+
+pub(crate) fn parse_query_or_index_after_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
     if coerce_to_one_line {
         Some(input.len())
     } else {
-        const PATTERN: &str = "\n";
-        let mut pos = 0;
-        while let Some(newline_pos) = input.find(PATTERN) {
-            let after_newline_pos = newline_pos + 1;
-            let next_newline_pos = match input[after_newline_pos..].find(PATTERN) {
-                None => return None,
-                Some(next_newline_pos) => after_newline_pos + next_newline_pos,
-            };
-            pos += after_newline_pos;
-            if input[after_newline_pos..next_newline_pos].trim().is_empty() {
-                // pos is at the same character as after_newline_pos in the original input
-                return Some(pos + (next_newline_pos - after_newline_pos) + 1);
+        // We maximally try to parse as many lines into a query as we can.
+        // If we succeed, we then search for the next empty line after the end of the query
+        //   If the found empty line is directly after the query, we return the query's end index
+        //   If the found empty line is much later, there must be non-query text right after the query's end index.
+        //     However, we'll return that much later empty newline, as the query will then be rejected after submission
+        //   (Both of the two cases turn out to return the same index: query's end index == after empty newline index)
+        //   If no empty line is found, we return None (query is valid, but not "terminated" with an empty line)
+        // If we fail and there is no parseable query, we simply search for an empty newline and return that index
+        if let Ok((_query, mut after_query_pos)) = typeql::parse_query_from(input) {
+            // Note: Query parsing will consume any trailing whitespace, which we should undo
+            let tail_whitespace_count = (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
+            after_query_pos -= tail_whitespace_count;
+
+            if after_query_pos > input.len() {
+                return None
             }
-            input = &input[after_newline_pos..];
+            let remaining_input = &input[after_query_pos..];
+            let after_newline_pos = find_empty_line(remaining_input);
+            match after_newline_pos {
+                None => None,
+                Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+            }
+        } else {
+            find_empty_line(input)
         }
-        None
     }
+}
+
+fn find_empty_line(mut input: &str) -> Option<usize> {
+    const PATTERN: &str = "\n";
+    let mut pos = 0;
+    while let Some(newline_pos) = input.find(PATTERN) {
+        let after_newline_pos = newline_pos + 1;
+        let next_newline_pos = match input[after_newline_pos..].find(PATTERN) {
+            None => return None,
+            Some(next_newline_pos) => after_newline_pos + next_newline_pos,
+        };
+        pos += after_newline_pos;
+        if input[after_newline_pos..next_newline_pos].trim().is_empty() {
+            // pos is at the same character as after_newline_pos in the original input
+            return Some(pos + (next_newline_pos - after_newline_pos) + 1);
+        }
+        input = &input[after_newline_pos..];
+    }
+    None
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

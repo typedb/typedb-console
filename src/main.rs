@@ -83,7 +83,7 @@ fn main() {
         println!(
             "\
             TLS connections can only be enabled when connecting to HTTPS endpoints, for example using 'https://<ip>:port'. \
-            Please modify the address, or disable TLS (WARNING: this will send passwords over plaintext!).\
+            Please modify the address, or disable TLS (--tls-disabled). WARNING: this will send passwords over plaintext!\
         "
         );
         exit(1);

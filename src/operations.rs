@@ -245,6 +245,10 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
     let mut query_count = 0;
     while let Some(next_query_index) = parse_query_or_index_after_empty_line(&input, false) {
         let query = &input[0..next_query_index];
+        if query.trim().is_empty() {
+            input = &input[next_query_index..];
+            continue;
+        }
         match execute_query(context, query.to_owned(), true) {
             Err(err) => {
                 return Err(Box::new(ReplError {
@@ -263,7 +267,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
             }
         }
     }
-    if !input.is_empty() {
+    if !input.trim().is_empty() {
         match execute_query(context, input.to_owned(), false) {
             Err(err) => {
                 return Err(Box::new(ReplError {

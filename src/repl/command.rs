@@ -19,6 +19,7 @@ use rustyline::{
     highlight::Highlighter,
     hint::Hinter,
 };
+use typeql::common::error::TypeQLError;
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -386,22 +387,59 @@ pub(crate) fn parse_query_or_index_after_empty_line(mut input: &str, coerce_to_o
         //   (Both of the two cases turn out to return the same index: query's end index == after empty newline index)
         //   If no empty line is found, we return None (query is valid, but not "terminated" with an empty line)
         // If we fail and there is no parseable query, we simply search for an empty newline and return that index
-        if let Ok((_query, mut after_query_pos)) = typeql::parse_query_from(input) {
-            // Note: Query parsing will consume any trailing whitespace, which we should undo
-            let tail_whitespace_count = (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
-            after_query_pos -= tail_whitespace_count;
+        match typeql::parse_query_from(input) {
+            Ok((_query, mut after_query_pos)) => {
+                // Note: Query parsing will consume any trailing whitespace, which we should undo
+                let tail_whitespace_count = (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
+                after_query_pos -= tail_whitespace_count;
 
-            if after_query_pos > input.len() {
-                return None
+                if after_query_pos > input.len() {
+                    return None
+                }
+                let remaining_input = &input[after_query_pos..];
+                let after_newline_pos = find_empty_line(remaining_input);
+                match after_newline_pos {
+                    None => None,
+                    Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+                }
             }
-            let remaining_input = &input[after_query_pos..];
-            let after_newline_pos = find_empty_line(remaining_input);
-            match after_newline_pos {
-                None => None,
-                Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+            Err(err) => {
+                // sometimes TypeQL will hit an error, and stop parsing at that line even though it's not the end of a query
+                // this will degrade the query error pointer! So if we have a line number of the parsing error, we'll look for the newline
+                // after that line, instead of just the first newline
+                let mut start_line = 0;
+                let mut start_col = 0;
+                for error in err.errors() {
+                    if let TypeQLError::SyntaxErrorDetailed { error_line_nr, error_col, .. } = error {
+                        let line_nr = *error_line_nr - 1;
+                        if line_nr > start_line {
+                            start_line = line_nr;
+                            start_col = *error_col; //note: 1-indexed, but this works out to move the pos forward one to skip the first col
+                        }
+                    }
+                }
+                let mut after_error_pos = 0;
+                for _ in 0..start_line {
+                    const NEWLINE: &str = "\n";
+                    match input.find(NEWLINE) {
+                        None => {
+                            // unexpected, fall back behaviour
+                            return find_empty_line(input)
+                        }
+                        Some(pos) => {
+                            after_error_pos += pos + NEWLINE.len();
+                            input = &input[pos + NEWLINE.len()..]
+                        }
+                    }
+                }
+                after_error_pos += start_col;
+                let remaining_input = &input[start_col..];
+                let newline_after_error_pos = find_empty_line(remaining_input);
+                match newline_after_error_pos {
+                    None => None,
+                    Some(newline_after_error_pos) => Some(after_error_pos + newline_after_error_pos),
+                }
             }
-        } else {
-            find_empty_line(input)
         }
     }
 }

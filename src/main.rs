@@ -58,12 +58,16 @@ struct ConsoleContext {
     repl_stack: Vec<Rc<Repl<ConsoleContext>>>,
     background_runtime: BackgroundRuntime,
     driver: Arc<TypeDBDriver>,
-    transaction: Option<Transaction>,
+    transaction: Option<(Transaction, bool)>,
 }
 
 impl ReplContext for ConsoleContext {
     fn current_repl(&self) -> &Repl<Self> {
         self.repl_stack.last().unwrap()
+    }
+    
+    fn has_changes(&self) -> bool {
+        self.transaction.as_ref().is_some_and(|(_, has_writes)| *has_writes)
     }
 }
 
@@ -164,7 +168,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();
-        let (result, interrupt_input_empty) = current_repl.get_input();
+        let (result, interrupt_input_empty) = current_repl.get_input(context.has_changes());
         match result {
             Ok(input) => {
                 if !input.trim().is_empty() {

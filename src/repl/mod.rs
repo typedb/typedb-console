@@ -18,6 +18,8 @@ pub(crate) mod line_reader;
 
 pub(crate) trait ReplContext: Sized {
     fn current_repl(&self) -> &Repl<Self>;
+
+    fn has_changes(&self) -> bool;
 }
 
 pub(crate) struct Repl<Context> {
@@ -51,9 +53,13 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         self
     }
 
-    pub(crate) fn get_input(&self) -> (rustyline::Result<String>, Option<bool>) {
+    pub(crate) fn get_input(&self, has_changes: bool) -> (rustyline::Result<String>, Option<bool>) {
         let mut editor = RustylineReader::new(self.commands.clone(), self.history_file.clone(), self.multiline_input);
-        editor.readline(&self.prompt)
+        if has_changes {
+            editor.readline(&format!("*{}", self.prompt))
+        } else {
+            editor.readline(&self.prompt)
+        }
     }
 
     pub(crate) fn match_first_command<'a>(

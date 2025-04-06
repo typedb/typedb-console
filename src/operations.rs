@@ -7,10 +7,7 @@
 use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
-use typedb_driver::{
-    answer::{QueryAnswer, QueryType},
-    TransactionType,
-};
+use typedb_driver::{answer::{QueryAnswer, QueryType}, Transaction, TransactionType};
 
 use crate::{
     printer::{print_document, print_row},
@@ -130,7 +127,7 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
         .background_runtime
         .run(async move { driver.transaction(db_name_owned, TransactionType::Read).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    context.transaction = Some(transaction);
+    context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Read);
     context.repl_stack.push(Rc::new(repl));
     Ok(())
@@ -144,7 +141,7 @@ pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) 
         .background_runtime
         .run(async move { driver.transaction(db_name_owned, TransactionType::Write).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    context.transaction = Some(transaction);
+    context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Write);
     context.repl_stack.push(Rc::new(repl));
     Ok(())
@@ -158,14 +155,15 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
         .background_runtime
         .run(async move { driver.transaction(db_name_owned, TransactionType::Schema).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    context.transaction = Some(transaction);
+    context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Schema);
     context.repl_stack.push(Rc::new(repl));
     Ok(())
 }
 
 pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
-    match context.background_runtime.run(context.transaction.take().unwrap().commit()) {
+    let (transaction, _) = context.transaction.take().unwrap();
+    match context.background_runtime.run(transaction.commit()) {
         Ok(_) => {
             println!("Successfully committed transaction.");
             context.repl_stack.pop().unwrap().finished(context);
@@ -179,7 +177,7 @@ pub(crate) fn transaction_commit(context: &mut ConsoleContext, _input: &[String]
 }
 
 pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
-    let transaction = context.transaction.take().unwrap(); // drop
+    let (transaction, _) = context.transaction.take().unwrap(); // drop
     let message = match transaction.type_() {
         TransactionType::Read => "Transaction closed",
         TransactionType::Write | TransactionType::Schema => "Transaction closed without committing changes.",
@@ -190,14 +188,14 @@ pub(crate) fn transaction_close(context: &mut ConsoleContext, _input: &[String])
 }
 
 pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
-    let transaction = context.transaction.take().unwrap();
+    let (transaction, _has_writes) = context.transaction.take().unwrap();
     let (transaction, result) = context.background_runtime.run(async move {
         let result = transaction.rollback().await;
         (transaction, result)
     });
     match result {
         Ok(_) => {
-            context.transaction = Some(transaction);
+            context.transaction = Some((transaction, false));
             println!("Transaction changes rolled back.");
             Ok(())
         }
@@ -293,8 +291,8 @@ fn query_type_str(query_type: QueryType) -> &'static str {
 }
 
 fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> Result<(), typedb_driver::Error> {
-    let transaction = context.transaction.take().expect("Transaction query run without active transaction.");
-    let (transaction, result) = context.background_runtime.run(async move {
+    let (transaction, has_writes) = context.transaction.take().expect("Transaction query run without active transaction.");
+    let (transaction, result, write_succes) = context.background_runtime.run(async move {
         let result = transaction.query(query).await;
         if logging {
             // note: print results in the async block so we don't have to collect first
@@ -303,7 +301,8 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                     match answer {
                         QueryAnswer::Ok(query_type) => {
                             println!("Finished {} query.", query_type_str(query_type));
-                            (transaction, Ok(()))
+                            let write_query = !matches!(query_type, QueryType::ReadQuery);
+                            (transaction, Ok(()), write_query)
                         }
                         QueryAnswer::ConceptRowStream(header, mut rows_stream) => {
                             println!(
@@ -311,11 +310,13 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                                 QUERY_COMPILATION_SUCCESS
                                     .replace(QUERY_TYPE_TEMPLATE, query_type_str(header.query_type))
                             );
-                            if matches!(header.query_type, QueryType::WriteQuery) {
+                            let write_query = if matches!(header.query_type, QueryType::WriteQuery) {
                                 println!("{}", QUERY_WRITE_FINISHED_STREAMING_ROWS);
+                                true
                             } else {
                                 println!("{}", QUERY_STREAMING_ROWS);
-                            }
+                                false
+                            };
                             let has_columns = !header.column_names.is_empty();
                             if !has_columns {
                                 println!("\nNo columns to show.\n");
@@ -329,11 +330,11 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                                         }
                                         count += 1;
                                     }
-                                    Err(err) => return (transaction, Err(err)),
+                                    Err(err) => return (transaction, Err(err), false),
                                 }
                             }
                             println!("{}", QUERY_FINISHED_COUNT.replace(ANSWER_COUNT_TEMPLATE, &count.to_string()));
-                            (transaction, Ok(()))
+                            (transaction, Ok(()), write_query)
                         }
                         QueryAnswer::ConceptDocumentStream(header, mut documents_stream) => {
                             println!(
@@ -341,11 +342,13 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                                 QUERY_COMPILATION_SUCCESS
                                     .replace(QUERY_TYPE_TEMPLATE, query_type_str(header.query_type))
                             );
-                            if matches!(header.query_type, QueryType::WriteQuery) {
+                            let write_query = if matches!(header.query_type, QueryType::WriteQuery) {
                                 println!("{}", QUERY_WRITE_FINISHED_STREAMING_DOCUMENTS);
+                                true
                             } else {
                                 println!("{}", QUERY_STREAMING_DOCUMENTS);
-                            }
+                                false
+                            };
 
                             let mut count = 0;
                             while let Some(result) = documents_stream.next().await {
@@ -356,20 +359,23 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                                     }
                                     // Note: we don't necessarily have to terminate the transaction when we get an error
                                     // but the signalling isn't in place to do this canonically either!
-                                    Err(err) => return (transaction, Err(err)),
+                                    Err(err) => return (transaction, Err(err), false),
                                 }
                             }
                             println!("{}", QUERY_FINISHED_COUNT.replace(ANSWER_COUNT_TEMPLATE, &count.to_string()));
-                            (transaction, Ok(()))
+                            (transaction, Ok(()), write_query)
                         }
                     }
                 }
-                Err(err) => (transaction, Err(err)),
+                Err(err) => (transaction, Err(err), false),
             }
         } else {
             match result {
-                Ok(_) => (transaction, Ok(())),
-                Err(err) => (transaction, Err(err)),
+                Ok(answer) => {
+                    let write_query = !matches!(answer.get_query_type(), QueryType::ReadQuery);
+                    (transaction, Ok(()), write_query)
+                },
+                Err(err) => (transaction, Err(err), false),
             }
         }
     });
@@ -378,7 +384,7 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
         // TODO: would be better to return a repl END type. In other places, return repl START(repl)
         context.repl_stack.pop();
     } else {
-        context.transaction = Some(transaction);
+        context.transaction = Some((transaction, has_writes || write_succes));
     };
     result
 }

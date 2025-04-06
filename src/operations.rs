@@ -24,8 +24,12 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
         .background_runtime
         .run(async move { driver.databases().all().await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    for db in databases {
-        println!("{}", db.name());
+    if databases.is_empty() {
+        println!("No databases are present on the server.");
+    } else {
+        for db in databases {
+            println!("{}", db.name());
+        }
     }
     Ok(())
 }

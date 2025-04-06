@@ -7,7 +7,10 @@
 use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
-use typedb_driver::{answer::{QueryAnswer, QueryType}, Transaction, TransactionType};
+use typedb_driver::{
+    answer::{QueryAnswer, QueryType},
+    TransactionType,
+};
 
 use crate::{
     printer::{print_document, print_row},
@@ -291,7 +294,8 @@ fn query_type_str(query_type: QueryType) -> &'static str {
 }
 
 fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> Result<(), typedb_driver::Error> {
-    let (transaction, has_writes) = context.transaction.take().expect("Transaction query run without active transaction.");
+    let (transaction, has_writes) =
+        context.transaction.take().expect("Transaction query run without active transaction.");
     let (transaction, result, write_succes) = context.background_runtime.run(async move {
         let result = transaction.query(query).await;
         if logging {
@@ -374,7 +378,7 @@ fn execute_query(context: &mut ConsoleContext, query: String, logging: bool) -> 
                 Ok(answer) => {
                     let write_query = !matches!(answer.get_query_type(), QueryType::ReadQuery);
                     (transaction, Ok(()), write_query)
-                },
+                }
                 Err(err) => (transaction, Err(err), false),
             }
         }

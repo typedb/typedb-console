@@ -65,7 +65,7 @@ impl ReplContext for ConsoleContext {
     fn current_repl(&self) -> &Repl<Self> {
         self.repl_stack.last().unwrap()
     }
-    
+
     fn has_changes(&self) -> bool {
         self.transaction.as_ref().is_some_and(|(_, has_writes)| *has_writes)
     }

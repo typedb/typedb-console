@@ -29,7 +29,7 @@ use crate::{
     operations::{
         database_create, database_delete, database_list, transaction_close, transaction_commit, transaction_query,
         transaction_read, transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create,
-        user_delete, user_update_password,
+        user_delete, user_list, user_update_password,
     },
     repl::{
         command::{get_word, index_after_empty_line, CommandInput, CommandLeaf, Subcommand},
@@ -259,6 +259,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ));
 
     let user_commands = Subcommand::new("user")
+        .add(CommandLeaf::new("list", "List users.", user_list))
         .add(CommandLeaf::new_with_inputs(
             "create",
             "Create new user.",

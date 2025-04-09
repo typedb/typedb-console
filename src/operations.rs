@@ -59,6 +59,22 @@ pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
+pub(crate) fn user_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let users = context
+        .background_runtime
+        .run(async move { driver.users().all().await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    if users.is_empty() {
+        println!("No users are present.");
+    } else {
+        for user in users {
+            println!("{}", user.name);
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn user_create(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let username = input[0].clone();

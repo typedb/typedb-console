@@ -1,13 +1,10 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.1.1
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.2.0-rc0
 
 
 ## New Features
-- **Add `user list` command**
-  Add `user list` command to display the list of users existing on the server.
-  
-  
+
 
 ## Bugs Fixed
 
@@ -17,4 +14,5 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 ## Other Improvements
 
-    
+- **Update typedb-driver dependency for token-based authentication**
+  No changes to the UI/UX.

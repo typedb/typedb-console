@@ -8,13 +8,12 @@ def typedb_dependencies():
     git_repository(
         name = "typedb_dependencies",
         remote = "https://github.com/typedb/typedb-dependencies",
-        commit = "959bcdbfac995582812b334ba719b190367e4625", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        commit = "6b9bc322bab187ebad65b192c129feffd6c704f4", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typedb_driver():
-    # TODO: Return typedb
     git_repository(
         name = "typedb_driver",
-        remote = "https://github.com/farost/typedb-driver",
-        commit = "be485ccb2f6c851791ce9c4a9b53d10dd5d41bb3",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        remote = "https://github.com/typedb/typedb-driver",
+        commit = "6e2d3092063947233640eb3a7168418786c7f663",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )

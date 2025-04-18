@@ -22,6 +22,7 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "@typedb_driver//rust:typedb_driver",
+        "@typeql//rust:typeql",
 
         # External dependencies
         "@crates//:clap",

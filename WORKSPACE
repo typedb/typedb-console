@@ -150,8 +150,9 @@ google_common_workspace_rules()
 #############################
 
 # Load repositories
-load("//dependencies/typedb:repositories.bzl", "typedb_driver")
+load("//dependencies/typedb:repositories.bzl", "typedb_driver", "typeql")
 typedb_driver()
+typeql()
 
 load("@typedb_driver//dependencies/typedb:repositories.bzl", "typedb_protocol")
 typedb_protocol()

@@ -14,7 +14,7 @@ use typedb_driver::{
 
 use crate::{
     printer::{print_document, print_row},
-    repl::command::{parse_query_or_index_after_empty_line, CommandResult, ReplError},
+    repl::command::{parse_one_query, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
 };
 
@@ -243,7 +243,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
     let mut input: &str = &contents;
     let mut query_count = 0;
-    while let Some(next_query_index) = parse_query_or_index_after_empty_line(&input, false) {
+    while let Some(next_query_index) = parse_one_query(&input, false) {
         let query = &input[0..next_query_index];
         if query.trim().is_empty() {
             input = &input[next_query_index..];

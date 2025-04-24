@@ -164,7 +164,7 @@ fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
-    const BRACKETED_PASTE_MODE_START: &str = "\x1b[200~" ;
+    const BRACKETED_PASTE_MODE_START: &str = "\x1b[200~";
     println!("\nWelcome to TypeDB Console!\n");
     while !context.repl_stack.is_empty() {
         let repl_index = context.repl_stack.len() - 1;

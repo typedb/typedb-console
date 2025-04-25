@@ -22,6 +22,7 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "@typedb_driver//rust:typedb_driver",
+        "@typeql//rust:typeql",
 
         # External dependencies
         "@crates//:clap",
@@ -143,6 +144,7 @@ release_validate_deps(
     refs = "@typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
         "@typedb_driver",
+        "@typeql",
     ],
     tags = ["manual"], # in order for bazel test //... to not fail
     version_file = "VERSION",

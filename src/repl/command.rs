@@ -19,6 +19,7 @@ use rustyline::{
     highlight::Highlighter,
     hint::Hinter,
 };
+use typeql::{common::error::TypeQLError, parse_query_from};
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -297,7 +298,7 @@ impl CommandInput {
         Self { usage, reader, hidden_reader, completer }
     }
 
-    fn read_end_index_from<'a>(&self, input: &'a str, coerce_to_one_line: bool) -> Option<usize> {
+    fn read_end_index_from(&self, input: &str, coerce_to_one_line: bool) -> Option<usize> {
         (self.reader)(input, coerce_to_one_line)
     }
 
@@ -361,27 +362,93 @@ pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> 
     }
 }
 
-pub(crate) fn index_after_empty_line(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
+/// Read a maximum-length query from the input.
+/// This query must either be explicitly terminated with 'end', or be valid and have an empty following newline
+/// If there is a valid query, and the newline occurs much later, we still return that newline
+/// as that may the user's intended query end but there's a query parse error
+pub(crate) fn parse_one_query(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
     if coerce_to_one_line {
         Some(input.len())
     } else {
-        const PATTERN: &str = "\n";
-        let mut pos = 0;
-        while let Some(newline_pos) = input.find(PATTERN) {
-            let after_newline_pos = newline_pos + 1;
-            let next_newline_pos = match input[after_newline_pos..].find(PATTERN) {
-                None => return None,
-                Some(next_newline_pos) => after_newline_pos + next_newline_pos,
-            };
-            pos += after_newline_pos;
-            if input[after_newline_pos..next_newline_pos].trim().is_empty() {
-                // pos is at the same character as after_newline_pos in the original input
-                return Some(pos + (next_newline_pos - after_newline_pos) + 1);
+        // We maximally try to parse as many lines into a query as we can.
+        // If we fail and there is no parseable query, we return the full string
+        match typeql::parse_query_from(input) {
+            Ok((query, mut after_query_pos)) => {
+                // Note: Query parsing may consume any trailing whitespace, which we should undo
+                let tail_whitespace_count =
+                    (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
+                after_query_pos -= tail_whitespace_count;
+
+                if query.has_explicit_end() {
+                    return Some(after_query_pos);
+                } else {
+                    let remaining_input = &input[after_query_pos..];
+                    let after_newline_pos = find_empty_line(remaining_input);
+                    match after_newline_pos {
+                        None => None,
+                        Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+                    }
+                }
             }
-            input = &input[after_newline_pos..];
+            Err(err) => {
+                // If we fail and there is no parseable query, we simply search for an empty newline and return that index
+                // sometimes TypeQL will hit an error, and stop parsing at that line even though it's not the end of a query
+                // this will degrade the query error pointer! So if we have a line number of the parsing error, we'll look for the newline
+                // after that line, instead of just the first newline
+                let mut start_line = 0;
+                let mut start_col = 0;
+                for error in err.errors() {
+                    if let TypeQLError::SyntaxErrorDetailed { error_line_nr, error_col, .. } = error {
+                        let line_nr = *error_line_nr - 1;
+                        if line_nr > start_line {
+                            start_line = line_nr;
+                            start_col = *error_col; //note: 1-indexed, but this works out to move the pos forward one to skip the first col
+                        }
+                    }
+                }
+                let mut after_error_pos = 0;
+                for _ in 0..start_line {
+                    const NEWLINE: &str = "\n";
+                    match input.find(NEWLINE) {
+                        None => {
+                            // unexpected, fall back behaviour
+                            return find_empty_line(input);
+                        }
+                        Some(pos) => {
+                            after_error_pos += pos + NEWLINE.len();
+                            input = &input[pos + NEWLINE.len()..]
+                        }
+                    }
+                }
+                after_error_pos += start_col;
+                let remaining_input = &input[start_col..];
+                let newline_after_error_pos = find_empty_line(remaining_input);
+                match newline_after_error_pos {
+                    None => None,
+                    Some(newline_after_error_pos) => Some(after_error_pos + newline_after_error_pos),
+                }
+            }
         }
-        None
     }
+}
+
+fn find_empty_line(mut input: &str) -> Option<usize> {
+    const PATTERN: &str = "\n";
+    let mut pos = 0;
+    while let Some(newline_pos) = input.find(PATTERN) {
+        let after_newline_pos = newline_pos + 1;
+        let next_newline_pos = match input[after_newline_pos..].find(PATTERN) {
+            None => return None,
+            Some(next_newline_pos) => after_newline_pos + next_newline_pos,
+        };
+        pos += after_newline_pos;
+        if input[after_newline_pos..next_newline_pos].trim().is_empty() {
+            // pos is at the same character as after_newline_pos in the original input
+            return Some(pos + (next_newline_pos - after_newline_pos) + 1);
+        }
+        input = &input[after_newline_pos..];
+    }
+    None
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

@@ -96,7 +96,7 @@ will also be autocompleted, while others, such as queries, will not.
 
 ### Transaction-level commands
 
-- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you **hit enter twice**.
+- `<query>` : Once you're in the transaction REPL, the terminal immediately accepts a multi-line TypeQL query, and will execute it when you **hit enter twice (submit an empty newline) or use an explicit "end;" stage**.
   ```
   my-typedb-database::schema>> define
                               attribute name, value string;
@@ -105,7 +105,7 @@ will also be autocompleted, while others, such as queries, will not.
   Finished schema query.
   >>
   ```
-- `source <file>` : Run TypeQL queries in a file (_not a general console script_), which you can refer to using relative or absolute path. Queries must be terminated by an empty newline.
+- `source <file>` : Run TypeQL queries in a file (_not a general console script_), which you can refer to using relative or absolute path. Queries must be terminated by an empty newline or an explicit "end;" stage.
   ```
   my-typedb-database::schema> source ./schema.tql
   Successfully executed 1 queries.
@@ -183,6 +183,31 @@ Finished. Total answers: 1
 Transaction closed
 ```
 
+Queries will be parsed maximally and newlines **are** allowed.
+If you wish to split a query pipeline into two queries, or skip the usual empty newline after a query,
+use the query "end;" marker:
+```
+>> database create test
+transaction schema test
+    define 
+      entity person;  # newlines are allowed in pasted scripts:
+       
+      attribute name, value string;
+      
+      person owns name; 
+   
+    commit
+transaction write test
+    insert 
+      $x isa person;
+      
+      $x has name "bob";
+    end; # this is required to avoid creating a single "insert-match" query pipeline!
+    
+    match $x isa person, has name "bob";  # this is treated as a new query
+    
+    commit
+```
 
 ### Non-interactive modes
 
@@ -191,7 +216,9 @@ Transaction closed
 We can define a script file that contains the list of commands to run, then invoke console with `./typedb console --script=<path>`. 
 
 Script files take exactly the same format as scripts pasted directly in the REPL.
-Importantly, this means that the **end of a query is delimited by an empty newline**.
+Importantly, this means that:
+- **Ambiguous query pipelines may need to be split explicitly up with an "end;" marker**.
+- **A query is that is not ended with the "end;" marker must still be terminated with an empty newline**
 
 For example, a script `commands.tqls`
 ```

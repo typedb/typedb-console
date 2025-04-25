@@ -38,6 +38,12 @@ features = {}
 		version = "0.3.2"
 		default-features = false
 
+	[dependencies.typeql]
+		features = []
+		rev = "7cbb621200f10f2cb741b57e82494ff9659813c6"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
 	[dependencies.typedb-driver]
 		features = []
 		git = "https://github.com/typedb/typedb-driver"

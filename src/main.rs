@@ -32,7 +32,7 @@ use crate::{
         user_delete, user_list, user_update_password,
     },
     repl::{
-        command::{get_word, index_after_empty_line, CommandInput, CommandLeaf, Subcommand},
+        command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         Repl, ReplContext,
     },
@@ -172,7 +172,6 @@ fn execute_interactive(context: &mut ConsoleContext) {
         match result {
             Ok(input) => {
                 if !input.trim().is_empty() {
-                    // the execute_all will drive the error handling and printing
                     let _ = execute_commands(context, &input, false, false);
                 } else {
                     continue;
@@ -344,7 +343,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", index_after_empty_line, None, None),
+            CommandInput::new("query", parse_one_query, None, None),
             transaction_query,
         ));
     repl

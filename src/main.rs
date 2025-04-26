@@ -27,9 +27,9 @@ use crate::{
     cli::Args,
     completions::{database_name_completer_fn, file_completer},
     operations::{
-        database_create, database_delete, database_list, transaction_close, transaction_commit, transaction_query,
-        transaction_read, transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create,
-        user_delete, user_list, user_update_password,
+        database_create, database_delete, database_list, database_schema, transaction_close, transaction_commit,
+        transaction_query, transaction_read, transaction_rollback, transaction_schema, transaction_source,
+        transaction_write, user_create, user_delete, user_list, user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -255,6 +255,12 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "Delete the database with the given name.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_delete,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "schema",
+            "Retrieve the TypeQL representation of a database's schema.",
+            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            database_schema,
         ));
 
     let user_commands = Subcommand::new("user")

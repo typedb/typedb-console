@@ -59,6 +59,17 @@ pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
+pub(crate) fn database_schema(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let db_name = input[0].clone();
+    let schema = context
+        .background_runtime
+        .run(async move { driver.databases().get(db_name).await?.schema().await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("{}", schema);
+    Ok(())
+}
+
 pub(crate) fn user_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let users = context

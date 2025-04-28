@@ -40,14 +40,14 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "7cbb621200f10f2cb741b57e82494ff9659813c6"
 		git = "https://github.com/typedb/typeql"
+		tag = "3.2.0-rc2"
 		default-features = false
 
 	[dependencies.typedb-driver]
 		features = []
-		rev = "02edb1b7c4bcd3f5bc822634d667653964e2ab92"
 		git = "https://github.com/typedb/typedb-driver"
+		tag = "3.2.0-rc2"
 		default-features = false
 
 	[dependencies.futures]

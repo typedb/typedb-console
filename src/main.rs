@@ -41,6 +41,7 @@ use crate::{
 
 mod cli;
 mod completions;
+mod constants;
 mod operations;
 mod printer;
 mod repl;

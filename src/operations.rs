@@ -9,10 +9,11 @@ use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
 use futures::stream::StreamExt;
 use typedb_driver::{
     answer::{QueryAnswer, QueryType},
-    TransactionType,
+    TransactionOptions, TransactionType,
 };
 
 use crate::{
+    constants::DEFAULT_TRANSACTION_TIMEOUT,
     printer::{print_document, print_row},
     repl::command::{parse_one_query, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
@@ -155,7 +156,9 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
     let db_name_owned = db_name.clone();
     let transaction = context
         .background_runtime
-        .run(async move { driver.transaction(db_name_owned, TransactionType::Read).await })
+        .run(async move {
+            driver.transaction_with_options(db_name_owned, TransactionType::Read, default_transaction_options()).await
+        })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Read);
@@ -169,7 +172,9 @@ pub(crate) fn transaction_write(context: &mut ConsoleContext, input: &[String]) 
     let db_name_owned = db_name.clone();
     let transaction = context
         .background_runtime
-        .run(async move { driver.transaction(db_name_owned, TransactionType::Write).await })
+        .run(async move {
+            driver.transaction_with_options(db_name_owned, TransactionType::Write, default_transaction_options()).await
+        })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Write);
@@ -183,7 +188,9 @@ pub(crate) fn transaction_schema(context: &mut ConsoleContext, input: &[String])
     let db_name_owned = db_name.clone();
     let transaction = context
         .background_runtime
-        .run(async move { driver.transaction(db_name_owned, TransactionType::Schema).await })
+        .run(async move {
+            driver.transaction_with_options(db_name_owned, TransactionType::Schema, default_transaction_options()).await
+        })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     context.transaction = Some((transaction, false));
     let repl = transaction_repl(db_name, TransactionType::Schema);
@@ -305,6 +312,10 @@ pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRe
     } else {
         execute_query(context, query, true).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
     }
+}
+
+fn default_transaction_options() -> TransactionOptions {
+    TransactionOptions::new().transaction_timeout(DEFAULT_TRANSACTION_TIMEOUT)
 }
 
 const QUERY_TYPE_TEMPLATE: &'static str = "<QUERY TYPE>";

@@ -1,9 +1,18 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.2.0-rc2
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.2.0
 
 
 ## New Features
+- **Add database 'schema' command to retrieve the database schema**
+
+
+- **Increase transaction timeout**
+  Set transaction timeout for opened transactions to 1 hour.
+  
+  This change significantly lowers the impact of https://github.com/typedb/typedb-console/issues/287.
+  
+  
 - **Improve multiline query support**
   
   We improve multi-line query support to allow copy-pasting queries and scripts containing empty newlines. In particular this makes pasting entire schema definitions from files. 
@@ -57,10 +66,8 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
   ```
   
   **Note that now `end` is a reserved keyword and cannot be used as a type!**
-
-
-- **Add database 'schema' command to retrieve the database schema**
-
+  
+  
 
 ## Bugs Fixed
 
@@ -70,4 +77,7 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 ## Other Improvements
 
+- **Update typedb-driver dependency for token-based authentication**
+  
+  
     

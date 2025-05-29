@@ -20,7 +20,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.44.2"
+		version = "1.45.0"
 		default-features = false
 
 	[dependencies.rustyline]
@@ -30,7 +30,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.36"
+		version = "4.5.38"
 		default-features = false
 
 	[dependencies.glob]
@@ -46,7 +46,7 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
-		rev = "b2341b75d9d4202468cfe834c5e5de186842e368"
+		rev = "e3b3ab1df21c7bbeef6b3bfd9b1a040343fbb54a"
 		git = "https://github.com/typedb/typedb-driver"
 		default-features = false
 
@@ -62,7 +62,7 @@ features = {}
 
 	[dependencies.rpassword]
 		features = []
-		version = "7.3.1"
+		version = "7.4.0"
 		default-features = false
 
 	[dependencies.home]

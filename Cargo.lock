@@ -2456,7 +2456,7 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-driver?rev=0e484c59ea9846ce80f94bb96e4f61f7bdfa0e57#0e484c59ea9846ce80f94bb96e4f61f7bdfa0e57"
+source = "git+https://github.com/typedb/typedb-driver?rev=b2341b75d9d4202468cfe834c5e5de186842e368#b2341b75d9d4202468cfe834c5e5de186842e368"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -2478,7 +2478,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=9ef738d2e0f5d9ebb57d1281a66b38267c430c15#9ef738d2e0f5d9ebb57d1281a66b38267c430c15"
+source = "git+https://github.com/typedb/typedb-protocol?rev=1480387a62e48b64b34d5d8626211c3d139e0465#1480387a62e48b64b34d5d8626211c3d139e0465"
 dependencies = [
  "prost",
  "tonic",

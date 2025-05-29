@@ -297,7 +297,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ))
         .add(CommandLeaf::new_with_inputs(
             "import",
-            "Create a new database with the given name based on another exported database.",
+            "Create a database with the given name based on another previously exported database.",
             vec![
                 CommandInput::new("db", get_word, None, None),
                 CommandInput::new("schema file path", get_word, None, None),
@@ -307,7 +307,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ))
         .add(CommandLeaf::new_with_inputs(
             "export",
-            "Export a database into a .tql schema definition and a .typedb data file.",
+            "Export a database into a schema definition and a data files.",
             vec![
                 CommandInput::new(
                     "db",

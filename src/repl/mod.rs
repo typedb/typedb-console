@@ -18,8 +18,6 @@ pub(crate) mod line_reader;
 
 pub(crate) trait ReplContext: Sized {
     fn current_repl(&self) -> &Repl<Self>;
-
-    fn has_changes(&self) -> bool;
 }
 
 pub(crate) struct Repl<Context> {

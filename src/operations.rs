@@ -252,13 +252,7 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
 
 pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let file_str = &input[0];
-    let mut path = PathBuf::from(file_str);
-    if !path.is_absolute() {
-        match context.script_dir.as_ref() {
-            None => path = context.invocation_dir.join(path),
-            Some(dir) => path = PathBuf::from(dir).join(path),
-        }
-    }
+    let path = context.convert_path(file_str);
     if !path.exists() {
         return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
             as Box<dyn Error + Send>);

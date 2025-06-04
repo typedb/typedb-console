@@ -65,13 +65,27 @@ struct ConsoleContext {
     script_dir: Option<String>,
 }
 
-impl ReplContext for ConsoleContext {
-    fn current_repl(&self) -> &Repl<Self> {
-        self.repl_stack.last().unwrap()
+impl ConsoleContext {
+    fn convert_path(&self, path: &str) -> PathBuf {
+        let path = Path::new(path);
+        if !path.is_absolute() {
+            match self.script_dir.as_ref() {
+                None => self.invocation_dir.join(path),
+                Some(dir) => PathBuf::from(dir).join(path),
+            }
+        } else {
+            path.to_path_buf()
+        }
     }
 
     fn has_changes(&self) -> bool {
         self.transaction.as_ref().is_some_and(|(_, has_writes)| *has_writes)
+    }
+}
+
+impl ReplContext for ConsoleContext {
+    fn current_repl(&self) -> &Repl<Self> {
+        self.repl_stack.last().unwrap()
     }
 }
 
@@ -138,10 +152,7 @@ fn main() {
 
 fn execute_scripts(context: &mut ConsoleContext, files: &[String]) {
     for file_path in files {
-        let mut path = PathBuf::from(file_path);
-        if !path.is_absolute() {
-            path = context.invocation_dir.join(path);
-        }
+        let path = context.convert_path(file_path);
         if let Ok(file) = File::open(&file_path) {
             execute_script(context, path, io::BufReader::new(file).lines())
         } else {

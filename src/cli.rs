@@ -16,7 +16,8 @@ pub struct Args {
 
     /// Executes all console commands directly from the script(s) in the order of each specified script.
     /// Exits if any script errors at any point.
-    /// Files must follow the convention of terminating queries with an empty newline
+    /// Files must follow the convention of terminating queries with an empty newline.
+    /// File path can be absolute or relative to the current directory
     #[arg(long, value_name = "path to script file")]
     pub script: Vec<String>,
 

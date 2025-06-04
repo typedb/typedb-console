@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fs::read_to_string, path::Path, process::exit, rc::Rc};
+use std::{
+    error::Error,
+    fs::read_to_string,
+    path::{Path, PathBuf},
+    process::exit,
+    rc::Rc,
+};
 
 use futures::stream::StreamExt;
 use typedb_driver::{
@@ -246,13 +252,19 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
 
 pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let file_str = &input[0];
-    let path = Path::new(file_str);
+    let mut path = PathBuf::from(file_str);
+    if !path.is_absolute() {
+        match context.script_dir.as_ref() {
+            None => path = context.invocation_dir.join(path),
+            Some(dir) => path = PathBuf::from(dir).join(path),
+        }
+    }
     if !path.exists() {
-        return Err(Box::new(ReplError { message: format!("File not found: {}", file_str) }) as Box<dyn Error + Send>);
+        return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
+            as Box<dyn Error + Send>);
     } else if path.is_dir() {
-        return Err(
-            Box::new(ReplError { message: format!("Path must be a file: {}", file_str) }) as Box<dyn Error + Send>
-        );
+        return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
+            as Box<dyn Error + Send>);
     }
 
     let contents = read_to_string(path).map_err(|err| {
@@ -267,7 +279,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
             input = &input[next_query_index..];
             continue;
         }
-        match execute_query(context, query.to_owned(), true) {
+        match execute_query(context, query.to_owned(), false) {
             Err(err) => {
                 return Err(Box::new(ReplError {
                     message: format!(
@@ -283,6 +295,9 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
                 input = &input[next_query_index..];
                 query_count += 1;
             }
+        }
+        if query_count % 1_000 == 0 {
+            println!("In progress: executed {} queries.", query_count);
         }
     }
     if !input.trim().is_empty() {
@@ -301,7 +316,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
             Ok(_) => query_count += 1,
         }
     }
-    println!("Successfully executed {} queries.", query_count);
+    println!("Finished executing {} queries.", query_count);
     Ok(())
 }
 

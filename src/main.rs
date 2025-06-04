@@ -5,13 +5,14 @@
  */
 
 use std::{
+    env,
     env::temp_dir,
     error::Error,
     fmt::{Debug, Display, Formatter},
     fs::File,
     io,
     io::BufRead,
-    path::Path,
+    path::{Path, PathBuf},
     process::exit,
     rc::Rc,
     sync::Arc,
@@ -56,19 +57,35 @@ const DIAGNOSTICS_REPORTING_URI: &'static str =
     "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
 
 struct ConsoleContext {
+    invocation_dir: PathBuf,
     repl_stack: Vec<Rc<Repl<ConsoleContext>>>,
     background_runtime: BackgroundRuntime,
     driver: Arc<TypeDBDriver>,
     transaction: Option<(Transaction, bool)>,
+    script_dir: Option<String>,
+}
+
+impl ConsoleContext {
+    fn convert_path(&self, path: &str) -> PathBuf {
+        let path = Path::new(path);
+        if !path.is_absolute() {
+            match self.script_dir.as_ref() {
+                None => self.invocation_dir.join(path),
+                Some(dir) => PathBuf::from(dir).join(path),
+            }
+        } else {
+            path.to_path_buf()
+        }
+    }
+
+    fn has_changes(&self) -> bool {
+        self.transaction.as_ref().is_some_and(|(_, has_writes)| *has_writes)
+    }
 }
 
 impl ReplContext for ConsoleContext {
     fn current_repl(&self) -> &Repl<Self> {
         self.repl_stack.last().unwrap()
-    }
-
-    fn has_changes(&self) -> bool {
-        self.transaction.as_ref().is_some_and(|(_, has_writes)| *has_writes)
     }
 }
 
@@ -111,8 +128,15 @@ fn main() {
     };
 
     let repl = entry_repl(driver.clone(), runtime.clone());
-    let mut context =
-        ConsoleContext { repl_stack: vec![Rc::new(repl)], background_runtime: runtime, transaction: None, driver };
+    let invocation_dir = PathBuf::from(env::current_dir().unwrap());
+    let mut context = ConsoleContext {
+        invocation_dir,
+        repl_stack: vec![Rc::new(repl)],
+        background_runtime: runtime,
+        transaction: None,
+        script_dir: None,
+        driver,
+    };
 
     if !args.command.is_empty() && !args.script.is_empty() {
         println!("Error: Cannot specify both commands and files");
@@ -128,17 +152,23 @@ fn main() {
 
 fn execute_scripts(context: &mut ConsoleContext, files: &[String]) {
     for file_path in files {
+        let path = context.convert_path(file_path);
         if let Ok(file) = File::open(&file_path) {
-            execute_script(context, &file_path, io::BufReader::new(file).lines())
+            execute_script(context, path, io::BufReader::new(file).lines())
         } else {
-            println!("Error opening file: {}", file_path);
+            println!("Error opening file: {}", path.to_string_lossy());
             exit(1);
         }
     }
 }
 
-fn execute_script(context: &mut ConsoleContext, file: &str, inputs: impl Iterator<Item = Result<String, io::Error>>) {
+fn execute_script(
+    context: &mut ConsoleContext,
+    file_path: PathBuf,
+    inputs: impl Iterator<Item = Result<String, io::Error>>,
+) {
     let mut combined_input = String::new();
+    context.script_dir = Some(file_path.parent().unwrap().to_string_lossy().to_string());
     for (index, input) in inputs.enumerate() {
         match input {
             Ok(line) => {
@@ -146,13 +176,14 @@ fn execute_script(context: &mut ConsoleContext, file: &str, inputs: impl Iterato
                 combined_input.push_str(&line);
             }
             Err(_) => {
-                println!("### Error reading file '{}' line: {}", file, index + 1);
+                println!("### Error reading file '{}' line: {}", file_path.to_string_lossy(), index + 1);
                 return;
             }
         }
     }
     // we could choose to implement this as line-by-line instead of as an interactive-compatible script
     let _ = execute_commands(context, &combined_input, false, true);
+    context.script_dir = None;
 }
 
 fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
@@ -342,7 +373,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         ))
         .add(CommandLeaf::new_with_input(
             "source",
-            "Execute a file containing a sequence of TypeQL queries. Queries may be split over multiple lines using backslash ('\\')",
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. Path may be absolute or relative to the invoking script (if there is one) otherwise relative to the current working directory.",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))

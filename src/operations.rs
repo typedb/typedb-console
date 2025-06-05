@@ -52,6 +52,35 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
+pub(crate) fn database_import(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let db_name = input[0].clone();
+    let schema = read_to_string(input[1].clone()).map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    let data_file_path: PathBuf = input[2].clone().into();
+    context
+        .background_runtime
+        .run(async move { driver.databases().import_file(db_name, schema, data_file_path).await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully imported database.");
+    Ok(())
+}
+
+pub(crate) fn database_export(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let db_name = input[0].clone();
+    let schema_file_path: PathBuf = input[1].clone().into();
+    let data_file_path: PathBuf = input[2].clone().into();
+    context
+        .background_runtime
+        .run(async move {
+            let db = driver.databases().get(db_name).await?;
+            db.export_file(schema_file_path, data_file_path).await
+        })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully exported database.");
+    Ok(())
+}
+
 pub(crate) fn database_delete(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let db_name = input[0].clone();

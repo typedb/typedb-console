@@ -28,9 +28,10 @@ use crate::{
     cli::Args,
     completions::{database_name_completer_fn, file_completer},
     operations::{
-        database_create, database_delete, database_list, database_schema, transaction_close, transaction_commit,
-        transaction_query, transaction_read, transaction_rollback, transaction_schema, transaction_source,
-        transaction_write, user_create, user_delete, user_list, user_update_password,
+        database_create, database_delete, database_export, database_import, database_list, database_schema,
+        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
+        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
+        user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -293,6 +294,31 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "Retrieve the TypeQL representation of a database's schema.",
             CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_schema,
+        ))
+        .add(CommandLeaf::new_with_inputs(
+            "import",
+            "Create a database with the given name based on another previously exported database.",
+            vec![
+                CommandInput::new("db", get_word, None, None),
+                CommandInput::new("schema file path", get_word, None, None),
+                CommandInput::new("data file path", get_word, None, None),
+            ],
+            database_import,
+        ))
+        .add(CommandLeaf::new_with_inputs(
+            "export",
+            "Export a database into a schema definition and a data files.",
+            vec![
+                CommandInput::new(
+                    "db",
+                    get_word,
+                    None,
+                    Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+                ),
+                CommandInput::new("schema file path", get_word, None, None),
+                CommandInput::new("data file path", get_word, None, None),
+            ],
+            database_export,
         ));
 
     let user_commands = Subcommand::new("user")

@@ -5,11 +5,10 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def typedb_dependencies():
-    # TODO: Return typedb
     git_repository(
         name = "typedb_dependencies",
-        remote = "https://github.com/farost/typedb-dependencies",
-        commit = "b198f8d11a0b437ee9f9cf1e4eead8bedcdb7312", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        remote = "https://github.com/typedb/typedb-dependencies",
+        commit = "4ffeaabde31c41cee271cbb563f17168f4229a93", # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typedb_driver():
@@ -17,7 +16,7 @@ def typedb_driver():
     git_repository(
         name = "typedb_driver",
         remote = "https://github.com/farost/typedb-driver",
-        commit = "8ff2b2d5da375eaee13baf9e8167f51d74a79bdc",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        commit = "3fe2be96066d0e3ed64654b3b3bcfed9554acafb",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )
 
 def typeql():

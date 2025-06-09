@@ -59,7 +59,7 @@ pub(crate) fn database_import(context: &mut ConsoleContext, input: &[String]) ->
     let data_file_path: PathBuf = input[2].clone().into();
     context
         .background_runtime
-        .run(async move { driver.databases().import_file(db_name, schema, data_file_path).await })
+        .run(async move { driver.databases().import_from_file(db_name, schema, data_file_path).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully imported database.");
     Ok(())
@@ -74,7 +74,7 @@ pub(crate) fn database_export(context: &mut ConsoleContext, input: &[String]) ->
         .background_runtime
         .run(async move {
             let db = driver.databases().get(db_name).await?;
-            db.export_file(schema_file_path, data_file_path).await
+            db.export_to_file(schema_file_path, data_file_path).await
         })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully exported database.");

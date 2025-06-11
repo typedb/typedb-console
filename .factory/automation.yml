@@ -12,7 +12,7 @@ build:
   quality:
     filter:
       owner: typedb
-      branch: [master, development, "3.0"]
+      branch: [master]
     dependency-analysis:
       image: typedb-ubuntu-22.04
       command: |
@@ -56,7 +56,7 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master, "3.0"]
+    branch: [master]
   validation:
     validate-dependencies:
       image: typedb-ubuntu-22.04

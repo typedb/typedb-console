@@ -22,7 +22,7 @@ use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
-use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
+use typedb_driver::{Addresses, Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 
 use crate::{
     cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
@@ -165,9 +165,9 @@ fn main() {
 
     let runtime = BackgroundRuntime::new();
     let driver = match runtime.run(TypeDBDriver::new(
-        address,
+        Addresses::try_from_address_str(&address).unwrap(),
         Credentials::new(&username, args.password.as_ref().unwrap()),
-        DriverOptions::new(!args.tls_disabled, tls_root_ca_path).unwrap(),
+        DriverOptions::new().tls_enabled(!args.tls_disabled).tls_root_ca(tls_root_ca_path).unwrap(),
     )) {
         Ok(driver) => Arc::new(driver),
         Err(err) => {

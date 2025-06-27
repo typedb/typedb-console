@@ -14,4 +14,4 @@ pub mod common {
     pub const SECONDS_IN_HOUR: u64 = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
 }
 
-pub const DEFAULT_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+pub const DEFAULT_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(10);

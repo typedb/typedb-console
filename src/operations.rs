@@ -132,7 +132,7 @@ pub(crate) fn user_list(context: &mut ConsoleContext, _input: &[String]) -> Comm
         println!("No users are present.");
     } else {
         for user in users {
-            println!("{}", user.name);
+            println!("{}", user.name());
         }
     }
     Ok(())
@@ -184,13 +184,13 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
             };
         let current_user = driver
             .users()
-            .get_current_user()
+            .get_current()
             .await
             .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
             .expect("Could not fetch currently logged in user.");
 
         user.update_password(new_password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-        Ok(current_user.name == username)
+        Ok(current_user.name() == username)
     })?;
     if updated_current_user {
         println!("Successfully updated current user's password, exiting console. Please log in with the updated credentials.");

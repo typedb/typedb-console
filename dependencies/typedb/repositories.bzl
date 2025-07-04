@@ -12,11 +12,21 @@ def typedb_dependencies():
     )
 
 def typedb_driver():
+    # TODO: Return typedb
+#    native.local_repository(
+#        name = "typedb_driver",
+#        path = "../typedb-driver",
+#    )
     git_repository(
         name = "typedb_driver",
-        remote = "https://github.com/typedb/typedb-driver",
-        tag = "3.4.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        remote = "https://github.com/farost/typedb-driver",
+        commit = "f1bf3d9e327344fe7a67084c13da4eb0fb5ca2be",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )
+#    git_repository(
+#        name = "typedb_driver",
+#        remote = "https://github.com/typedb/typedb-driver",
+#        tag = "3.4.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+#    )
 
 def typeql():
     git_repository(

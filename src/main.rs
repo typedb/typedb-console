@@ -17,7 +17,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-
+use std::collections::HashMap;
 use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
@@ -99,10 +99,11 @@ fn main() {
     if args.password.is_none() {
         args.password = Some(LineReaderHidden::new().readline(&format!("password for '{}': ", args.username)));
     }
-    if !args.diagnostics_disable {
+    if !args.diagnostics_disabled {
         init_diagnostics()
     }
-    if !args.tls_disabled && !args.address.starts_with("https:") {
+    let address_info = parse_addresses(&args);
+    if !args.tls_disabled && !address_info.only_https {
         println!(
             "\
             TLS connections can only be enabled when connecting to HTTPS endpoints, for example using 'https://<ip>:port'. \
@@ -113,10 +114,11 @@ fn main() {
     }
     let runtime = BackgroundRuntime::new();
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
+    let driver_options = DriverOptions::new().use_replication(!args.replication_disabled).is_tls_enabled(!args.tls_disabled).tls_root_ca(tls_root_ca_path).unwrap();
     let driver = match runtime.run(TypeDBDriver::new(
-        Addresses::try_from_address_str(args.address).unwrap(),
+        address_info.addresses,
         Credentials::new(&args.username, args.password.as_ref().unwrap()),
-        DriverOptions::new().is_tls_enabled(!args.tls_disabled).tls_root_ca(tls_root_ca_path).unwrap(),
+        driver_options,
     )) {
         Ok(driver) => Arc::new(driver),
         Err(err) => {
@@ -423,6 +425,40 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
         TransactionType::Write => "write",
         TransactionType::Schema => "schema",
     }
+}
+
+struct AddressInfo {
+    only_https: bool,
+    addresses: Addresses,
+}
+
+fn parse_addresses(args: &Args) -> AddressInfo {
+    if let Some(address) = &args.address {
+        AddressInfo {only_https: is_https_address(address), addresses: Addresses::try_from_address_str(address).unwrap() }
+    } else if let Some(addresses) = &args.addresses {
+        let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
+        println!("Split: {split:?}");
+        let only_https = split.iter().all(|address| is_https_address(address));
+        AddressInfo {only_https, addresses: Addresses::try_from_addresses_str(split).unwrap() }
+    } else if let Some(translation) = &args.address_translation {
+        let mut map = HashMap::new();
+        let mut only_https = true;
+        for pair in translation.split(',') {
+            let (public_address, private_address) = pair
+                .split_once('=')
+                .unwrap_or_else(|| panic!("Invalid address pair: {pair}. Must be of form public=private"));
+            only_https = only_https && is_https_address(public_address);
+            map.insert(public_address.to_string(), private_address.to_string());
+        }
+        println!("Translation map:: {map:?}");
+        AddressInfo {only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
+    } else {
+        panic!("At least one of --address, --addresses, or --address-translation must be provided.");
+    }
+}
+
+fn is_https_address(address: &str) -> bool {
+    address.starts_with("https:")
 }
 
 fn init_diagnostics() {

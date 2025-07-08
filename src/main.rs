@@ -40,6 +40,7 @@ use crate::{
     },
     runtime::BackgroundRuntime,
 };
+use crate::operations::{replica_deregister, replica_list, replica_primary, replica_register, server_version};
 
 mod cli;
 mod completions;
@@ -326,6 +327,9 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
+    let server_commands = Subcommand::new("server")
+        .add(CommandLeaf::new("version", "Retrieve server version.", server_version));
+    
     let database_commands = Subcommand::new("database")
         .add(CommandLeaf::new("list", "List databases on the server.", database_list))
         .add(CommandLeaf::new_with_input(
@@ -410,6 +414,25 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             user_update_password,
         ));
 
+    let replica_commands = Subcommand::new("replica")
+        .add(CommandLeaf::new("list", "List replicas.", replica_list))
+        .add(CommandLeaf::new("primary", "Get current primary replica.", replica_primary))
+        .add(CommandLeaf::new_with_inputs(
+            "register",
+            "Register new replica.",
+            vec![
+                CommandInput::new("replica id", get_word, None, None),
+                CommandInput::new("address", get_word, None, None),
+            ],
+            replica_register,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "deregister",
+            "Deregister existing replica.",
+            CommandInput::new("replica id", get_word, None, None),
+            replica_deregister,
+        ));
+
     let transaction_commands = Subcommand::new("transaction")
         .add(CommandLeaf::new_with_input(
             "read",
@@ -445,8 +468,10 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(ENTRY_REPL_HISTORY);
 
     let repl = Repl::new(PROMPT.to_owned(), history_path, false, None)
+        .add(server_commands)
         .add(database_commands)
         .add(user_commands)
+        .add(replica_commands)
         .add(transaction_commands);
 
     repl

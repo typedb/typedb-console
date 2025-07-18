@@ -57,6 +57,36 @@ const TRANSACTION_REPL_HISTORY: &'static str = "typedb_console_transaction_repl_
 const DIAGNOSTICS_REPORTING_URI: &'static str =
     "https://7f0ccb67b03abfccbacd7369d1f4ac6b@o4506315929812992.ingest.sentry.io/4506355433537536";
 
+#[derive(Debug, Copy, Clone)]
+enum ExitCode {
+    Success = 0,
+    GeneralError = 1,
+    CommandError = 2,
+    ConnectionError = 3,
+    UserInputError = 4,
+    QueryError = 5,
+}
+
+fn exit_with_error(err: &(dyn std::error::Error + 'static)) -> ! {
+    use crate::repl::command::ReplError;
+    if let Some(repl_err) = err.downcast_ref::<ReplError>() {
+        eprintln!("Error: {}", repl_err);
+        exit(ExitCode::UserInputError as i32);
+    } else if let Some(io_err) = err.downcast_ref::<io::Error>() {
+        eprintln!("I/O Error: {}", io_err);
+        exit(ExitCode::UserInputError as i32);
+    } else if let Some(driver_err) = err.downcast_ref::<typedb_driver::Error>() {
+        eprintln!("TypeDB Error: {}", driver_err);
+        exit(ExitCode::QueryError as i32);
+    } else if let Some(command_error) = err.downcast_ref::<CommandError>() {
+        eprintln!("Command Error: {}", command_error);
+        exit(ExitCode::CommandError as i32);
+    } else {
+        eprintln!("Error: {}", err);
+        exit(ExitCode::GeneralError as i32);
+    }
+}
+
 struct ConsoleContext {
     invocation_dir: PathBuf,
     repl_stack: Vec<Rc<Repl<ConsoleContext>>>,
@@ -94,7 +124,7 @@ fn main() {
     let mut args = Args::parse();
     if args.version {
         println!("{}", VERSION);
-        exit(0);
+        exit(ExitCode::Success as i32);
     }
     if args.password.is_none() {
         args.password = Some(LineReaderHidden::new().readline(&format!("password for '{}': ", args.username)));
@@ -109,7 +139,7 @@ fn main() {
             Please modify the address, or disable TLS (--tls-disabled). WARNING: this will send passwords over plaintext!\
         "
         );
-        exit(1);
+        exit(ExitCode::UserInputError as i32);
     }
     let runtime = BackgroundRuntime::new();
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
@@ -120,11 +150,11 @@ fn main() {
     )) {
         Ok(driver) => Arc::new(driver),
         Err(err) => {
-            println!("Failed to create driver connection to server. {}", err);
+            eprintln!("Failed to create driver connection to server. {}", err);
             if !args.tls_disabled {
-                println!("Verify that the server is also configured with TLS encryption.");
+                eprintln!("Verify that the server is also configured with TLS encryption.");
             }
-            exit(1);
+            exit(ExitCode::ConnectionError as i32);
         }
     };
 
@@ -140,27 +170,31 @@ fn main() {
     };
 
     if !args.command.is_empty() && !args.script.is_empty() {
-        println!("Error: Cannot specify both commands and files");
-        exit(1);
+        eprintln!("Error: Cannot specify both commands and files");
+        exit(ExitCode::UserInputError as i32);
     } else if !args.command.is_empty() {
-        execute_command_list(&mut context, &args.command);
+        if let Err(err) = execute_command_list(&mut context, &args.command) {
+            exit_with_error(&*err);
+        }
     } else if !args.script.is_empty() {
-        execute_scripts(&mut context, &args.script);
+        if let Err(err) = execute_scripts(&mut context, &args.script) {
+            exit_with_error(&*err);
+        }
     } else {
         execute_interactive(&mut context);
     }
 }
 
-fn execute_scripts(context: &mut ConsoleContext, files: &[String]) {
+fn execute_scripts(context: &mut ConsoleContext, files: &[String]) -> Result<(), Box<dyn Error>> {
     for file_path in files {
         let path = context.convert_path(file_path);
         if let Ok(file) = File::open(&file_path) {
             execute_script(context, path, io::BufReader::new(file).lines())
         } else {
-            println!("Error opening file: {}", path.to_string_lossy());
-            exit(1);
+            return Err(Box::new(io::Error::new(io::ErrorKind::NotFound, format!("Error opening file: {}", path.to_string_lossy()))));
         }
     }
+    Ok(())
 }
 
 fn execute_script(
@@ -187,13 +221,14 @@ fn execute_script(
     context.script_dir = None;
 }
 
-fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) {
+fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) -> Result<(), Box<dyn Error>> {
     for command in commands {
-        if let Err(_) = execute_commands(context, command, true, true) {
-            println!("### Stopped executing at command: {}", command);
-            exit(1);
+        if let Err(err) = execute_commands(context, command, true, true) {
+            eprintln!("### Stopped executing at command: {}", command);
+            return Err(Box::new(err));
         }
     }
+    Ok(())
 }
 
 fn execute_interactive(context: &mut ConsoleContext) {
@@ -221,7 +256,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
                     // do nothing
                 } else {
                     // this is unexpected... quit
-                    exit(1)
+                    exit(ExitCode::GeneralError as i32);
                 }
             }
             Err(err) => {
@@ -236,7 +271,7 @@ fn execute_commands(
     mut input: &str,
     coerce_each_command_to_one_line: bool,
     must_log_command: bool,
-) -> Result<(), EmptyError> {
+) -> Result<(), CommandError> {
     let mut multiple_commands = None;
     while !context.repl_stack.is_empty() && !input.trim().is_empty() {
         let repl_index = context.repl_stack.len() - 1;
@@ -244,8 +279,9 @@ fn execute_commands(
 
         input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
             Ok(None) => {
-                println!("Unrecognised command: {}", input);
-                return Err(EmptyError {});
+                let message = format!("Unrecognised command: {}", input);
+                println!("{}", message);
+                return Err(CommandError { message });
             }
             Ok(Some((command, arguments, next_command_index))) => {
                 let command_string = &input[0..next_command_index];
@@ -259,14 +295,15 @@ fn execute_commands(
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
-                        println!("Error executing command: '{}'\n{}", command_string.trim(), err);
-                        return Err(EmptyError {});
+                        let message = format!("Error executing command: '{}'\n{}", command_string.trim(), err);
+                        println!("{}", message);
+                        return Err(CommandError { message});
                     }
                 }
             }
             Err(err) => {
                 println!("{}", err);
-                return Err(EmptyError {});
+                return Err(CommandError { message: err.to_string() });
             }
         };
         input = input.trim_start();
@@ -432,18 +469,20 @@ fn init_diagnostics() {
     ));
 }
 
-struct EmptyError {}
+struct CommandError {
+    message: String,
+}
 
-impl Debug for EmptyError {
+impl Debug for CommandError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }
 }
 
-impl Display for EmptyError {
+impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "")
+        write!(f, "{}", self.message)
     }
 }
 
-impl Error for EmptyError {}
+impl Error for CommandError {}

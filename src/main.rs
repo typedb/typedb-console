@@ -74,7 +74,7 @@ fn exit_with_error(err: &(dyn std::error::Error + 'static)) -> ! {
         exit(ExitCode::UserInputError as i32);
     } else if let Some(io_err) = err.downcast_ref::<io::Error>() {
         eprintln!("I/O Error: {}", io_err);
-        exit(ExitCode::UserInputError as i32);
+        exit(ExitCode::GeneralError as i32);
     } else if let Some(driver_err) = err.downcast_ref::<typedb_driver::Error>() {
         eprintln!("TypeDB Error: {}", driver_err);
         exit(ExitCode::QueryError as i32);
@@ -133,7 +133,7 @@ fn main() {
         init_diagnostics()
     }
     if !args.tls_disabled && !args.address.starts_with("https:") {
-        println!(
+        eprintln!(
             "\
             TLS connections can only be enabled when connecting to HTTPS endpoints, for example using 'https://<ip>:port'. \
             Please modify the address, or disable TLS (--tls-disabled). WARNING: this will send passwords over plaintext!\
@@ -191,7 +191,10 @@ fn execute_scripts(context: &mut ConsoleContext, files: &[String]) -> Result<(),
         if let Ok(file) = File::open(&file_path) {
             execute_script(context, path, io::BufReader::new(file).lines())
         } else {
-            return Err(Box::new(io::Error::new(io::ErrorKind::NotFound, format!("Error opening file: {}", path.to_string_lossy()))));
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Error opening file: {}", path.to_string_lossy()),
+            )));
         }
     }
     Ok(())
@@ -280,7 +283,7 @@ fn execute_commands(
         input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
             Ok(None) => {
                 let message = format!("Unrecognised command: {}", input);
-                println!("{}", message);
+                eprintln!("{}", message);
                 return Err(CommandError { message });
             }
             Ok(Some((command, arguments, next_command_index))) => {
@@ -290,19 +293,19 @@ fn execute_commands(
                 }
 
                 if must_log_command || multiple_commands.is_some_and(|b| b) {
-                    println!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
+                    eprintln!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
                 }
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
                         let message = format!("Error executing command: '{}'\n{}", command_string.trim(), err);
-                        println!("{}", message);
-                        return Err(CommandError { message});
+                        eprintln!("{}", message);
+                        return Err(CommandError { message });
                     }
                 }
             }
             Err(err) => {
-                println!("{}", err);
+                eprintln!("{}", err);
                 return Err(CommandError { message: err.to_string() });
             }
         };

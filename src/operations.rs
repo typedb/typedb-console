@@ -213,15 +213,17 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
 
 pub(crate) fn replica_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replicas = driver.replicas();
-    if replicas.is_empty() {
-        println!("No replicas are present.");
-    } else {
-        for replica in replicas {
-            println!("{}", replica.address());
+    context.background_runtime.run(async move {
+        let replicas = driver.replicas().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+        if replicas.is_empty() {
+            println!("No replicas are present.");
+        } else {
+            for replica in replicas {
+                println!("{}", replica.address());
+            }
         }
-    }
-    Ok(())
+        Ok(())
+    })
 }
 
 pub(crate) fn replica_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {

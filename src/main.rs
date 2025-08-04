@@ -329,7 +329,26 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
     let server_commands = Subcommand::new("server")
         .add(CommandLeaf::new("version", "Retrieve server version.", server_version));
-    
+
+    let replica_commands = Subcommand::new("replica")
+        .add(CommandLeaf::new("list", "List replicas.", replica_list))
+        .add(CommandLeaf::new("primary", "Get current primary replica.", replica_primary))
+        .add(CommandLeaf::new_with_inputs(
+            "register",
+            "Register new replica. Requires a clustering address, not a connection address.",
+            vec![
+                CommandInput::new("replica id", get_word, None, None),
+                CommandInput::new("clustering address", get_word, None, None),
+            ],
+            replica_register,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "deregister",
+            "Deregister existing replica.",
+            CommandInput::new("replica id", get_word, None, None),
+            replica_deregister,
+        ));
+
     let database_commands = Subcommand::new("database")
         .add(CommandLeaf::new("list", "List databases on the server.", database_list))
         .add(CommandLeaf::new_with_input(
@@ -412,25 +431,6 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
                 CommandInput::new_hidden("new password", get_word, get_word, None),
             ],
             user_update_password,
-        ));
-
-    let replica_commands = Subcommand::new("replica")
-        .add(CommandLeaf::new("list", "List replicas.", replica_list))
-        .add(CommandLeaf::new("primary", "Get current primary replica.", replica_primary))
-        .add(CommandLeaf::new_with_inputs(
-            "register",
-            "Register new replica.",
-            vec![
-                CommandInput::new("replica id", get_word, None, None),
-                CommandInput::new("address", get_word, None, None),
-            ],
-            replica_register,
-        ))
-        .add(CommandLeaf::new_with_input(
-            "deregister",
-            "Deregister existing replica.",
-            CommandInput::new("replica id", get_word, None, None),
-            replica_deregister,
         ));
 
     let transaction_commands = Subcommand::new("transaction")
@@ -537,7 +537,6 @@ fn parse_addresses(args: &Args) -> AddressInfo {
         AddressInfo {only_https: is_https_address(address), addresses: Addresses::try_from_address_str(address).unwrap() }
     } else if let Some(addresses) = &args.addresses {
         let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
-        println!("Split: {split:?}");
         let only_https = split.iter().all(|address| is_https_address(address));
         AddressInfo {only_https, addresses: Addresses::try_from_addresses_str(split).unwrap() }
     } else if let Some(translation) = &args.address_translation {
@@ -550,7 +549,7 @@ fn parse_addresses(args: &Args) -> AddressInfo {
             only_https = only_https && is_https_address(public_address);
             map.insert(public_address.to_string(), private_address.to_string());
         }
-        println!("Translation map:: {map:?}");
+        println!("Translation map:: {map:?}"); // TODO: Remove
         AddressInfo {only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
     } else {
         panic!("At least one of --address, --addresses, or --address-translation must be provided.");

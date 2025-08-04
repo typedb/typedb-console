@@ -46,6 +46,8 @@ pub struct Args {
     #[arg(long = "replication-disabled", default_value = "false")]
     pub replication_disabled: bool,
 
+    // TODO: Add cluster-related retries/attempts flags from Driver Options?
+
     /// Username for authentication
     #[arg(long, value_name = USERNAME_VALUE_NAME)]
     pub username: Option<String>,

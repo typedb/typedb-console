@@ -129,7 +129,7 @@ fn main() {
     let address = match args.address {
         Some(address) => address,
         None => {
-            println_error!("missing server address ('{}').", format_argument!("--address=<{ADDRESS_VALUE_NAME}>"));
+            println_error!("missing server address ('{}').", format_argument!("--address <{ADDRESS_VALUE_NAME}>"));
             exit(ExitCode::UserInputError as i32);
         }
     };
@@ -138,7 +138,7 @@ fn main() {
         None => {
             println_error!(
                 "username is required for connection authentication ('{}').",
-                format_argument!("--username=<{USERNAME_VALUE_NAME}>")
+                format_argument!("--username <{USERNAME_VALUE_NAME}>")
             );
             exit(ExitCode::UserInputError as i32);
         }

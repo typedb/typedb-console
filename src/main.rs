@@ -25,7 +25,7 @@ use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 
 use crate::{
-    cli::Args,
+    cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
         database_create, database_delete, database_export, database_import, database_list, database_schema,
@@ -70,19 +70,19 @@ enum ExitCode {
 fn exit_with_error(err: &(dyn std::error::Error + 'static)) -> ! {
     use crate::repl::command::ReplError;
     if let Some(repl_err) = err.downcast_ref::<ReplError>() {
-        eprintln!("Error: {}", repl_err);
+        println_error!("Error: {}", repl_err);
         exit(ExitCode::UserInputError as i32);
     } else if let Some(io_err) = err.downcast_ref::<io::Error>() {
-        eprintln!("I/O Error: {}", io_err);
+        println_error!("I/O Error: {}", io_err);
         exit(ExitCode::GeneralError as i32);
     } else if let Some(driver_err) = err.downcast_ref::<typedb_driver::Error>() {
-        eprintln!("TypeDB Error: {}", driver_err);
+        println_error!("TypeDB Error: {}", driver_err);
         exit(ExitCode::QueryError as i32);
     } else if let Some(command_error) = err.downcast_ref::<CommandError>() {
-        eprintln!("Command Error: {}", command_error);
+        println_error!("Command Error: {}", command_error);
         exit(ExitCode::CommandError as i32);
     } else {
-        eprintln!("Error: {}", err);
+        println_error!("Error: {}", err);
         exit(ExitCode::GeneralError as i32);
     }
 }
@@ -126,34 +126,54 @@ fn main() {
         println!("{}", VERSION);
         exit(ExitCode::Success as i32);
     }
+    let address = match args.address {
+        Some(address) => address,
+        None => {
+            println_error!("missing server address ('{}').", format_argument!("--address <{ADDRESS_VALUE_NAME}>"));
+            exit(ExitCode::UserInputError as i32);
+        }
+    };
+    let username = match args.username {
+        Some(username) => username,
+        None => {
+            println_error!(
+                "username is required for connection authentication ('{}').",
+                format_argument!("--username <{USERNAME_VALUE_NAME}>")
+            );
+            exit(ExitCode::UserInputError as i32);
+        }
+    };
     if args.password.is_none() {
-        args.password = Some(LineReaderHidden::new().readline(&format!("password for '{}': ", args.username)));
+        args.password = Some(LineReaderHidden::new().readline(&format!("password for '{username}': ")));
     }
     if !args.diagnostics_disable {
         init_diagnostics()
     }
-    if !args.tls_disabled && !args.address.starts_with("https:") {
-        eprintln!(
+    if !args.tls_disabled && !address.starts_with("https:") {
+        println_error!(
             "\
-            TLS connections can only be enabled when connecting to HTTPS endpoints, for example using 'https://<ip>:port'. \
-            Please modify the address, or disable TLS (--tls-disabled). WARNING: this will send passwords over plaintext!\
-        "
+            TLS connections can only be enabled when connecting to HTTPS endpoints. \
+            For example, using 'https://<ip>:port'.\n\
+            Please modify the address or disable TLS ('{}'). {}\
+        ",
+            format_argument!("--tls-disabled"),
+            format_warning!("WARNING: this will send passwords over plaintext!"),
         );
         exit(ExitCode::UserInputError as i32);
     }
-    let runtime = BackgroundRuntime::new();
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
+
+    let runtime = BackgroundRuntime::new();
     let driver = match runtime.run(TypeDBDriver::new(
-        args.address,
-        Credentials::new(&args.username, args.password.as_ref().unwrap()),
+        address,
+        Credentials::new(&username, args.password.as_ref().unwrap()),
         DriverOptions::new(!args.tls_disabled, tls_root_ca_path).unwrap(),
     )) {
         Ok(driver) => Arc::new(driver),
         Err(err) => {
-            eprintln!("Failed to create driver connection to server. {}", err);
-            if !args.tls_disabled {
-                eprintln!("Verify that the server is also configured with TLS encryption.");
-            }
+            let tls_error =
+                if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
+            println_error!("Failed to create driver connection to server. {err}{tls_error}");
             exit(ExitCode::ConnectionError as i32);
         }
     };
@@ -170,7 +190,7 @@ fn main() {
     };
 
     if !args.command.is_empty() && !args.script.is_empty() {
-        eprintln!("Error: Cannot specify both commands and files");
+        println_error!("cannot specify both commands and files");
         exit(ExitCode::UserInputError as i32);
     } else if !args.command.is_empty() {
         if let Err(err) = execute_command_list(&mut context, &args.command) {
@@ -227,7 +247,7 @@ fn execute_script(
 fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) -> Result<(), Box<dyn Error>> {
     for command in commands {
         if let Err(err) = execute_commands(context, command, true, true) {
-            eprintln!("### Stopped executing at command: {}", command);
+            println_error!("### Stopped executing at command: {}", command);
             return Err(Box::new(err));
         }
     }
@@ -283,7 +303,7 @@ fn execute_commands(
         input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
             Ok(None) => {
                 let message = format!("Unrecognised command: {}", input);
-                eprintln!("{}", message);
+                println_error!("{}", message);
                 return Err(CommandError { message });
             }
             Ok(Some((command, arguments, next_command_index))) => {
@@ -293,19 +313,19 @@ fn execute_commands(
                 }
 
                 if must_log_command || multiple_commands.is_some_and(|b| b) {
-                    eprintln!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
+                    println_error!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
                 }
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
                         let message = format!("Error executing command: '{}'\n{}", command_string.trim(), err);
-                        eprintln!("{}", message);
+                        println_error!("{}", message);
                         return Err(CommandError { message });
                     }
                 }
             }
             Err(err) => {
-                eprintln!("{}", err);
+                println_error!("{}", err);
                 return Err(CommandError { message: err.to_string() });
             }
         };

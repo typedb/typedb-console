@@ -6,6 +6,9 @@
 
 use clap::Parser;
 
+pub const ADDRESS_VALUE_NAME: &str = "host:port";
+pub const USERNAME_VALUE_NAME: &str = "username";
+
 #[derive(Parser, Debug)]
 #[command(author, about)]
 pub struct Args {
@@ -22,12 +25,12 @@ pub struct Args {
     pub script: Vec<String>,
 
     /// TypeDB address to connect to. If using TLS encryption, this must start with "https://"
-    #[arg(long, value_name = "host:port")]
-    pub address: String,
+    #[arg(long, value_name = ADDRESS_VALUE_NAME)]
+    pub address: Option<String>,
 
     /// Username for authentication
-    #[arg(long, value_name = "username")]
-    pub username: String,
+    #[arg(long, value_name = USERNAME_VALUE_NAME)]
+    pub username: Option<String>,
 
     /// Password for authentication. Will be requested safely by default.
     #[arg(long, value_name = "password")]

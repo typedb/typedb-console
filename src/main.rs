@@ -172,8 +172,8 @@ fn main() {
         Ok(driver) => Arc::new(driver),
         Err(err) => {
             let tls_error =
-                if args.tls_disabled { "" } else { "Verify that the server is also configured with TLS encryption." };
-            println_error!("Failed to create driver connection to server. {err}\n{tls_error}");
+                if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
+            println_error!("Failed to create driver connection to server. {err}{tls_error}");
             exit(ExitCode::ConnectionError as i32);
         }
     };

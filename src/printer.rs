@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use clap::builder::styling::{AnsiColor, Color, Style};
 use typedb_driver::{
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
@@ -13,6 +14,54 @@ use typedb_driver::{
 const TABLE_INDENT: &'static str = "   ";
 const CONTENT_INDENT: &'static str = "    ";
 const TABLE_DASHES: usize = 7;
+
+pub const ERROR_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Red))).bold();
+pub const WARNING_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))).bold();
+pub const ARGUMENT_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
+
+#[macro_export]
+macro_rules! format_error {
+    ($($arg:tt)*) => {
+        $crate::format_colored!($crate::printer::ERROR_STYLE, $($arg)*)
+    };
+}
+
+#[macro_export]
+macro_rules! format_warning {
+    ($($arg:tt)*) => {
+        $crate::format_colored!($crate::printer::WARNING_STYLE, $($arg)*)
+    };
+}
+
+#[macro_export]
+macro_rules! format_argument {
+    ($($arg:tt)*) => {
+        $crate::format_colored!($crate::printer::ARGUMENT_STYLE, $($arg)*)
+    };
+}
+
+#[macro_export]
+macro_rules! format_colored {
+    ($style:expr, $($arg:tt)*) => {
+        format!(
+            "{}{}{}",
+            $style.render(),
+            format!($($arg)*),
+            $style.render_reset()
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! println_error {
+    ($($arg:tt)*) => {
+        eprintln!(
+            "{} {}",
+            $crate::format_error!("error:"),
+            format!($($arg)*)
+        );
+    }
+}
 
 fn println(string: &str) {
     println!("{}", string)

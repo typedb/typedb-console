@@ -53,49 +53,6 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
     Ok(())
 }
 
-enum FileResource {
-    Remote(String),
-    Local(PathBuf)
-}
-
-impl FileResource {
-    fn parse(context: &mut ConsoleContext, string: &str) -> Self {
-        if string.starts_with("http://") || string.starts_with("https://") {
-            Self::Remote(string.to_owned())
-        } else {
-            Self::Local(context.convert_path(&string))
-        }
-    }
-
-    fn read_to_string(&self) -> Result<String, Box<dyn Error + Send>> {
-        match self {
-            FileResource::Remote(url) => {
-                let response = ureq::get(url)
-                    .call()
-                    .map_err(|e| Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to fetch file from {}: {}", url, e)
-                    )) as Box<dyn Error + Send>)?;
-                response.into_string()
-                    .map_err(|e| Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to read file content from {}: {}", url, e)
-                    )) as Box<dyn Error + Send>)
-            }
-            FileResource::Local(path) => {
-                if !path.exists() {
-                    return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
-                        as Box<dyn Error + Send>);
-                } else if path.is_dir() {
-                    return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
-                        as Box<dyn Error + Send>);
-                }
-                read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
-            }
-        }
-    }
-}
-
 pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let db_name = &input[0];
     let schema_uri = &input[1];
@@ -405,6 +362,49 @@ pub(crate) fn transaction_query(context: &mut ConsoleContext, input: &[impl AsRe
 
 fn default_transaction_options() -> TransactionOptions {
     TransactionOptions::new().transaction_timeout(DEFAULT_TRANSACTION_TIMEOUT)
+}
+
+enum FileResource {
+    Remote(String),
+    Local(PathBuf)
+}
+
+impl FileResource {
+    fn parse(context: &mut ConsoleContext, string: &str) -> Self {
+        if string.starts_with("http://") || string.starts_with("https://") {
+            Self::Remote(string.to_owned())
+        } else {
+            Self::Local(context.convert_path(&string))
+        }
+    }
+
+    fn read_to_string(&self) -> Result<String, Box<dyn Error + Send>> {
+        match self {
+            FileResource::Remote(url) => {
+                let response = ureq::get(url)
+                    .call()
+                    .map_err(|e| Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to fetch file from {}: {}", url, e)
+                    )) as Box<dyn Error + Send>)?;
+                response.into_string()
+                    .map_err(|e| Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to read file content from {}: {}", url, e)
+                    )) as Box<dyn Error + Send>)
+            }
+            FileResource::Local(path) => {
+                if !path.exists() {
+                    return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
+                        as Box<dyn Error + Send>);
+                } else if path.is_dir() {
+                    return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
+                        as Box<dyn Error + Send>);
+                }
+                read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+            }
+        }
+    }
 }
 
 const QUERY_TYPE_TEMPLATE: &'static str = "<QUERY TYPE>";

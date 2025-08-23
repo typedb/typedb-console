@@ -345,7 +345,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ))
         .add(CommandLeaf::new_with_inputs(
             "create-init",
-            "Create a new database with the given name and run schema and data from files. Files may be HTTP resources, or absolute or relative paths. Files are treated identically to 'transaction source' commands run explicitly.",
+            "Create a new database with the given name and load schema and data from files. Files may be HTTP-hosted files, or absolute or relative paths. File contents are treated identically to 'transaction source' commands run explicitly, and may contain multiple queries separated by 'end;' markers.",
             vec![
                 CommandInput::new("db", get_word, None, None),
                 CommandInput::new("schema file", get_word, None, None),
@@ -469,7 +469,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         ))
         .add(CommandLeaf::new_with_input(
             "source",
-            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP resource, an absolute path, or a path relative to the invoking script (if there is one) else a path relative to the current working directory.",
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a path relative to the invoking script (if there is one) else a path relative to the current working directory.",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))

@@ -28,7 +28,7 @@ use crate::{
     cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
-        database_create, database_delete, database_export, database_import, database_list, database_schema,
+        database_create, database_create_init, database_delete, database_export, database_import, database_list, database_schema,
         transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
         transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
         user_update_password,
@@ -343,6 +343,16 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             CommandInput::new("db", get_word, None, None),
             database_create,
         ))
+        .add(CommandLeaf::new_with_inputs(
+            "create-init",
+            "Create a new database with the given name and run schema and data from files. Files may be HTTP resources, or absolute or relative paths. Files are treated identically to 'transaction source' commands run explicitly.",
+            vec![
+                CommandInput::new("db", get_word, None, None),
+                CommandInput::new("schema file", get_word, None, None),
+                CommandInput::new("data file", get_word, None, None),
+            ],
+            database_create_init,
+        ))
         .add(CommandLeaf::new_with_input(
             "delete",
             "Delete the database with the given name.",
@@ -357,7 +367,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ))
         .add(CommandLeaf::new_with_inputs(
             "import",
-            "Create a database with the given name based on another previously exported database.",
+            "Create a database with the given name based on another previously exported database. File paths must be absolute or relative paths on the local machine.",
             vec![
                 CommandInput::new("db", get_word, None, None),
                 CommandInput::new("schema file path", get_word, None, None),
@@ -459,7 +469,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         ))
         .add(CommandLeaf::new_with_input(
             "source",
-            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. Path may be absolute or relative to the invoking script (if there is one) otherwise relative to the current working directory.",
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP resource, an absolute path, or a path relative to the invoking script (if there is one) else a path relative to the current working directory.",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))

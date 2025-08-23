@@ -75,6 +75,11 @@ features = {}
 		version = "0.36.0"
 		default-features = false
 
+	[dependencies.ureq]
+		features = ["default", "gzip", "tls"]
+		version = "2.12.1"
+		default-features = false
+
 [[test]]
 	path = "tests/assembly/test_assembly.rs"
 	name = "test-assembly-native"

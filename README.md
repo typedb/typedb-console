@@ -30,10 +30,10 @@ platform-specific distribution.
 
 ## Command line arguments
 
-You can provide several command arguments when running console in the terminal.
+You can provide several command arguments when running console in the terminal, of which the typically-used ones are:
 
 - `--username=<username>` : TypeDB server username to log in with (mandatory).
-- `--address=<address>` : TypeDB server address to which the console will connect to (mandatory). Ensure it is prefixed with `https://` when using TLS.
+- `--address=<address>` : TypeDB server address to which the console will connect to (mandatory)
 - `--script=<path>` : Run commands in the script file in non-interactive mode.
 - `--command=<command1> --command=<command2> ...` : Run commands in non-interactive mode.
 - `-V, --version` : Print version information and exit.
@@ -53,8 +53,6 @@ For TypeDB Cloud deployments, there is **no reason to use this setting** as they
 Alternatively, you may securely connect by managing your own certificates for both the client-side and server-side,
 and provide your certificate to the console with:
 `--tls-root-ca=<path>`
-
-See documentation at https://typedb.com/docs/manual/configure/encryption for further details.
 
 ## Console commands
 

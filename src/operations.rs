@@ -7,7 +7,7 @@
 use std::{
     error::Error,
     fs::read_to_string,
-    path::{Path, PathBuf},
+    path::PathBuf,
     process::exit,
     rc::Rc,
 };
@@ -17,6 +17,7 @@ use typedb_driver::{
     answer::{QueryAnswer, QueryType},
     TransactionOptions, TransactionType,
 };
+use ureq;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
@@ -49,6 +50,66 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
         .run(async move { driver.databases().create(db_name).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     println!("Successfully created database.");
+    Ok(())
+}
+
+enum FileResource {
+    Remote(String),
+    Local(PathBuf)
+}
+
+impl FileResource {
+    fn parse(context: &mut ConsoleContext, string: &str) -> Self {
+        if string.starts_with("http://") || string.starts_with("https://") {
+            Self::Remote(string.to_owned())
+        } else {
+            Self::Local(context.convert_path(&string))
+        }
+    }
+
+    fn read_to_string(&self) -> Result<String, Box<dyn Error + Send>> {
+        match self {
+            FileResource::Remote(url) => {
+                let response = ureq::get(url)
+                    .call()
+                    .map_err(|e| Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to fetch file from {}: {}", url, e)
+                    )) as Box<dyn Error + Send>)?;
+                response.into_string()
+                    .map_err(|e| Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to read file content from {}: {}", url, e)
+                    )) as Box<dyn Error + Send>)
+            }
+            FileResource::Local(path) => {
+                if !path.exists() {
+                    return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
+                        as Box<dyn Error + Send>);
+                } else if path.is_dir() {
+                    return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
+                        as Box<dyn Error + Send>);
+                }
+                read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+            }
+        }
+    }
+}
+
+pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let db_name = &input[0];
+    let schema_uri = &input[1];
+    let data_uri = &input[2];
+
+    database_create(context, &[db_name.clone()])?;
+    transaction_schema(context, &[db_name.clone()])?;
+    transaction_source(context, &[schema_uri.clone()])?;
+    transaction_commit(context, &[])?;
+
+    transaction_write(context, &[db_name.clone()])?;
+    transaction_source(context, &[data_uri.clone()])?;
+    transaction_commit(context, &[])?;
+    println!("Successfully created and initialized database with schema and data.");
     Ok(())
 }
 
@@ -282,18 +343,7 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
 
 pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let file_str = &input[0];
-    let path = context.convert_path(file_str);
-    if !path.exists() {
-        return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
-            as Box<dyn Error + Send>);
-    } else if path.is_dir() {
-        return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
-            as Box<dyn Error + Send>);
-    }
-
-    let contents = read_to_string(path).map_err(|err| {
-        Box::new(ReplError { message: format!("Error reading file '{}': {}", file_str, err) }) as Box<dyn Error + Send>
-    })?;
+    let contents = FileResource::parse(context, file_str).read_to_string()?;
 
     let mut input: &str = &contents;
     let mut query_count = 0;

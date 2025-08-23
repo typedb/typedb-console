@@ -101,13 +101,13 @@ pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String
     let schema_uri = &input[1];
     let data_uri = &input[2];
 
-    database_create(context, &[db_name.clone()])?;
-    transaction_schema(context, &[db_name.clone()])?;
-    transaction_source(context, &[schema_uri.clone()])?;
+    database_create(context, &input[0..1])?;
+    transaction_schema(context, &input[0..1])?;
+    transaction_source(context, &input[1..2])?;
     transaction_commit(context, &[])?;
 
-    transaction_write(context, &[db_name.clone()])?;
-    transaction_source(context, &[data_uri.clone()])?;
+    transaction_write(context, &input[0..1])?;
+    transaction_source(context, &input[2..3])?;
     transaction_commit(context, &[])?;
     println!("Successfully created and initialized database with schema and data.");
     Ok(())

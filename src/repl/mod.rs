@@ -71,11 +71,23 @@ impl<Context: ReplContext + 'static> Repl<Context> {
     pub(crate) fn help(&self) -> String {
         let usages_descriptions: Vec<(String, &'static str)> = self.commands.usage_description().collect();
 
-        let widest_usage = usages_descriptions.iter().map(|(usage, _)| usage.len()).max().unwrap_or(0);
-        let usage_width = widest_usage + 4;
+        const INLINE_HELP_THRESHOLD: usize = 100;
+        let widest_usage_under_threshold = usages_descriptions
+            .iter()
+            .filter(|(usage, description)| usage.len()+ description.len() < INLINE_HELP_THRESHOLD)
+            .map(|(usage, _)| usage.len())
+            .max()
+            .unwrap_or(0);
+        let usage_width = widest_usage_under_threshold + 4;
         usages_descriptions
             .iter()
-            .map(|(usage, description)| format!("{:<width$}{}", usage, description, width = usage_width))
+            .map(|(usage, description)| {
+                if usage.len() + description.len() < INLINE_HELP_THRESHOLD {
+                    format!("{:<width$}{}", usage, description, width = usage_width)
+                } else {
+                    format!("{}\n    {}", usage, description)
+                }
+            })
             .collect::<Vec<_>>()
             .join("\n")
     }

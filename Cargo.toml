@@ -23,6 +23,31 @@ features = {}
 		version = "1.45.0"
 		default-features = false
 
+	[dependencies.glob]
+		features = []
+		version = "0.3.2"
+		default-features = false
+
+	[dependencies.futures]
+		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+		version = "0.3.31"
+		default-features = false
+
+	[dependencies.rpassword]
+		features = []
+		version = "7.4.0"
+		default-features = false
+
+	[dependencies.home]
+		features = []
+		version = "0.5.11"
+		default-features = false
+
+	[dependencies.sha2]
+		features = ["default", "std"]
+		version = "0.10.9"
+		default-features = false
+
 	[dependencies.rustyline]
 		features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
 		version = "15.0.0"
@@ -31,11 +56,6 @@ features = {}
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
 		version = "4.5.38"
-		default-features = false
-
-	[dependencies.glob]
-		features = []
-		version = "0.3.2"
 		default-features = false
 
 	[dependencies.typeql]
@@ -50,24 +70,9 @@ features = {}
 		tag = "3.4.4"
 		default-features = false
 
-	[dependencies.futures]
-		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-		version = "0.3.31"
-		default-features = false
-
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.140"
-		default-features = false
-
-	[dependencies.rpassword]
-		features = []
-		version = "7.4.0"
-		default-features = false
-
-	[dependencies.home]
-		features = []
-		version = "0.5.11"
 		default-features = false
 
 	[dependencies.sentry]

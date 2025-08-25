@@ -192,7 +192,17 @@ impl<Context> CommandLeaf<Context> {
         arguments: Vec<CommandInput>,
         executor: CommandExecutor<Context>,
     ) -> Self {
+        Self::validate_optionals_at_tail(&arguments);
         Self { token: token.into(), description, arguments, executor }
+    }
+
+    fn validate_optionals_at_tail(args: &[CommandInput]) {
+        let first_optional_index = args.iter().position(|input| matches!(input.type_, InputType::Optional));
+        if let Some(first_index) = first_optional_index {
+            if args.iter().skip(first_index + 1).any(|input| !matches!(input.type_, InputType::Optional)) {
+                panic!("Invalid Console configuration: cannot have non-optional arguments following optional arguments");
+            }
+        }
     }
 }
 
@@ -243,12 +253,19 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                             (remaining[0..next_index].trim().to_owned(), &remaining[next_index..])
                         }
                         None => {
-                            if argument.is_hidden() {
-                                (argument.request_hidden()?, remaining)
-                            } else {
-                                return Err(Box::new(ReplError {
-                                    message: format!("Missing argument {}: {}", index + 1, argument.usage),
-                                }));
+                            match argument.type_ {
+                                InputType::Optional => {
+                                    // note: optional args all come at the end, so we just skip
+                                    continue;
+                                }
+                                InputType::RequiredHidden(_) => {
+                                    (argument.request_hidden()?, remaining)
+                                }
+                                InputType::RequiredVisible => {
+                                    return Err(Box::new(ReplError {
+                                        message: format!("Missing argument {}: {}", index + 1, argument.usage),
+                                    }));
+                                }
                             }
                         }
                     };

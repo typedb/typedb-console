@@ -2018,9 +2018,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.8"
+version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -2466,6 +2466,7 @@ dependencies = [
  "rustyline",
  "sentry",
  "serde_json",
+ "sha2",
  "tokio",
  "typedb-driver",
  "typedb_binary_runner",
@@ -2476,7 +2477,7 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-driver?tag=3.4.0#337851667eb7c74d45643d4411f7af3499d8817a"
+source = "git+https://github.com/typedb/typedb-driver?tag=3.4.4#ca07f77759f7b5ca4044429f112f3866e7115424"
 dependencies = [
  "chrono",
  "chrono-tz",

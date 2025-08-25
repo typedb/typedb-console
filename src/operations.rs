@@ -13,6 +13,7 @@ use std::{
 };
 
 use futures::stream::StreamExt;
+use sha2::Digest;
 use typedb_driver::{
     answer::{QueryAnswer, QueryType},
     TransactionOptions, TransactionType,
@@ -55,16 +56,18 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
 
 pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let db_name = &input[0..1];
-    let schema_uri = &input[1..2];
-    let data_uri = &input[2..3];
+    let mut schema_args = vec![input[1].clone()];
+    let mut data_args = vec![input[2].clone()];
+    schema_args.extend(input.get(3).cloned());
+    data_args.extend(input.get(4).cloned());
 
     database_create(context, db_name)?;
     transaction_schema(context, db_name)?;
-    transaction_source(context, schema_uri)?;
+    transaction_source(context, &schema_args)?;
     transaction_commit(context, &[])?;
 
     transaction_write(context, db_name)?;
-    transaction_source(context, data_uri)?;
+    transaction_source(context, &data_args)?;
     transaction_commit(context, &[])?;
     println!("Successfully created and initialized database with schema and data.");
     Ok(())
@@ -300,9 +303,13 @@ pub(crate) fn transaction_rollback(context: &mut ConsoleContext, _input: &[Strin
 
 pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let file_str = &input[0];
-    let contents = FileResource::parse(context, file_str).read_to_string()?;
+    let file_sha256 = input.get(1);
+    let resource = FileResource::read(context, file_str)?;
+    if let Some(file_sha) = file_sha256 {
+        resource.matches_sha256(file_sha)?
+    }
 
-    let mut input: &str = &contents;
+    let mut input: &str = &resource.file_content;
     let mut query_count = 0;
     while let Some(next_query_index) = parse_one_query(&input, false) {
         let query = &input[0..next_query_index];
@@ -364,45 +371,52 @@ fn default_transaction_options() -> TransactionOptions {
     TransactionOptions::new().transaction_timeout(DEFAULT_TRANSACTION_TIMEOUT)
 }
 
-enum FileResource {
-    Remote(String),
-    Local(PathBuf)
+struct FileResource {
+    file_source: String,
+    file_content: String,
 }
 
 impl FileResource {
-    fn parse(context: &mut ConsoleContext, string: &str) -> Self {
-        if string.starts_with("http://") || string.starts_with("https://") {
-            Self::Remote(string.to_owned())
+    fn read(context: &mut ConsoleContext, string: &str) -> Result<Self, Box<dyn Error + Send>> {
+        let file_content = if string.starts_with("http://") || string.starts_with("https://") {
+            let url = string.to_owned();
+            let response = ureq::get(&url)
+                .call()
+                .map_err(|e| Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to fetch file from {}: {}", url, e)
+                )) as Box<dyn Error + Send>)?;
+            response.into_string()
+                .map_err(|e| Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to read file content from {}: {}", url, e)
+                )) as Box<dyn Error + Send>)?
         } else {
-            Self::Local(context.convert_path(&string))
-        }
+            let path = context.convert_path(&string);
+            if !path.exists() {
+                return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
+                    as Box<dyn Error + Send>);
+            } else if path.is_dir() {
+                return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
+                    as Box<dyn Error + Send>);
+            }
+            read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
+        };
+        Ok(Self { file_source: string.to_owned(), file_content })
     }
 
-    fn read_to_string(&self) -> Result<String, Box<dyn Error + Send>> {
-        match self {
-            FileResource::Remote(url) => {
-                let response = ureq::get(url)
-                    .call()
-                    .map_err(|e| Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to fetch file from {}: {}", url, e)
-                    )) as Box<dyn Error + Send>)?;
-                response.into_string()
-                    .map_err(|e| Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to read file content from {}: {}", url, e)
-                    )) as Box<dyn Error + Send>)
-            }
-            FileResource::Local(path) => {
-                if !path.exists() {
-                    return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
-                        as Box<dyn Error + Send>);
-                } else if path.is_dir() {
-                    return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
-                        as Box<dyn Error + Send>);
-                }
-                read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)
-            }
+    fn matches_sha256(&self, expected_sha256: &str) -> Result<(), Box<dyn Error + Send>> {
+        let expected_sha256 = expected_sha256.trim_start_matches("sha256:");
+        let computed_hash_string = format!("{:x}", sha2::Sha256::digest(&self.file_content));
+        if expected_sha256 != computed_hash_string {
+            Err(Box::new(ReplError {
+                message: format!(
+                    "Expected '{}' to have sha256 '{expected_sha256}', but calculated '{computed_hash_string}',
+                ", &self.file_source),
+            }) as Box<dyn Error + Send>)
+        } else {
+            println!("Successfully verified sha256 checksum of {}", &self.file_source);
+            Ok(())
         }
     }
 }

@@ -33,6 +33,7 @@ rust_binary(
         "@crates//:rustyline",
         "@crates//:sentry",
         "@crates//:serde_json",
+        "@crates//:sha2",
         "@crates//:ureq",
         "@crates//:tokio",
     ],

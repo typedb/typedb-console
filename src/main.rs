@@ -318,7 +318,7 @@ fn execute_commands(
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
-                        let message = format!("Error executing command: '{}'\n{}", command_string.trim(), err);
+                        let message = format!("**Error executing command**\n{}\n--> Error\n{}", command_string.trim(), err);
                         println_error!("{}", message);
                         return Err(CommandError { message });
                     }
@@ -345,13 +345,13 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         ))
         .add(CommandLeaf::new_with_inputs(
             "create-init",
-            "Create a new database with the given name and load schema and data from files. Files may be HTTP-hosted files, or absolute or relative paths. File contents are treated identically to 'transaction source' commands run explicitly, and may contain multiple queries separated by 'end;' markers.",
+            "Create a new database with the given name and load schema and data from files. Files may be HTTP-hosted files, or absolute or relative paths. File contents are treated identically to 'transaction source' commands run explicitly, and may contain multiple queries separated by 'end;' markers. File sha256 sums maybe provided.",
             vec![
                 CommandInput::new_required("db", get_word, None),
                 CommandInput::new_required("schema file", get_word, None),
                 CommandInput::new_required("data file", get_word, None),
-                CommandInput::new_required("schema file sha256", get_word, None),
-                CommandInput::new_required("data file sha256", get_word, None),
+                CommandInput::new_optional("schema file sha256 (hex or sha256:hex)", get_word, None),
+                CommandInput::new_optional("data file sha256 (hex or sha256:hex)", get_word, None),
             ],
             database_create_init,
         ))
@@ -468,10 +468,13 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             "Close the current transaction.",
             transaction_close,
         ))
-        .add(CommandLeaf::new_with_input(
+        .add(CommandLeaf::new_with_inputs(
             "source",
-            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a relative path. Relative paths are relative to the invoking script (if there is one) or else a path relative to the current working directory.",
-            CommandInput::new_required("file", get_word, Some(Box::new(file_completer))),
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly separated with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a relative path. Relative paths are relative to the invoking script (if there is one) or else a path relative to the current working directory. A sha256 may be optionally provided.",
+            vec![
+                CommandInput::new_required("file", get_word, Some(Box::new(file_completer))),
+                CommandInput::new_optional("file sha256 (hex or sha256:hex)", get_word, None),
+            ],
             transaction_source,
         ))
         // default: no token

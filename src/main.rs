@@ -28,10 +28,10 @@ use crate::{
     cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
-        database_create, database_delete, database_export, database_import, database_list, database_schema,
-        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
-        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
-        user_update_password,
+        database_create, database_create_init, database_delete, database_export, database_import, database_list,
+        database_schema, transaction_close, transaction_commit, transaction_query, transaction_read,
+        transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create, user_delete,
+        user_list, user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -318,7 +318,8 @@ fn execute_commands(
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
-                        let message = format!("Error executing command: '{}'\n{}", command_string.trim(), err);
+                        let message =
+                            format!("**Error executing command**\n{}\n--> Error\n{}", command_string.trim(), err);
                         println_error!("{}", message);
                         return Err(CommandError { message });
                     }
@@ -340,28 +341,40 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(CommandLeaf::new_with_input(
             "create",
             "Create a new database with the given name.",
-            CommandInput::new("db", get_word, None, None),
+            CommandInput::new_required("db", get_word, None),
             database_create,
+        ))
+        .add(CommandLeaf::new_with_inputs(
+            "create-init",
+            "Create a new database with the given name and load schema and data from files. Files may be HTTP-hosted files, or absolute or relative paths. File contents are treated identically to 'transaction source' commands run explicitly, and may contain multiple queries separated by 'end;' markers. File sha256 sums maybe provided.",
+            vec![
+                CommandInput::new_required("db", get_word, None),
+                CommandInput::new_required("schema file", get_word, None),
+                CommandInput::new_required("data file", get_word, None),
+                CommandInput::new_optional("schema file sha256 (hex or sha256:hex)", get_word, None),
+                CommandInput::new_optional("data file sha256 (hex or sha256:hex)", get_word, None),
+            ],
+            database_create_init,
         ))
         .add(CommandLeaf::new_with_input(
             "delete",
             "Delete the database with the given name.",
-            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_delete,
         ))
         .add(CommandLeaf::new_with_input(
             "schema",
             "Retrieve the TypeQL representation of a database's schema.",
-            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
             database_schema,
         ))
         .add(CommandLeaf::new_with_inputs(
             "import",
-            "Create a database with the given name based on another previously exported database.",
+            "Create a database with the given name based on another previously exported database. File paths must be absolute or relative paths on the local machine.",
             vec![
-                CommandInput::new("db", get_word, None, None),
-                CommandInput::new("schema file path", get_word, None, None),
-                CommandInput::new("data file path", get_word, None, None),
+                CommandInput::new_required("db", get_word, None),
+                CommandInput::new_required("schema file path", get_word, None),
+                CommandInput::new_required("data file path", get_word, None),
             ],
             database_import,
         ))
@@ -369,14 +382,13 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "export",
             "Export a database into a schema definition and a data files.",
             vec![
-                CommandInput::new(
+                CommandInput::new_required(
                     "db",
                     get_word,
-                    None,
                     Some(database_name_completer_fn(driver.clone(), runtime.clone())),
                 ),
-                CommandInput::new("schema file path", get_word, None, None),
-                CommandInput::new("data file path", get_word, None, None),
+                CommandInput::new_required("schema file path", get_word, None),
+                CommandInput::new_required("data file path", get_word, None),
             ],
             database_export,
         ));
@@ -387,23 +399,23 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "create",
             "Create new user.",
             vec![
-                CommandInput::new("name", get_word, None, None),
-                CommandInput::new("password", get_word, Some(get_word), None),
+                CommandInput::new_required("name", get_word, None),
+                CommandInput::new_hidden("password", get_word, get_word, None),
             ],
             user_create,
         ))
         .add(CommandLeaf::new_with_input(
             "delete",
             "Delete existing user.",
-            CommandInput::new("name", get_word, None, None),
+            CommandInput::new_required("name", get_word, None),
             user_delete,
         ))
         .add(CommandLeaf::new_with_inputs(
             "update-password",
             "Set existing user's password.",
             vec![
-                CommandInput::new("name", get_word, None, None),
-                CommandInput::new("new password", get_word, Some(get_word), None),
+                CommandInput::new_required("name", get_word, None),
+                CommandInput::new_hidden("new password", get_word, get_word, None),
             ],
             user_update_password,
         ));
@@ -412,19 +424,31 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(CommandLeaf::new_with_input(
             "read",
             "Open read transaction.",
-            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_read,
         ))
         .add(CommandLeaf::new_with_input(
             "write",
             "Open write transaction.",
-            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_write,
         ))
         .add(CommandLeaf::new_with_input(
             "schema",
             "Open schema transaction.",
-            CommandInput::new("db", get_word, None, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_schema,
         ));
 
@@ -457,17 +481,20 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             "Close the current transaction.",
             transaction_close,
         ))
-        .add(CommandLeaf::new_with_input(
+        .add(CommandLeaf::new_with_inputs(
             "source",
-            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. Path may be absolute or relative to the invoking script (if there is one) otherwise relative to the current working directory.",
-            CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly separated with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a relative path. Relative paths are relative to the invoking script (if there is one) or else a path relative to the current working directory. A sha256 may be optionally provided.",
+            vec![
+                CommandInput::new_required("file", get_word, Some(Box::new(file_completer))),
+                CommandInput::new_optional("file sha256 (hex or sha256:hex)", get_word, None),
+            ],
             transaction_source,
         ))
         // default: no token
         .add(CommandLeaf::new_with_input(
             "",
             "Execute query string.",
-            CommandInput::new("query", parse_one_query, None, None),
+            CommandInput::new_required("query", parse_one_query, None),
             transaction_query,
         ));
     repl

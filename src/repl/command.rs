@@ -19,7 +19,7 @@ use rustyline::{
     highlight::Highlighter,
     hint::Hinter,
 };
-use typeql::{common::error::TypeQLError, parse_query_from};
+use typeql::common::error::TypeQLError;
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -192,7 +192,19 @@ impl<Context> CommandLeaf<Context> {
         arguments: Vec<CommandInput>,
         executor: CommandExecutor<Context>,
     ) -> Self {
+        Self::validate_optionals_at_tail(&arguments);
         Self { token: token.into(), description, arguments, executor }
+    }
+
+    fn validate_optionals_at_tail(args: &[CommandInput]) {
+        let first_optional_index = args.iter().position(|input| matches!(input.type_, InputType::Optional));
+        if let Some(first_index) = first_optional_index {
+            if args.iter().skip(first_index + 1).any(|input| !matches!(input.type_, InputType::Optional)) {
+                panic!(
+                    "Invalid Console configuration: cannot have non-optional arguments following optional arguments"
+                );
+            }
+        }
     }
 }
 
@@ -243,12 +255,17 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                             (remaining[0..next_index].trim().to_owned(), &remaining[next_index..])
                         }
                         None => {
-                            if argument.is_hidden() {
-                                (argument.request_hidden()?, remaining)
-                            } else {
-                                return Err(Box::new(ReplError {
-                                    message: format!("Missing argument {}: {}", index + 1, argument.usage),
-                                }));
+                            match argument.type_ {
+                                InputType::Optional => {
+                                    // note: optional args all come at the end, so we just skip
+                                    continue;
+                                }
+                                InputType::RequiredHidden(_) => (argument.request_hidden()?, remaining),
+                                InputType::RequiredVisible => {
+                                    return Err(Box::new(ReplError {
+                                        message: format!("Missing argument {}: {}", index + 1, argument.usage),
+                                    }));
+                                }
                             }
                         }
                     };
@@ -264,7 +281,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
     fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
         let mut usage = format!("{}", self.token);
         for arg in &self.arguments {
-            usage = format!("{} <{}>", usage, arg.usage());
+            usage = format!("{} {}", usage, arg.usage());
         }
         Box::new([(usage, self.description)].into_iter())
     }
@@ -284,18 +301,40 @@ pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
 pub(crate) struct CommandInput {
     usage: &'static str,
     reader: InputReaderFn,
-    hidden_reader: Option<InputReaderFn>,
+    type_: InputType,
     completer: Option<Box<InputCompleterFn>>,
 }
 
+enum InputType {
+    Optional,
+    RequiredVisible,
+    RequiredHidden(InputReaderFn),
+}
+
 impl CommandInput {
-    pub(crate) fn new(
+    pub(crate) fn new_required(
         usage: &'static str,
         reader: InputReaderFn,
-        hidden_reader: Option<InputReaderFn>,
         completer: Option<Box<InputCompleterFn>>,
     ) -> Self {
-        Self { usage, reader, hidden_reader, completer }
+        Self { usage, reader, type_: InputType::RequiredVisible, completer }
+    }
+
+    pub(crate) fn new_hidden(
+        usage: &'static str,
+        reader: InputReaderFn,
+        hidden_reader: InputReaderFn,
+        completer: Option<Box<InputCompleterFn>>,
+    ) -> Self {
+        Self { usage, reader, type_: InputType::RequiredHidden(hidden_reader), completer }
+    }
+
+    pub(crate) fn new_optional(
+        usage: &'static str,
+        reader: InputReaderFn,
+        completer: Option<Box<InputCompleterFn>>,
+    ) -> Self {
+        Self { usage, reader, type_: InputType::Optional, completer }
     }
 
     fn read_end_index_from(&self, input: &str, coerce_to_one_line: bool) -> Option<usize> {
@@ -303,12 +342,12 @@ impl CommandInput {
     }
 
     fn is_hidden(&self) -> bool {
-        self.hidden_reader.is_some()
+        matches!(self.type_, InputType::RequiredHidden(_))
     }
 
     fn request_hidden(&self) -> Result<String, Box<dyn Error + Send>> {
-        match self.hidden_reader.as_ref() {
-            Some(reader) => {
+        match self.type_ {
+            InputType::RequiredHidden(reader) => {
                 let string = LineReaderHidden::new().readline(&format!("{}: ", self.usage));
                 let input_end = match reader(&string, true) {
                     None => {
@@ -320,7 +359,7 @@ impl CommandInput {
                 };
                 Ok(string[0..input_end].to_owned())
             }
-            None => Err(Box::new(ReplError {
+            InputType::Optional | InputType::RequiredVisible => Err(Box::new(ReplError {
                 message: format!(
                     "{} cannot be requested as a hidden parameter and must be entered as part of the command.",
                     self.usage
@@ -342,10 +381,10 @@ impl CommandInput {
     }
 
     fn usage(&self) -> String {
-        if self.hidden_reader.is_some() {
-            format!("{} (enter in hidden input)", self.usage)
-        } else {
-            self.usage.to_owned()
+        match self.type_ {
+            InputType::Optional => format!("[{}]", self.usage),
+            InputType::RequiredVisible => format!("<{}>", self.usage),
+            InputType::RequiredHidden(_) => format!("<{} (hidden input)>", self.usage),
         }
     }
 }
@@ -507,7 +546,7 @@ impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
                         return true;
                     }
                 }
-                Err(err) => return false,
+                Err(_err) => return false,
             }
         }
     }

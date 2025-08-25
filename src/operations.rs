@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fs::read_to_string,
-    path::PathBuf,
-    process::exit,
-    rc::Rc,
-};
+use std::{error::Error, fs::read_to_string, path::PathBuf, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
 use sha2::Digest;
@@ -380,25 +374,28 @@ impl FileResource {
     fn read(context: &mut ConsoleContext, string: &str) -> Result<Self, Box<dyn Error + Send>> {
         let file_content = if string.starts_with("http://") || string.starts_with("https://") {
             let url = string.to_owned();
-            let response = ureq::get(&url)
-                .call()
-                .map_err(|e| Box::new(std::io::Error::new(
+            let response = ureq::get(&url).call().map_err(|e| {
+                Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!("Failed to fetch file from {}: {}", url, e)
-                )) as Box<dyn Error + Send>)?;
-            response.into_string()
-                .map_err(|e| Box::new(std::io::Error::new(
+                    format!("Failed to fetch file from {}: {}", url, e),
+                )) as Box<dyn Error + Send>
+            })?;
+            response.into_string().map_err(|e| {
+                Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!("Failed to read file content from {}: {}", url, e)
-                )) as Box<dyn Error + Send>)?
+                    format!("Failed to read file content from {}: {}", url, e),
+                )) as Box<dyn Error + Send>
+            })?
         } else {
             let path = context.convert_path(&string);
             if !path.exists() {
                 return Err(Box::new(ReplError { message: format!("File not found: {}", path.to_string_lossy()) })
                     as Box<dyn Error + Send>);
             } else if path.is_dir() {
-                return Err(Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
-                    as Box<dyn Error + Send>);
+                return Err(
+                    Box::new(ReplError { message: format!("Path must be a file: {}", path.to_string_lossy()) })
+                        as Box<dyn Error + Send>,
+                );
             }
             read_to_string(path).map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
         };
@@ -412,7 +409,9 @@ impl FileResource {
             Err(Box::new(ReplError {
                 message: format!(
                     "Expected '{}' to have sha256 '{expected_sha256}', but calculated '{computed_hash_string}',
-                ", &self.file_source),
+                ",
+                    &self.file_source
+                ),
             }) as Box<dyn Error + Send>)
         } else {
             println!("Successfully verified sha256 checksum of {}", &self.file_source);

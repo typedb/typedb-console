@@ -28,10 +28,10 @@ use crate::{
     cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
-        database_create, database_create_init, database_delete, database_export, database_import, database_list, database_schema,
-        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
-        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
-        user_update_password,
+        database_create, database_create_init, database_delete, database_export, database_import, database_list,
+        database_schema, transaction_close, transaction_commit, transaction_query, transaction_read,
+        transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create, user_delete,
+        user_list, user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -318,7 +318,8 @@ fn execute_commands(
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],
                     Err(err) => {
-                        let message = format!("**Error executing command**\n{}\n--> Error\n{}", command_string.trim(), err);
+                        let message =
+                            format!("**Error executing command**\n{}\n--> Error\n{}", command_string.trim(), err);
                         println_error!("{}", message);
                         return Err(CommandError { message });
                     }
@@ -398,7 +399,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "create",
             "Create new user.",
             vec![
-                CommandInput::new_required("name", get_word,  None),
+                CommandInput::new_required("name", get_word, None),
                 CommandInput::new_hidden("password", get_word, get_word, None),
             ],
             user_create,
@@ -423,19 +424,31 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(CommandLeaf::new_with_input(
             "read",
             "Open read transaction.",
-            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_read,
         ))
         .add(CommandLeaf::new_with_input(
             "write",
             "Open write transaction.",
-            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_write,
         ))
         .add(CommandLeaf::new_with_input(
             "schema",
             "Open schema transaction.",
-            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required(
+                "db",
+                get_word,
+                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+            ),
             transaction_schema,
         ));
 

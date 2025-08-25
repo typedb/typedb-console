@@ -74,7 +74,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
         const INLINE_HELP_THRESHOLD: usize = 100;
         let widest_usage_under_threshold = usages_descriptions
             .iter()
-            .filter(|(usage, description)| usage.len()+ description.len() < INLINE_HELP_THRESHOLD)
+            .filter(|(usage, description)| usage.len() + description.len() < INLINE_HELP_THRESHOLD)
             .map(|(usage, _)| usage.len())
             .max()
             .unwrap_or(0);

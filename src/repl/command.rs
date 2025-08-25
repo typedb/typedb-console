@@ -19,7 +19,7 @@ use rustyline::{
     highlight::Highlighter,
     hint::Hinter,
 };
-use typeql::{common::error::TypeQLError};
+use typeql::common::error::TypeQLError;
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -200,7 +200,9 @@ impl<Context> CommandLeaf<Context> {
         let first_optional_index = args.iter().position(|input| matches!(input.type_, InputType::Optional));
         if let Some(first_index) = first_optional_index {
             if args.iter().skip(first_index + 1).any(|input| !matches!(input.type_, InputType::Optional)) {
-                panic!("Invalid Console configuration: cannot have non-optional arguments following optional arguments");
+                panic!(
+                    "Invalid Console configuration: cannot have non-optional arguments following optional arguments"
+                );
             }
         }
     }
@@ -258,9 +260,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
                                     // note: optional args all come at the end, so we just skip
                                     continue;
                                 }
-                                InputType::RequiredHidden(_) => {
-                                    (argument.request_hidden()?, remaining)
-                                }
+                                InputType::RequiredHidden(_) => (argument.request_hidden()?, remaining),
                                 InputType::RequiredVisible => {
                                     return Err(Box::new(ReplError {
                                         message: format!("Missing argument {}: {}", index + 1, argument.usage),
@@ -384,7 +384,7 @@ impl CommandInput {
         match self.type_ {
             InputType::Optional => format!("[optional] {}", self.usage),
             InputType::RequiredVisible => self.usage.to_owned(),
-            InputType::RequiredHidden(_) => format!("{} (enter in hidden input)", self.usage)
+            InputType::RequiredHidden(_) => format!("{} (enter in hidden input)", self.usage),
         }
     }
 }

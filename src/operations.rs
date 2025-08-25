@@ -54,17 +54,17 @@ pub(crate) fn database_create(context: &mut ConsoleContext, input: &[String]) ->
 }
 
 pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
-    let db_name = &input[0];
-    let schema_uri = &input[1];
-    let data_uri = &input[2];
+    let db_name = &input[0..1];
+    let schema_uri = &input[1..2];
+    let data_uri = &input[2..3];
 
-    database_create(context, &input[0..1])?;
-    transaction_schema(context, &input[0..1])?;
-    transaction_source(context, &input[1..2])?;
+    database_create(context, db_name)?;
+    transaction_schema(context, db_name)?;
+    transaction_source(context, schema_uri)?;
     transaction_commit(context, &[])?;
 
-    transaction_write(context, &input[0..1])?;
-    transaction_source(context, &input[2..3])?;
+    transaction_write(context, db_name)?;
+    transaction_source(context, data_uri)?;
     transaction_commit(context, &[])?;
     println!("Successfully created and initialized database with schema and data.");
     Ok(())

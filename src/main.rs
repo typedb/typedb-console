@@ -469,7 +469,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
         ))
         .add(CommandLeaf::new_with_input(
             "source",
-            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a path relative to the invoking script (if there is one) else a path relative to the current working directory.",
+            "Synchronously execute a file containing a sequence of TypeQL queries with full validation. Queries can be explicitly ended with 'end;' if required. May be a HTTP-hosted file, an absolute path, or a relative path. Relative paths are relative to the invoking script (if there is one) or else a path relative to the current working directory.",
             CommandInput::new("file", get_word, None, Some(Box::new(file_completer))),
             transaction_source,
         ))

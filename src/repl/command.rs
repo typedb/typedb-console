@@ -281,7 +281,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
     fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_> {
         let mut usage = format!("{}", self.token);
         for arg in &self.arguments {
-            usage = format!("{} <{}>", usage, arg.usage());
+            usage = format!("{} {}", usage, arg.usage());
         }
         Box::new([(usage, self.description)].into_iter())
     }
@@ -382,9 +382,9 @@ impl CommandInput {
 
     fn usage(&self) -> String {
         match self.type_ {
-            InputType::Optional => format!("[optional] {}", self.usage),
-            InputType::RequiredVisible => self.usage.to_owned(),
-            InputType::RequiredHidden(_) => format!("{} (enter in hidden input)", self.usage),
+            InputType::Optional => format!("[{}]", self.usage),
+            InputType::RequiredVisible => format!("<{}>", self.usage),
+            InputType::RequiredHidden(_) => format!("<{} (hidden input)>", self.usage),
         }
     }
 }
@@ -546,7 +546,7 @@ impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
                         return true;
                     }
                 }
-                Err(err) => return false,
+                Err(_err) => return false,
             }
         }
     }

@@ -403,8 +403,9 @@ impl FileResource {
     }
 
     fn matches_sha256(&self, expected_sha256: &str) -> Result<(), Box<dyn Error + Send>> {
+        let expected_sha256 = expected_sha256.to_lowercase();
         let expected_sha256 = expected_sha256.trim_start_matches("sha256:");
-        let computed_hash_string = format!("{:x}", sha2::Sha256::digest(&self.file_content));
+        let computed_hash_string = format!("{:x}", sha2::Sha256::digest(&self.file_content)).to_lowercase();
         if expected_sha256 != computed_hash_string {
             Err(Box::new(ReplError {
                 message: format!(

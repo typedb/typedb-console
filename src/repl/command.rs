@@ -19,7 +19,7 @@ use rustyline::{
     highlight::Highlighter,
     hint::Hinter,
 };
-use typeql::{common::error::TypeQLError, parse_query_from};
+use typeql::{common::error::TypeQLError};
 
 use crate::repl::{line_reader::LineReaderHidden, ReplContext};
 
@@ -284,18 +284,40 @@ pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
 pub(crate) struct CommandInput {
     usage: &'static str,
     reader: InputReaderFn,
-    hidden_reader: Option<InputReaderFn>,
+    type_: InputType,
     completer: Option<Box<InputCompleterFn>>,
 }
 
+enum InputType {
+    Optional,
+    RequiredVisible,
+    RequiredHidden(InputReaderFn),
+}
+
 impl CommandInput {
-    pub(crate) fn new(
+    pub(crate) fn new_required(
         usage: &'static str,
         reader: InputReaderFn,
-        hidden_reader: Option<InputReaderFn>,
         completer: Option<Box<InputCompleterFn>>,
     ) -> Self {
-        Self { usage, reader, hidden_reader, completer }
+        Self { usage, reader, type_: InputType::RequiredVisible, completer }
+    }
+
+    pub(crate) fn new_hidden(
+        usage: &'static str,
+        reader: InputReaderFn,
+        hidden_reader: InputReaderFn,
+        completer: Option<Box<InputCompleterFn>>,
+    ) -> Self {
+        Self { usage, reader, type_: InputType::RequiredHidden(hidden_reader), completer }
+    }
+
+    pub(crate) fn new_optional(
+        usage: &'static str,
+        reader: InputReaderFn,
+        completer: Option<Box<InputCompleterFn>>,
+    ) -> Self {
+        Self { usage, reader, type_: InputType::Optional, completer }
     }
 
     fn read_end_index_from(&self, input: &str, coerce_to_one_line: bool) -> Option<usize> {
@@ -303,12 +325,12 @@ impl CommandInput {
     }
 
     fn is_hidden(&self) -> bool {
-        self.hidden_reader.is_some()
+        matches!(self.type_, InputType::RequiredHidden(_))
     }
 
     fn request_hidden(&self) -> Result<String, Box<dyn Error + Send>> {
-        match self.hidden_reader.as_ref() {
-            Some(reader) => {
+        match self.type_ {
+            InputType::RequiredHidden(reader) => {
                 let string = LineReaderHidden::new().readline(&format!("{}: ", self.usage));
                 let input_end = match reader(&string, true) {
                     None => {
@@ -320,7 +342,7 @@ impl CommandInput {
                 };
                 Ok(string[0..input_end].to_owned())
             }
-            None => Err(Box::new(ReplError {
+            InputType::Optional | InputType::RequiredVisible => Err(Box::new(ReplError {
                 message: format!(
                     "{} cannot be requested as a hidden parameter and must be entered as part of the command.",
                     self.usage
@@ -342,10 +364,10 @@ impl CommandInput {
     }
 
     fn usage(&self) -> String {
-        if self.hidden_reader.is_some() {
-            format!("{} (enter in hidden input)", self.usage)
-        } else {
-            self.usage.to_owned()
+        match self.type_ {
+            InputType::Optional => format!("[optional] {}", self.usage),
+            InputType::RequiredVisible => self.usage.to_owned(),
+            InputType::RequiredHidden(_) => format!("{} (enter in hidden input)", self.usage)
         }
     }
 }

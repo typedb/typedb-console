@@ -313,7 +313,7 @@ fn execute_commands(
                 }
 
                 if must_log_command || multiple_commands.is_some_and(|b| b) {
-                    println_error!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
+                    println!("{} {}", "+".repeat(repl_index + 1), command_string.trim());
                 }
                 match command.execute(context, arguments) {
                     Ok(_) => &input[next_command_index..],

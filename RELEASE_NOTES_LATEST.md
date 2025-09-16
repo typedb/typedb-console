@@ -1,6 +1,6 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.5.0-rc0
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.5.0
 
 
 ## New Features
@@ -16,6 +16,11 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 
 ## Other Improvements
+- **Fix incorrect error println**
+
+- **Fix build and cargo lock**
+  Fix build and cargo lock
+
 - **Introduce 'create-init' command to load a new database from schema/data**
   
   We introduce a new command `database create-init`, which 
@@ -50,3 +55,6 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
   ```
   
   These commands can also receive local in relative or absolute path formats.
+  
+  
+    

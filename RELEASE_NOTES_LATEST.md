@@ -20,12 +20,7 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 - **Fix build and cargo lock**
   Fix build and cargo lock
-  
-  
-- **Prepare release 3.5.0-rc0**
-  Bump version, prepare release notes
-  
-  
+
 - **Introduce 'create-init' command to load a new database from schema/data**
   
   We introduce a new command `database create-init`, which 

@@ -240,13 +240,13 @@ fn execute_script(
         }
     }
     // we could choose to implement this as line-by-line instead of as an interactive-compatible script
-    let _ = execute_commands(context, &combined_input, false, true);
+    let _ = execute_commands(context, &combined_input, true);
     context.script_dir = None;
 }
 
 fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) -> Result<(), Box<dyn Error>> {
     for command in commands {
-        if let Err(err) = execute_commands(context, command, true, true) {
+        if let Err(err) = execute_commands(context, command, true) {
             println_error!("### Stopped executing at command: {}", command);
             return Err(Box::new(err));
         }
@@ -263,7 +263,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
         match result {
             Ok(input) => {
                 if !input.trim().is_empty() {
-                    let _ = execute_commands(context, &input, false, false);
+                    let _ = execute_commands(context, &input, false);
                 } else {
                     continue;
                 }
@@ -292,7 +292,6 @@ fn execute_interactive(context: &mut ConsoleContext) {
 fn execute_commands(
     context: &mut ConsoleContext,
     mut input: &str,
-    coerce_each_command_to_one_line: bool,
     must_log_command: bool,
 ) -> Result<(), CommandError> {
     let mut multiple_commands = None;
@@ -300,7 +299,7 @@ fn execute_commands(
         let repl_index = context.repl_stack.len() - 1;
         let current_repl = context.repl_stack[repl_index].clone();
 
-        input = match current_repl.match_first_command(input, coerce_each_command_to_one_line) {
+        input = match current_repl.match_first_command(input) {
             Ok(None) => {
                 let message = format!("Unrecognised command: {}", input);
                 println_error!("{}", message);
@@ -491,7 +490,7 @@ fn transaction_repl(database: &str, transaction_type: TransactionType) -> Repl<C
             transaction_source,
         ))
         // default: no token
-        .add(CommandLeaf::new_with_input(
+        .add(CommandLeaf::new_with_input_multiline(
             "",
             "Execute query string.",
             CommandInput::new_required("query", parse_one_query, None),

@@ -33,7 +33,6 @@ pub(crate) trait Command<Context> {
     fn match_first<'a>(
         &self,
         input: &'a str,
-        coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>>;
 
     fn usage_description(&self) -> Box<dyn Iterator<Item = (String, &'static str)> + '_>;
@@ -111,14 +110,13 @@ impl<Context: ReplContext> Command<Context> for Subcommand<Context> {
     fn match_first<'a>(
         &self,
         input: &'a str,
-        coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         match self.token.match_(input) {
             None => Ok(None),
             Some((_token, remaining, remaining_start_index)) => {
                 // rev forces longest match first
                 for subcommand in self.subcommands.iter().rev() {
-                    match subcommand.match_first(remaining, coerce_to_one_line)? {
+                    match subcommand.match_first(remaining)? {
                         None => continue,
                         Some((command, remaining_after_subcommand, remaining_after_subcommand_index)) => {
                             // since we only reveal the substring to the subcommand
@@ -166,6 +164,7 @@ pub(crate) struct CommandLeaf<Context> {
     description: &'static str,
     arguments: Vec<CommandInput>,
     executor: CommandExecutor<Context>,
+    allow_multiline: bool,
 }
 
 impl<Context> CommandLeaf<Context> {
@@ -183,7 +182,16 @@ impl<Context> CommandLeaf<Context> {
         arguments: CommandInput,
         executor: CommandExecutor<Context>,
     ) -> Self {
-        Self::new_with_inputs(token, description, vec![arguments], executor)
+        Self::new_with_inputs_with_multiline(token, description, vec![arguments], executor, false)
+    }
+
+    pub(crate) fn new_with_input_multiline(
+        token: impl Into<CommandToken>,
+        description: &'static str,
+        arguments: CommandInput,
+        executor: CommandExecutor<Context>,
+    ) -> Self {
+        Self::new_with_inputs_with_multiline(token, description, vec![arguments], executor, true)
     }
 
     pub(crate) fn new_with_inputs(
@@ -192,8 +200,27 @@ impl<Context> CommandLeaf<Context> {
         arguments: Vec<CommandInput>,
         executor: CommandExecutor<Context>,
     ) -> Self {
+        Self::new_with_inputs_with_multiline(token, description, arguments, executor, false)
+    }
+
+    pub(crate) fn new_with_inputs_multiline(
+        token: impl Into<CommandToken>,
+        description: &'static str,
+        arguments: Vec<CommandInput>,
+        executor: CommandExecutor<Context>,
+    ) -> Self {
+        Self::new_with_inputs_with_multiline(token, description, arguments, executor, true)
+    }
+
+    pub(crate) fn new_with_inputs_with_multiline(
+        token: impl Into<CommandToken>,
+        description: &'static str,
+        arguments: Vec<CommandInput>,
+        executor: CommandExecutor<Context>,
+        allow_multiline: bool,
+    ) -> Self {
         Self::validate_optionals_at_tail(&arguments);
-        Self { token: token.into(), description, arguments, executor }
+        Self { token: token.into(), description, arguments, executor, allow_multiline }
     }
 
     fn validate_optionals_at_tail(args: &[CommandInput]) {
@@ -242,13 +269,12 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
     fn match_first<'a>(
         &self,
         input: &'a str,
-        coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
         match self.token.match_(input) {
             Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();
                 for (index, argument) in self.arguments.iter().enumerate() {
-                    let (arg_value, remaining_input) = match argument.read_end_index_from(remaining, coerce_to_one_line)
+                    let (arg_value, remaining_input) = match argument.read_end_index_from(remaining)
                     {
                         Some(next_index) => {
                             remaining_start_index += next_index;
@@ -337,8 +363,8 @@ impl CommandInput {
         Self { usage, reader, type_: InputType::Optional, completer }
     }
 
-    fn read_end_index_from(&self, input: &str, coerce_to_one_line: bool) -> Option<usize> {
-        (self.reader)(input, coerce_to_one_line)
+    fn read_end_index_from(&self, input: &str) -> Option<usize> {
+        (self.reader)(input)
     }
 
     fn is_hidden(&self) -> bool {
@@ -370,7 +396,7 @@ impl CommandInput {
 
     // Return completions that are longer than the input
     fn completions(&self, input: &str) -> Vec<String> {
-        let input = match self.read_end_index_from(input, true) {
+        let input = match self.read_end_index_from(input) {
             None => return Vec::with_capacity(0),
             Some(index) => &input[0..index],
         };
@@ -389,7 +415,7 @@ impl CommandInput {
     }
 }
 
-pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> {
+pub(crate) fn get_word(input: &str) -> Option<usize> {
     if input.trim().is_empty() {
         None
     } else {
@@ -405,67 +431,63 @@ pub(crate) fn get_word(input: &str, _coerce_to_one_line: bool) -> Option<usize> 
 /// This query must either be explicitly terminated with 'end', or be valid and have an empty following newline
 /// If there is a valid query, and the newline occurs much later, we still return that newline
 /// as that may the user's intended query end but there's a query parse error
-pub(crate) fn parse_one_query(mut input: &str, coerce_to_one_line: bool) -> Option<usize> {
-    if coerce_to_one_line {
-        Some(input.len())
-    } else {
-        // We maximally try to parse as many lines into a query as we can.
-        // If we fail and there is no parseable query, we return the full string
-        match typeql::parse_query_from(input) {
-            Ok((query, mut after_query_pos)) => {
-                // Note: Query parsing may consume any trailing whitespace, which we should undo
-                let tail_whitespace_count =
-                    (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
-                after_query_pos -= tail_whitespace_count;
+pub(crate) fn parse_one_query(mut input: &str) -> Option<usize> {
+    // We maximally try to parse as many lines into a query as we can.
+    // If we fail and there is no parseable query, we return the full string
+    match typeql::parse_query_from(input) {
+        Ok((query, mut after_query_pos)) => {
+            // Note: Query parsing may consume any trailing whitespace, which we should undo
+            let tail_whitespace_count =
+                (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
+            after_query_pos -= tail_whitespace_count;
 
-                if query.has_explicit_end() {
-                    return Some(after_query_pos);
-                } else {
-                    let remaining_input = &input[after_query_pos..];
-                    let after_newline_pos = find_empty_line(remaining_input);
-                    match after_newline_pos {
-                        None => None,
-                        Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+            if query.has_explicit_end() {
+                return Some(after_query_pos);
+            } else {
+                let remaining_input = &input[after_query_pos..];
+                let after_newline_pos = find_empty_line(remaining_input);
+                match after_newline_pos {
+                    None => None,
+                    Some(after_newline_pos) => Some(after_query_pos + after_newline_pos),
+                }
+            }
+        }
+        Err(err) => {
+            // If we fail and there is no parseable query, we simply search for an empty newline and return that index
+            // sometimes TypeQL will hit an error, and stop parsing at that line even though it's not the end of a query
+            // this will degrade the query error pointer! So if we have a line number of the parsing error, we'll look for the newline
+            // after that line, instead of just the first newline
+            let mut start_line = 0;
+            let mut start_col = 0;
+            for error in err.errors() {
+                if let TypeQLError::SyntaxErrorDetailed { error_line_nr, error_col, .. } = error {
+                    let line_nr = *error_line_nr - 1;
+                    if line_nr > start_line {
+                        start_line = line_nr;
+                        start_col = *error_col; //note: 1-indexed, but this works out to move the pos forward one to skip the first col
                     }
                 }
             }
-            Err(err) => {
-                // If we fail and there is no parseable query, we simply search for an empty newline and return that index
-                // sometimes TypeQL will hit an error, and stop parsing at that line even though it's not the end of a query
-                // this will degrade the query error pointer! So if we have a line number of the parsing error, we'll look for the newline
-                // after that line, instead of just the first newline
-                let mut start_line = 0;
-                let mut start_col = 0;
-                for error in err.errors() {
-                    if let TypeQLError::SyntaxErrorDetailed { error_line_nr, error_col, .. } = error {
-                        let line_nr = *error_line_nr - 1;
-                        if line_nr > start_line {
-                            start_line = line_nr;
-                            start_col = *error_col; //note: 1-indexed, but this works out to move the pos forward one to skip the first col
-                        }
+            let mut after_error_pos = 0;
+            for _ in 0..start_line {
+                const NEWLINE: &str = "\n";
+                match input.find(NEWLINE) {
+                    None => {
+                        // unexpected, fall back behaviour
+                        return find_empty_line(input);
+                    }
+                    Some(pos) => {
+                        after_error_pos += pos + NEWLINE.len();
+                        input = &input[pos + NEWLINE.len()..]
                     }
                 }
-                let mut after_error_pos = 0;
-                for _ in 0..start_line {
-                    const NEWLINE: &str = "\n";
-                    match input.find(NEWLINE) {
-                        None => {
-                            // unexpected, fall back behaviour
-                            return find_empty_line(input);
-                        }
-                        Some(pos) => {
-                            after_error_pos += pos + NEWLINE.len();
-                            input = &input[pos + NEWLINE.len()..]
-                        }
-                    }
-                }
-                after_error_pos += start_col;
-                let remaining_input = &input[start_col..];
-                let newline_after_error_pos = find_empty_line(remaining_input);
-                match newline_after_error_pos {
-                    None => None,
-                    Some(newline_after_error_pos) => Some(after_error_pos + newline_after_error_pos),
-                }
+            }
+            after_error_pos += start_col;
+            let remaining_input = &input[start_col..];
+            let newline_after_error_pos = find_empty_line(remaining_input);
+            match newline_after_error_pos {
+                None => None,
+                Some(newline_after_error_pos) => Some(after_error_pos + newline_after_error_pos),
             }
         }
     }
@@ -538,7 +560,7 @@ pub(crate) trait CommandDefinitions: Highlighter + Hinter + Completer {
 impl<Context: ReplContext> CommandDefinitions for Subcommand<Context> {
     fn is_complete_command(&self, mut input: &str) -> bool {
         loop {
-            match Command::match_first(self, input, false) {
+            match Command::match_first(self, input) {
                 Ok(None) => return false,
                 Ok(Some((_executable, _args, next_command_index))) => {
                     input = &input[next_command_index..];

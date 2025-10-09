@@ -270,7 +270,26 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         &self,
         input: &'a str,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        match self.token.match_(input) {
+        let relevant_input = if self.allow_multiline {
+            input
+        } else {
+            // allow 'single line' to include multiple empty newlines at the start (hack) - eg. pasting a command with a leading newline
+            if let Some(mut end_pos) = input.find("\n") {
+                while input[..end_pos].trim_matches(char::is_whitespace).is_empty() {
+                    match &input[end_pos + 1..].find("\n") {
+                        None => break,
+                        Some(pos) => end_pos += 1 + pos,
+                    }
+                }
+                &input[..end_pos + 1]
+            } else {
+                input
+            }
+        };
+
+        println!("Trying to match {} from limited input: '{}'", self.token, relevant_input);
+
+        match self.token.match_(relevant_input) {
             Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();
                 for (index, argument) in self.arguments.iter().enumerate() {

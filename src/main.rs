@@ -99,16 +99,14 @@ struct ConsoleContext {
 impl ConsoleContext {
     fn convert_path(&self, path: &str) -> PathBuf {
         let path = Path::new(path);
-        let path = if !path.is_absolute() {
+        if !path.is_absolute() {
             match self.script_dir.as_ref() {
                 None => self.invocation_dir.join(path),
                 Some(dir) => PathBuf::from(dir).join(path),
             }
         } else {
             path.to_path_buf()
-        };
-        println!("converted path: {}", path.to_string_lossy());
-        path
+        }
     }
 
     fn has_changes(&self) -> bool {

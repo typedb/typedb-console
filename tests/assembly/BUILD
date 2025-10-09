@@ -62,63 +62,6 @@ rust_test(
     use_libtest_harness = True,
 )
 
-
-rust_test(
-    name = "test-commands",
-    srcs = [
-        "test_commands.rs",
-    ],
-    deps = [
-        "//tool/runner:typedb_binary_runner"
-    ],
-    env = select({
-        "@typedb_bazel_distribution//platform:is_linux_x86_64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-linux-x86_64-targz)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_linux-x86_64//file)",
-         },
-        "@typedb_bazel_distribution//platform:is_linux_arm64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-linux-arm64-targz)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_linux-arm64//file)",
-        },
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-mac-x86_64-zip)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_mac-x86_64//file)",
-        },
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-mac-arm64-zip)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_mac-arm64//file)",
-        },
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-windows-x86_64-zip)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_windows-x86_64//file)",
-        },
-    }),
-    data = select({
-        "@typedb_bazel_distribution//platform:is_linux_x86_64": [
-            "//:assemble-linux-x86_64-targz",
-            "@typedb_artifact_linux-x86_64//file",
-        ],
-        "@typedb_bazel_distribution//platform:is_linux_arm64" :  [
-            "//:assemble-linux-arm64-targz",
-            "@typedb_artifact_linux-arm64//file",
-        ],
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : [
-            "//:assemble-mac-x86_64-zip",
-            "@typedb_artifact_mac-x86_64//file",
-        ],
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : [
-            "//:assemble-mac-arm64-zip",
-            "@typedb_artifact_mac-arm64//file",
-        ],
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : [
-            "//:assemble-windows-x86_64-zip",
-            "@typedb_artifact_windows-x86_64//file",
-        ],
-    }),
-    use_libtest_harness = True,
-)
-
-
 rust_test(
     name = "test-script",
     srcs = [
@@ -131,6 +74,7 @@ rust_test(
         "@typedb_bazel_distribution//platform:is_linux_x86_64" : {
             "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-linux-x86_64-targz)",
             "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_linux-x86_64//file)",
+            # Note: script file is the only path required, other referenced files are loaded relative to the script
             "SCRIPT_PATH": "$(rootpath script.tqls)",
          },
         "@typedb_bazel_distribution//platform:is_linux_arm64" : {
@@ -154,7 +98,8 @@ rust_test(
             "SCRIPT_PATH": "$(rootpath script.tqls)",
         },
     }),
-    data = ["script.tqls", "attributes.tql", "entities.tql"] + select({
+    data = ["script.tqls", "attributes.tql", "entities.tql"]
+    + select({
         "@typedb_bazel_distribution//platform:is_linux_x86_64": [
             "//:assemble-linux-x86_64-targz",
             "@typedb_artifact_linux-x86_64//file",

@@ -287,8 +287,6 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
             }
         };
 
-        println!("Trying to match {} from limited input: '{}'", self.token, relevant_input);
-
         match self.token.match_(relevant_input) {
             Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();

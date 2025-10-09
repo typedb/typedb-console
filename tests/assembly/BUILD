@@ -126,6 +126,7 @@ rust_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["**/*.rs", "BUILD"]),
+    exclude = ["script.tqls", "attributes.tql", "entities.tql"],
     license_type = "mpl-header",
 )

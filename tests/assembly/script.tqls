@@ -3,7 +3,6 @@ user create new-user new-user-password
 user update-password new-user new-user-password-2
 user delete new-user
 
-database delete test-script-db
 database create test-script-db
 transaction schema test-script-db
 source attributes.tql b35f0e88429841c148e935a91cc709e5bcf7bdd5bc0faa1d39b8b16f6e33b7fc
@@ -47,7 +46,8 @@ end;
 close
 
 database export test-script-db exported_schema.tql exported_data.typedb
-database delete test-script-db2
+database delete test-script-db
+
 database import test-script-db2 exported_schema.tql exported_data.typedb
 
 database create-init example-bookstore https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-schema.tql https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-data.tql 

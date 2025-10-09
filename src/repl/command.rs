@@ -319,7 +319,7 @@ impl<Context: ReplContext> ExecutableCommand<Context> for CommandLeaf<Context> {
     }
 }
 
-pub(crate) type InputReaderFn = for<'a> fn(&'a str, bool) -> Option<usize>;
+pub(crate) type InputReaderFn = for<'a> fn(&'a str) -> Option<usize>;
 // since we can't pass the context in through RustyLine's completion/hinting system, we have to hack around it
 // this type lets us construct a closure capturing whatever we want
 pub(crate) type InputCompleterFn = dyn for<'a> Fn(&'a str) -> Vec<String>;
@@ -375,7 +375,7 @@ impl CommandInput {
         match self.type_ {
             InputType::RequiredHidden(reader) => {
                 let string = LineReaderHidden::new().readline(&format!("{}: ", self.usage));
-                let input_end = match reader(&string, true) {
+                let input_end = match reader(&string) {
                     None => {
                         return Err(Box::new(ReplError {
                             message: format!("Could not read input for '{}'", self.usage),

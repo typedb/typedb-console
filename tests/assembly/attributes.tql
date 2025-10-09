@@ -1,0 +1,2 @@
+define
+attribute name, value string;

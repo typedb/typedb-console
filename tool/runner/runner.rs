@@ -32,7 +32,7 @@ impl TypeDBBinaryRunner {
 
         Ok(TypeDBBinaryRunner { temp_dir, distribution, subcommand: typedb_subcommand.to_owned() })
     }
-
+    
     pub fn run(&self, options: &[impl AsRef<str>]) -> io::Result<Child> {
         let typedb_command = self.typedb_command(&self.distribution);
         let mut cmd = Command::new(typedb_command.join(" "));
@@ -57,5 +57,9 @@ impl TypeDBBinaryRunner {
             command.extend(vec!["/c".to_string(), "typedb.bat".to_string()]);
         }
         command
+    }
+
+    pub fn distribution_path(&self) -> &PathBuf {
+        &self.distribution
     }
 }

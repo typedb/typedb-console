@@ -305,7 +305,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
 
     let mut input: &str = &resource.file_content;
     let mut query_count = 0;
-    while let Some(next_query_index) = parse_one_query(&input, false) {
+    while let Some(next_query_index) = parse_one_query(&input) {
         let query = &input[0..next_query_index];
         if query.trim().is_empty() {
             input = &input[next_query_index..];

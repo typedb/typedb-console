@@ -99,14 +99,16 @@ struct ConsoleContext {
 impl ConsoleContext {
     fn convert_path(&self, path: &str) -> PathBuf {
         let path = Path::new(path);
-        if !path.is_absolute() {
+        let path = if !path.is_absolute() {
             match self.script_dir.as_ref() {
                 None => self.invocation_dir.join(path),
                 Some(dir) => PathBuf::from(dir).join(path),
             }
         } else {
             path.to_path_buf()
-        }
+        };
+        println!("converted path: {}", path.to_string_lossy());
+        path
     }
 
     fn has_changes(&self) -> bool {
@@ -209,7 +211,7 @@ fn execute_scripts(context: &mut ConsoleContext, files: &[String]) -> Result<(),
     for file_path in files {
         let path = context.convert_path(file_path);
         if let Ok(file) = File::open(&file_path) {
-            execute_script(context, path, io::BufReader::new(file).lines())
+            execute_script(context, path, io::BufReader::new(file).lines())?;
         } else {
             return Err(Box::new(io::Error::new(
                 io::ErrorKind::NotFound,
@@ -224,7 +226,7 @@ fn execute_script(
     context: &mut ConsoleContext,
     file_path: PathBuf,
     inputs: impl Iterator<Item = Result<String, io::Error>>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let mut combined_input = String::new();
     context.script_dir = Some(file_path.parent().unwrap().to_string_lossy().to_string());
     for (index, input) in inputs.enumerate() {
@@ -235,13 +237,14 @@ fn execute_script(
             }
             Err(_) => {
                 println!("### Error reading file '{}' line: {}", file_path.to_string_lossy(), index + 1);
-                return;
+                return Err(Box::new(io::Error::new(io::ErrorKind::Other, "Error reading file")));
             }
         }
     }
     // we could choose to implement this as line-by-line instead of as an interactive-compatible script
-    let _ = execute_commands(context, &combined_input, true);
+    let result = execute_commands(context, &combined_input, true);
     context.script_dir = None;
+    result.map_err(|err| Box::new(err) as Box<dyn Error>)
 }
 
 fn execute_command_list(context: &mut ConsoleContext, commands: &[String]) -> Result<(), Box<dyn Error>> {

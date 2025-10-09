@@ -8,7 +8,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
-    name = "test-assembly-native",
+    name = "test-assembly",
     srcs = [
         "test_assembly.rs",
     ],
@@ -64,7 +64,7 @@ rust_test(
 
 
 rust_test(
-    name = "test-assembly-commands",
+    name = "test-commands",
     srcs = [
         "test_commands.rs",
     ],
@@ -120,7 +120,7 @@ rust_test(
 
 
 rust_test(
-    name = "test-assembly-script",
+    name = "test-script",
     srcs = [
         "test_script.rs",
     ],

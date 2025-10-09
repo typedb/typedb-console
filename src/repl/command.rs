@@ -274,8 +274,7 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
             Some((_token, mut remaining, mut remaining_start_index)) => {
                 let mut parsed_args: Vec<String> = Vec::new();
                 for (index, argument) in self.arguments.iter().enumerate() {
-                    let (arg_value, remaining_input) = match argument.read_end_index_from(remaining)
-                    {
+                    let (arg_value, remaining_input) = match argument.read_end_index_from(remaining) {
                         Some(next_index) => {
                             remaining_start_index += next_index;
                             (remaining[0..next_index].trim().to_owned(), &remaining[next_index..])

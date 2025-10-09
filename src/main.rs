@@ -292,11 +292,7 @@ fn execute_interactive(context: &mut ConsoleContext) {
     }
 }
 
-fn execute_commands(
-    context: &mut ConsoleContext,
-    mut input: &str,
-    must_log_command: bool,
-) -> Result<(), CommandError> {
+fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_command: bool) -> Result<(), CommandError> {
     let mut multiple_commands = None;
     while !context.repl_stack.is_empty() && !input.trim().is_empty() {
         let repl_index = context.repl_stack.len() - 1;

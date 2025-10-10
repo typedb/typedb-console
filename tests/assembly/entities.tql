@@ -1,0 +1,2 @@
+define
+entity person, owns name;

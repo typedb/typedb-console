@@ -41,7 +41,9 @@ build:
       type: foreground
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/assembly:test-assembly-native --test_output=streamed
+        bazel test //tests/assembly:test-assembly --test_output=streamed
+        bazel test //tests/assembly:test-script --test_output=streamed
+
     sync-dependencies:
       image: typedb-ubuntu-22.04
       filter:

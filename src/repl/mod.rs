@@ -63,9 +63,8 @@ impl<Context: ReplContext + 'static> Repl<Context> {
     pub(crate) fn match_first_command<'a>(
         &self,
         input: &'a str,
-        coerce_to_one_line: bool,
     ) -> Result<Option<(&dyn ExecutableCommand<Context>, Vec<String>, usize)>, Box<dyn Error + Send>> {
-        self.commands.match_first(input, coerce_to_one_line)
+        self.commands.match_first(input)
     }
 
     pub(crate) fn help(&self) -> String {

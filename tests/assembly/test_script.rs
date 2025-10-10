@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, io, process::Child, thread::sleep, time::Duration};
+use std::{error::Error, io, path::PathBuf, process::Child, thread::sleep, time::Duration};
 
 use typedb_binary_runner::runner::TypeDBBinaryRunner;
 
-const DATABASE_NAME: &str = "assembly-test-db";
+const DATABASE_NAME: &str = "script-test-db";
 
 const TYPEDB_SERVER_ARCHIVE_VAR: &str = "TYPEDB_SERVER_ARCHIVE";
 const TYPEDB_CONSOLE_ARCHIVE_VAR: &str = "TYPEDB_CONSOLE_ARCHIVE";
@@ -17,7 +17,7 @@ const TYPEDB_SERVER_SUBCOMMAND: &str = "server";
 const TYPEDB_CONSOLE_SUBCOMMAND: &str = "console";
 
 #[test]
-fn test_console() -> Result<(), Box<dyn Error>> {
+fn test_script() -> Result<(), Box<dyn Error>> {
     /*
     NOTE: subprocesses make the logging and debugging from this test difficult
           the simplest way to bisect issues is to run TypeDB server externally, and remove it from here
@@ -28,12 +28,12 @@ fn test_console() -> Result<(), Box<dyn Error>> {
 
     let console_runner = TypeDBBinaryRunner::new(TYPEDB_CONSOLE_ARCHIVE_VAR, TYPEDB_CONSOLE_SUBCOMMAND)
         .expect("Failed to create console binary runner");
-    let db_create_command = format!("database create {}", DATABASE_NAME);
+    let script_path = std::env::var("SCRIPT_PATH").expect("SCRIPT_PATH is not set");
     let args = vec![
         "--address",
         "localhost:1729",
-        "--command",
-        &db_create_command,
+        "--script",
+        &script_path,
         "--username",
         "admin",
         "--password",
@@ -54,7 +54,12 @@ fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
     let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
         .expect("Failed to create server binary runner");
     // note: run in development mode to avoid polluting analytics data when using tagged releases
-    let args = ["--server.address", "0.0.0.0:1729", "--development-mode.enabled", "true" ];
+    let args: Vec<String> = vec![
+        "--server.address".to_owned(),
+        "0.0.0.0:1729".to_owned(),
+        "--development-mode.enabled".to_owned(),
+        "true".to_owned(),
+    ];
     let child: io::Result<Child> = runner.run(&args);
     (runner, child.expect("Failed to spawn child server process."))
 }

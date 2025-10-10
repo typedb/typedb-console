@@ -1,0 +1,57 @@
+user list
+user create new-user new-user-password
+user update-password new-user new-user-password-2
+user delete new-user
+
+database create test-script-db
+transaction schema test-script-db
+source attributes.tql b35f0e88429841c148e935a91cc709e5bcf7bdd5bc0faa1d39b8b16f6e33b7fc
+source entities.tql
+commit
+
+transaction write test-script-db
+insert $x isa person, has name "John"; 
+
+insert $y isa person, has name "Bob";
+end;
+insert 
+$x isa person,
+  has name "Alice";
+end;
+commit
+
+transaction read test-script-db
+match $x isa person, has name "John"; 
+
+match $y isa person, has name "Bob"; end;
+
+match
+  $z isa person, has name "Alice";
+fetch {
+  $z.*
+};
+
+match
+  $x isa person, has name "John";
+fetch {
+  $x.*
+};
+end;
+match
+  $y isa person, has name "Bob";
+fetch {
+  $y.*
+};
+end;
+close
+
+database export test-script-db exported_schema.tql exported_data.typedb
+database delete test-script-db
+
+database import test-script-db2 exported_schema.tql exported_data.typedb
+
+database create-init example-bookstore https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-schema.tql https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-data.tql 
+database delete example-bookstore
+
+database create-init example-bookstore-with-shas https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-schema.tql https://github.com/typedb/typedb-examples/releases/download/3.5.2/bookstore-data.tql sha256:b2de488d9f64ccdfdba016029c7932be69ec5d35d18977c85bb12ad4cc97e95f sha256:828806afe1ce939d0ee87d6ae89598f5d7f967155c7757263b151673480bcad1
+database delete example-bookstore-with-shas

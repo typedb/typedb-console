@@ -58,4 +58,8 @@ impl TypeDBBinaryRunner {
         }
         command
     }
+
+    pub fn distribution_path(&self) -> &PathBuf {
+        &self.distribution
+    }
 }

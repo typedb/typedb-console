@@ -445,8 +445,8 @@ pub(crate) fn parse_one_query(mut input: &str) -> Option<usize> {
     match typeql::parse_query_from(input) {
         Ok((query, mut after_query_pos)) => {
             // Note: Query parsing may consume any trailing whitespace, which we should undo
-            let tail_whitespace_count =
-                (&input[0..after_query_pos]).chars().rev().take_while(|c| c.is_whitespace()).count();
+            let query_string = &input[0..after_query_pos];
+            let tail_whitespace_count = query_string.len() - query_string.trim_end().len();
             after_query_pos -= tail_whitespace_count;
 
             if query.has_explicit_end() {

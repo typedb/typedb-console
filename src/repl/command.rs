@@ -273,18 +273,10 @@ impl<Context: ReplContext> Command<Context> for CommandLeaf<Context> {
         let relevant_input = if self.allow_multiline {
             input
         } else {
-            // allow 'single line' to include multiple empty newlines at the start (hack) - eg. pasting a command with a leading newline
-            if let Some(mut end_pos) = input.find("\n") {
-                while input[..end_pos].trim_matches(char::is_whitespace).is_empty() {
-                    match &input[end_pos + 1..].find("\n") {
-                        None => break,
-                        Some(pos) => end_pos += 1 + pos,
-                    }
-                }
-                &input[..end_pos + 1]
-            } else {
-                input
-            }
+            let trimmed_input = input.trim_start();
+            let leading_whitespace_len = input.len() - trimmed_input.len();
+            let line = trimmed_input.split_terminator('\n').next().unwrap_or(trimmed_input);
+            &input[..leading_whitespace_len + line.len()]
         };
 
         match self.token.match_(relevant_input) {

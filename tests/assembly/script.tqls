@@ -6,7 +6,7 @@ user delete new-user
 database create test-script-db
 transaction schema test-script-db
 source attributes.tql b35f0e88429841c148e935a91cc709e5bcf7bdd5bc0faa1d39b8b16f6e33b7fc
-source entities.tql 2f7bd17cfda662c120af8b143e7e337e6828f356cb6e48e23486dae4f024d492
+source entities.tql
 commit
 
 transaction write test-script-db

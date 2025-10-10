@@ -54,12 +54,7 @@ fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
     let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
         .expect("Failed to create server binary runner");
     // note: run in development mode to avoid polluting analytics data when using tagged releases
-    let args: Vec<String> = vec![
-        "--server.address".to_owned(),
-        "0.0.0.0:1729".to_owned(),
-        "--development-mode.enabled".to_owned(),
-        "true".to_owned(),
-    ];
+    let args = ["--server.address", "0.0.0.0:1729", "--development-mode.enabled", "true" ];
     let child: io::Result<Child> = runner.run(&args);
     (runner, child.expect("Failed to spawn child server process."))
 }

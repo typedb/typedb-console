@@ -5,6 +5,7 @@
  */
 
 use std::{
+    collections::HashMap,
     env,
     env::temp_dir,
     error::Error,
@@ -17,7 +18,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-use std::collections::HashMap;
+
 use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
@@ -29,8 +30,9 @@ use crate::{
     completions::{database_name_completer_fn, file_completer},
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
-        database_schema, transaction_close, transaction_commit, transaction_query, transaction_read,
-        transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create, user_delete,
+        database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
+        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
+        transaction_schema, transaction_source, transaction_write, user_create, user_delete,
         user_list, user_update_password,
     },
     repl::{
@@ -40,7 +42,6 @@ use crate::{
     },
     runtime::BackgroundRuntime,
 };
-use crate::operations::{replica_deregister, replica_list, replica_primary, replica_register, server_version};
 
 mod cli;
 mod completions;
@@ -158,7 +159,11 @@ fn main() {
     }
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
     let runtime = BackgroundRuntime::new();
-    let driver_options = DriverOptions::new().use_replication(!args.replication_disabled).tls_enabled(!args.tls_disabled).tls_root_ca(tls_root_ca_path).unwrap();
+    let driver_options = DriverOptions::new()
+        .use_replication(!args.replication_disabled)
+        .tls_enabled(!args.tls_disabled)
+        .tls_root_ca(tls_root_ca_path)
+        .unwrap();
     let driver = match runtime.run(TypeDBDriver::new(
         address_info.addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),
@@ -327,8 +332,8 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
-    let server_commands = Subcommand::new("server")
-        .add(CommandLeaf::new("version", "Retrieve server version.", server_version));
+    let server_commands =
+        Subcommand::new("server").add(CommandLeaf::new("version", "Retrieve server version.", server_version));
 
     let replica_commands = Subcommand::new("replica")
         .add(CommandLeaf::new("list", "List replicas.", replica_list))
@@ -534,11 +539,14 @@ struct AddressInfo {
 
 fn parse_addresses(args: &Args) -> AddressInfo {
     if let Some(address) = &args.address {
-        AddressInfo {only_https: is_https_address(address), addresses: Addresses::try_from_address_str(address).unwrap() }
+        AddressInfo {
+            only_https: is_https_address(address),
+            addresses: Addresses::try_from_address_str(address).unwrap(),
+        }
     } else if let Some(addresses) = &args.addresses {
         let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
         let only_https = split.iter().all(|address| is_https_address(address));
-        AddressInfo {only_https, addresses: Addresses::try_from_addresses_str(split).unwrap() }
+        AddressInfo { only_https, addresses: Addresses::try_from_addresses_str(split).unwrap() }
     } else if let Some(translation) = &args.address_translation {
         let mut map = HashMap::new();
         let mut only_https = true;
@@ -550,7 +558,7 @@ fn parse_addresses(args: &Args) -> AddressInfo {
             map.insert(public_address.to_string(), private_address.to_string());
         }
         println!("Translation map:: {map:?}"); // TODO: Remove
-        AddressInfo {only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
+        AddressInfo { only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
     } else {
         panic!("At least one of --address, --addresses, or --address-translation must be provided.");
     }

@@ -5,7 +5,7 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def typedb_dependencies():
-     # TODO: Return ref after merge to master, currently points to 'raft-dependencies-addition'
+     # TODO: Return ref after merge to master
      git_repository(
          name = "typedb_dependencies",
          remote = "https://github.com/typedb/typedb-dependencies",
@@ -13,7 +13,11 @@ def typedb_dependencies():
      )
 
 def typedb_driver():
-    # TODO: Return typedb
+     # TODO: Return ref after merge to master
+#    native.local_repository(
+#        name = "typedb_driver",
+#        path = "../typedb-driver",
+#    )
     git_repository(
         name = "typedb_driver",
         remote = "https://github.com/typedb/typedb-driver",

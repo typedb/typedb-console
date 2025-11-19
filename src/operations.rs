@@ -16,7 +16,7 @@ use ureq;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
-    printer::{print_document, print_row},
+    printer::{print_document, print_replicas_table, print_row},
     repl::command::{parse_one_query, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
 };
@@ -218,9 +218,7 @@ pub(crate) fn replica_list(context: &mut ConsoleContext, _input: &[String]) -> C
         if replicas.is_empty() {
             println!("No replicas are present.");
         } else {
-            for replica in replicas {
-                println!("{}", replica.address());
-            }
+            print_replicas_table(replicas);
         }
         Ok(())
     })
@@ -228,7 +226,9 @@ pub(crate) fn replica_list(context: &mut ConsoleContext, _input: &[String]) -> C
 
 pub(crate) fn replica_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let primary_replica = driver.primary_replica();
+    let primary_replica = context
+        .background_runtime
+        .run(async move { driver.primary_replica().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>) })?;
     if let Some(primary_replica) = primary_replica {
         println!("{}", primary_replica.address());
     } else {
@@ -239,8 +239,9 @@ pub(crate) fn replica_primary(context: &mut ConsoleContext, _input: &[String]) -
 
 pub(crate) fn replica_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replica_id: u64 = input[0].parse().map_err(|_| Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) })
-        as Box<dyn Error + Send>)?;
+    let replica_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
     let address = input[1].clone();
     context
         .background_runtime
@@ -252,8 +253,9 @@ pub(crate) fn replica_register(context: &mut ConsoleContext, input: &[String]) -
 
 pub(crate) fn replica_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replica_id: u64 = input[0].parse().map_err(|_| Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) })
-        as Box<dyn Error + Send>)?;
+    let replica_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
     context
         .background_runtime
         .run(async move { driver.deregister_replica(replica_id).await })

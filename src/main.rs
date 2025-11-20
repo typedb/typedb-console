@@ -161,7 +161,7 @@ fn main() {
     let runtime = BackgroundRuntime::new();
     let driver_options = DriverOptions::new()
         .use_replication(!args.replication_disabled)
-        .tls_enabled(!args.tls_disabled)
+        .is_tls_enabled(!args.tls_disabled)
         .tls_root_ca(tls_root_ca_path)
         .unwrap();
     let driver = match runtime.run(TypeDBDriver::new(
@@ -342,15 +342,15 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "register",
             "Register new replica. Requires a clustering address, not a connection address.",
             vec![
-                CommandInput::new("replica id", get_word, None, None),
-                CommandInput::new("clustering address", get_word, None, None),
+                CommandInput::new_required("replica id", get_word, None),
+                CommandInput::new_required("clustering address", get_word, None),
             ],
             replica_register,
         ))
         .add(CommandLeaf::new_with_input(
             "deregister",
             "Deregister existing replica.",
-            CommandInput::new("replica id", get_word, None, None),
+            CommandInput::new_required("replica id", get_word, None),
             replica_deregister,
         ));
 

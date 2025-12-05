@@ -38,15 +38,14 @@ pub struct Args {
     #[arg(long, value_name = "public=private,...", conflicts_with_all = ["address", "addresses"])]
     pub address_translation: Option<String>,
 
-    /// If used in a cluster environment, disables attempts to redirect requests to server replicas,
-    /// limiting Console to communicate only with the single address specified in the `address`
-    /// argument.
+    /// If used in a Cluster environment (Cloud or Enterprise), disables attempts to redirect 
+    /// requests to server replicas, limiting Console to communicate only with the single address 
+    /// specified in the `address` argument.
     /// Use for administrative / debug purposes to test a specific replica only: this option will
     /// lower the success rate of Console's operations in production.
     #[arg(long = "replication-disabled", default_value = "false")]
     pub replication_disabled: bool,
 
-    // TODO: Add cluster-related retries/attempts flags from Driver Options?
     /// Username for authentication
     #[arg(long, value_name = USERNAME_VALUE_NAME)]
     pub username: Option<String>,

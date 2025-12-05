@@ -173,7 +173,9 @@ fn main() {
         Err(err) => {
             let tls_error =
                 if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
-            println_error!("Failed to create driver connection to server. {err}{tls_error}");
+            let replication_error =
+                if args.replication_disabled { "\nVerify that the connection address is **exactly** the same as the server address specified in its config." } else { "" };
+            println_error!("Failed to create driver connection to server. {err}{tls_error}{replication_error}");
             exit(ExitCode::ConnectionError as i32);
         }
     };

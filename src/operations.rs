@@ -13,6 +13,7 @@ use typedb_driver::{
     TransactionOptions, TransactionType,
 };
 use ureq;
+use itertools::Itertools;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
@@ -40,9 +41,9 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
     if databases.is_empty() {
         println!("No databases are present on the server.");
     } else {
-        for db in databases {
-            println!("{}", db.name());
-        }
+        databases.into_iter().map(|db| db.name().to_string()).sorted().for_each(|name| {
+            println!("{name}");
+        });
     }
     Ok(())
 }
@@ -141,9 +142,9 @@ pub(crate) fn user_list(context: &mut ConsoleContext, _input: &[String]) -> Comm
     if users.is_empty() {
         println!("No users are present.");
     } else {
-        for user in users {
-            println!("{}", user.name());
-        }
+        users.into_iter().map(|user| user.name().to_string()).sorted().for_each(|name| {
+            println!("{name}");
+        });
     }
     Ok(())
 }

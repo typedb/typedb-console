@@ -24,42 +24,42 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "32a7fde17ad17b775a8ccc0867c87f119749e7ea",
+    commit = "4435d56bcda142fca47dd91fdc011bb1f3f221db",
 )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "a6363bf0b6208cabcfbf8865601e9eb03641559f",
+    commit = "10c8e442f0507153125b7e3ab5005da8100a4d23",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "7029e9f036540ad75d9bdc3afb1207409741d42a",
+    commit = "42ba8021d028e03b8a63f983b50997cd99d983c7",
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/typedb/typedb-driver",
-    commit = "a44a645e22114ba966c317c31e86d05f5cb29d2c",
+    commit = "e94d2554fcd155279e56b98180543d98518e4a6c",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "da3e316cb0022cb284083996f0659ad22db13aca",
+    commit = "bbe3d61970817b34687eeb145890af6712b7eec6",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "dabc971c4b9b9e63196c45b748e5cb6037e71076",
+    commit = "b5fe6da7330bc3a446bb3c8c7b4e01c1f699253c",
 )
 
 # Python toolchain
@@ -117,9 +117,9 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": "7029e9f036540ad75d9bdc3afb1207409741d42a",
-        "typedb_driver+": "a44a645e22114ba966c317c31e86d05f5cb29d2c",
-        "typedb_protocol+": "da3e316cb0022cb284083996f0659ad22db13aca",
+        "typeql+": "42ba8021d028e03b8a63f983b50997cd99d983c7",
+        "typedb_driver+": "e94d2554fcd155279e56b98180543d98518e4a6c",
+        "typedb_protocol+": "bbe3d61970817b34687eeb145890af6712b7eec6",
     },
     workspace_tag_dict = {
     },

@@ -24,9 +24,27 @@ pub struct Args {
     #[arg(long, value_name = "path to script file")]
     pub script: Vec<String>,
 
-    /// TypeDB address to connect to. If using TLS encryption, this must start with "https://"
-    #[arg(long, value_name = ADDRESS_VALUE_NAME)]
+    /// TypeDB address to connect to (host:port). If using TLS encryption, this must start with "https://".
+    #[arg(long, value_name = ADDRESS_VALUE_NAME, conflicts_with_all = ["addresses", "address_translation"])]
     pub address: Option<String>,
+
+    /// A comma-separated list of TypeDB replica addresses of a single cluster to connect to.
+    #[arg(long, value_name = "host1:port1,host2:port2", conflicts_with_all = ["address", "address_translation"])]
+    pub addresses: Option<String>,
+
+    /// A comma-separated list of public=private address pairs. Public addresses are the user-facing
+    /// addresses of the replicas, and private addresses are the addresses used for the server-side
+    /// connection between replicas.
+    #[arg(long, value_name = "public=private,...", conflicts_with_all = ["address", "addresses"])]
+    pub address_translation: Option<String>,
+
+    /// If used in a Cluster environment (Cloud or Enterprise), disables attempts to redirect 
+    /// requests to server replicas, limiting Console to communicate only with the single address 
+    /// specified in the `address` argument.
+    /// Use for administrative / debug purposes to test a specific replica only: this option will
+    /// lower the success rate of Console's operations in production.
+    #[arg(long = "replication-disabled", default_value = "false")]
+    pub replication_disabled: bool,
 
     /// Username for authentication
     #[arg(long, value_name = USERNAME_VALUE_NAME)]
@@ -48,8 +66,8 @@ pub struct Args {
 
     /// Disable error reporting. Error reporting helps TypeDB improve by reporting
     /// errors and crashes to the development team.
-    #[arg(long = "diagnostics-disable", default_value = "false")]
-    pub diagnostics_disable: bool,
+    #[arg(long = "diagnostics-disabled", default_value = "false")]
+    pub diagnostics_disabled: bool,
 
     /// Print the Console binary version
     #[arg(long = "version")]

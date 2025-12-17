@@ -14,14 +14,10 @@ def typedb_dependencies():
 
 def typedb_driver():
      # TODO: Return ref after merge to master
-#    native.local_repository(
-#        name = "typedb_driver",
-#        path = "../typedb-driver",
-#    )
     git_repository(
         name = "typedb_driver",
         remote = "https://github.com/typedb/typedb-driver",
-        commit = "7c7a715303a8be91e87bac6bbe42db475257e339",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        commit = "088f51e28cb12de4338ad76c03a8a7072b404046",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )
 
 def typeql():

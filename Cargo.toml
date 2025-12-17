@@ -33,6 +33,11 @@ features = {}
 		version = "0.3.31"
 		default-features = false
 
+	[dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false
+
 	[dependencies.rpassword]
 		features = []
 		version = "7.4.0"
@@ -66,7 +71,7 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
-		rev = "7c7a715303a8be91e87bac6bbe42db475257e339"
+		rev = "088f51e28cb12de4338ad76c03a8a7072b404046"
 		git = "https://github.com/typedb/typedb-driver"
 		default-features = false
 

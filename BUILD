@@ -29,6 +29,7 @@ rust_binary(
         "@crates//:futures",
         "@crates//:glob",
         "@crates//:home",
+        "@crates//:itertools",
         "@crates//:rpassword",
         "@crates//:rustyline",
         "@crates//:sentry",

@@ -32,8 +32,8 @@ use crate::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
         database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
         transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
-        transaction_schema, transaction_source, transaction_write, user_create, user_delete,
-        user_list, user_update_password,
+        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
+        user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -173,8 +173,11 @@ fn main() {
         Err(err) => {
             let tls_error =
                 if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
-            let replication_error =
-                if args.replication_disabled { "\nVerify that the connection address is **exactly** the same as the server address specified in its config." } else { "" };
+            let replication_error = if args.replication_disabled {
+                "\nVerify that the connection address is **exactly** the same as the server address specified in its config."
+            } else {
+                ""
+            };
             println_error!("Failed to create driver connection to server. {err}{tls_error}{replication_error}");
             exit(ExitCode::ConnectionError as i32);
         }

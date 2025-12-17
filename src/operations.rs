@@ -13,13 +13,24 @@ use typedb_driver::{
     TransactionOptions, TransactionType,
 };
 use ureq;
+use itertools::Itertools;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
-    printer::{print_document, print_row},
+    printer::{print_document, print_replicas_table, print_row},
     repl::command::{parse_one_query, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
 };
+
+pub(crate) fn server_version(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let server_version = context
+        .background_runtime
+        .run(async move { driver.server_version().await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("{}", server_version);
+    Ok(())
+}
 
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
@@ -30,9 +41,9 @@ pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> 
     if databases.is_empty() {
         println!("No databases are present on the server.");
     } else {
-        for db in databases {
-            println!("{}", db.name());
-        }
+        databases.into_iter().map(|db| db.name().to_string()).sorted().for_each(|name| {
+            println!("{name}");
+        });
     }
     Ok(())
 }
@@ -131,9 +142,9 @@ pub(crate) fn user_list(context: &mut ConsoleContext, _input: &[String]) -> Comm
     if users.is_empty() {
         println!("No users are present.");
     } else {
-        for user in users {
-            println!("{}", user.name);
-        }
+        users.into_iter().map(|user| user.name().to_string()).sorted().for_each(|name| {
+            println!("{name}");
+        });
     }
     Ok(())
 }
@@ -184,13 +195,13 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
             };
         let current_user = driver
             .users()
-            .get_current_user()
+            .get_current()
             .await
             .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
             .expect("Could not fetch currently logged in user.");
 
         user.update_password(new_password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-        Ok(current_user.name == username)
+        Ok(current_user.name() == username)
     })?;
     if updated_current_user {
         println!("Successfully updated current user's password, exiting console. Please log in with the updated credentials.");
@@ -198,6 +209,59 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     } else {
         println!("Successfully updated user password.");
     }
+    Ok(())
+}
+
+pub(crate) fn replica_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    context.background_runtime.run(async move {
+        let replicas = driver.replicas().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+        if replicas.is_empty() {
+            println!("No replicas are present.");
+        } else {
+            print_replicas_table(replicas);
+        }
+        Ok(())
+    })
+}
+
+pub(crate) fn replica_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let primary_replica = context
+        .background_runtime
+        .run(async move { driver.primary_replica().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>) })?;
+    if let Some(primary_replica) = primary_replica {
+        println!("{}", primary_replica.address());
+    } else {
+        println!("No primary replica is present.");
+    }
+    Ok(())
+}
+
+pub(crate) fn replica_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let replica_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
+    let address = input[1].clone();
+    context
+        .background_runtime
+        .run(async move { driver.register_replica(replica_id, address).await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully registered replica.");
+    Ok(())
+}
+
+pub(crate) fn replica_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let replica_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
+    context
+        .background_runtime
+        .run(async move { driver.deregister_replica(replica_id).await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully deregistered replica.");
     Ok(())
 }
 

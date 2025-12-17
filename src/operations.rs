@@ -7,13 +7,13 @@
 use std::{error::Error, fs::read_to_string, path::PathBuf, process::exit, rc::Rc};
 
 use futures::stream::StreamExt;
+use itertools::Itertools;
 use sha2::Digest;
 use typedb_driver::{
     answer::{QueryAnswer, QueryType},
     TransactionOptions, TransactionType,
 };
 use ureq;
-use itertools::Itertools;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,

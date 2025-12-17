@@ -19,8 +19,8 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.47.1"
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.48.0"
 		default-features = false
 
 	[dependencies.glob]
@@ -31,6 +31,11 @@ features = {}
 	[dependencies.futures]
 		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
 		version = "0.3.31"
+		default-features = false
+
+	[dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
 		default-features = false
 
 	[dependencies.rpassword]
@@ -55,7 +60,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.45"
+		version = "4.5.52"
 		default-features = false
 
 	[dependencies.typeql]
@@ -66,13 +71,13 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
+		rev = "a804da767e68154cc3ee5a7531feeaba5dbf0c17"
 		git = "https://github.com/typedb/typedb-driver"
-		tag = "3.7.0"
 		default-features = false
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.143"
+		version = "1.0.145"
 		default-features = false
 
 	[dependencies.sentry]
@@ -86,12 +91,12 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/assembly/test_assembly.rs"
-	name = "test-assembly"
-
-[[test]]
 	path = "tests/assembly/test_script.rs"
 	name = "test-script"
+
+[[test]]
+	path = "tests/assembly/test_assembly.rs"
+	name = "test-assembly"
 
 [[bin]]
 	path = "src/main.rs"

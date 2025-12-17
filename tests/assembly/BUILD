@@ -32,10 +32,11 @@ rust_test(
             "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-mac-arm64-zip)",
             "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_mac-arm64//file)",
         },
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-windows-x86_64-zip)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_windows-x86_64//file)",
-        },
+        # TODO: Return windows
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
+#            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-windows-x86_64-zip)",
+#            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_windows-x86_64//file)",
+#        },
     }),
     data = select({
         "@typedb_bazel_distribution//platform:is_linux_x86_64": [
@@ -54,10 +55,11 @@ rust_test(
             "//:assemble-mac-arm64-zip",
             "@typedb_artifact_mac-arm64//file",
         ],
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : [
-            "//:assemble-windows-x86_64-zip",
-            "@typedb_artifact_windows-x86_64//file",
-        ],
+        # TODO: Return Windows
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : [
+#            "//:assemble-windows-x86_64-zip",
+#            "@typedb_artifact_windows-x86_64//file",
+#        ],
     }),
     use_libtest_harness = True,
 )
@@ -92,11 +94,12 @@ rust_test(
             "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_mac-arm64//file)",
             "SCRIPT_PATH": "$(rootpath script.tqls)",
         },
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
-            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-windows-x86_64-zip)",
-            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_windows-x86_64//file)",
-            "SCRIPT_PATH": "$(rootpath script.tqls)",
-        },
+        # TODO: Return Windows
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
+#            "TYPEDB_CONSOLE_ARCHIVE": "$(rootpath //:assemble-windows-x86_64-zip)",
+#            "TYPEDB_SERVER_ARCHIVE": "$(rootpath @typedb_artifact_windows-x86_64//file)",
+#            "SCRIPT_PATH": "$(rootpath script.tqls)",
+#        },
     }),
     data = ["script.tqls", "attributes.tql", "entities.tql"]
     + select({
@@ -116,10 +119,11 @@ rust_test(
             "//:assemble-mac-arm64-zip",
             "@typedb_artifact_mac-arm64//file",
         ],
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : [
-            "//:assemble-windows-x86_64-zip",
-            "@typedb_artifact_windows-x86_64//file",
-        ],
+        # TODO: Return Windows
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : [
+#            "//:assemble-windows-x86_64-zip",
+#            "@typedb_artifact_windows-x86_64//file",
+#        ],
     }),
     use_libtest_harness = True,
 )

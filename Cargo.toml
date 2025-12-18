@@ -71,7 +71,7 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
-		rev = "a804da767e68154cc3ee5a7531feeaba5dbf0c17"
+		rev = "1464ffd2ca1280d47def6f4a9a0884e2a479d122"
 		git = "https://github.com/typedb/typedb-driver"
 		default-features = false
 

@@ -189,9 +189,9 @@ fn main() {
         invocation_dir,
         repl_stack: vec![Rc::new(repl)],
         background_runtime: runtime,
+        driver,
         transaction: None,
         script_dir: None,
-        driver,
     };
 
     if !args.command.is_empty() && !args.script.is_empty() {

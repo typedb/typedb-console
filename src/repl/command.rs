@@ -64,7 +64,7 @@ pub(crate) trait ExecutableCommand<Context>: Command<Context> {
 }
 
 pub(crate) type CommandExecutor<Context> = fn(&mut Context, &[String]) -> CommandResult;
-pub(crate) type CommandResult = Result<(), Box<dyn Error + Send>>;
+pub(crate) type CommandResult<T = ()> = Result<T, Box<dyn Error + Send>>;
 
 pub(crate) struct Subcommand<Context> {
     token: CommandToken,

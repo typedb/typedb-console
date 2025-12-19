@@ -61,14 +61,15 @@ release:
     owner: typedb
     branch: [master, cluster-support-feature-branch]
   validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      type: foreground
-      command: |
-        export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
-        export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-        bazel run @typedb_dependencies//distribution/artifact:create-netrc
-        bazel test //:release-validate-deps  --test_output=streamed
+# TODO: Return when we start releasing based on tags
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      type: foreground
+#      command: |
+#        export ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+#        export ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+#        bazel run @typedb_dependencies//distribution/artifact:create-netrc
+#        bazel test //:release-validate-deps  --test_output=streamed
     validate-release-notes:
       image: typedb-ubuntu-22.04
       command: |

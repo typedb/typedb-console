@@ -129,18 +129,19 @@ fn main() {
         exit(ExitCode::Success as i32);
     }
     let address_info = parse_addresses(&args);
-    if !args.tls_disabled && !address_info.only_https {
-        println_error!(
-            "\
-            TLS connections can only be enabled when connecting to HTTPS endpoints. \
-            For example, using 'https://<ip>:port'.\n\
-            Please modify the address or disable TLS ('{}'). {}\
-        ",
-            format_argument!("--tls-disabled"),
-            format_warning!("WARNING: this will send passwords over plaintext!"),
-        );
-        exit(ExitCode::UserInputError as i32);
-    }
+    // TODO: Decide whether to block this or not
+    // if !args.tls_disabled && !address_info.only_https {
+    //     println_error!(
+    //         "\
+    //         TLS connections can only be enabled when connecting to HTTPS endpoints. \
+    //         For example, using 'https://<ip>:port'.\n\
+    //         Please modify the address or disable TLS ('{}'). {}\
+    //     ",
+    //         format_argument!("--tls-disabled"),
+    //         format_warning!("WARNING: this will send passwords over plaintext!"),
+    //     );
+    //     exit(ExitCode::UserInputError as i32);
+    // }
     let username = match args.username {
         Some(username) => username,
         None => {

@@ -3254,7 +3254,11 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-driver?rev=a44a645e22114ba966c317c31e86d05f5cb29d2c#a44a645e22114ba966c317c31e86d05f5cb29d2c"
+=======
+source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
+>>>>>>> f842420 (Update release notes and temporarily disable TLS checks)
 dependencies = [
  "async-std",
  "chrono",

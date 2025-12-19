@@ -44,7 +44,14 @@ features = {}
 		workspace = true
 
 	[dependencies.typedb-driver]
+<<<<<<< HEAD
 		workspace = true
+=======
+		features = []
+		rev = "6661cee8f53a23c04ea66e0dd638e114a7738096"
+		git = "https://github.com/typedb/typedb-driver"
+		default-features = false
+>>>>>>> f842420 (Update release notes and temporarily disable TLS checks)
 
 	[dependencies.serde_json]
 		workspace = true

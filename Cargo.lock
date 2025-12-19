@@ -2573,7 +2573,7 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-driver?rev=3608fe6095564b77ec5144dd2b1458902be0efa6#3608fe6095564b77ec5144dd2b1458902be0efa6"
+source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
 dependencies = [
  "chrono",
  "chrono-tz",

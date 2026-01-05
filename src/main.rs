@@ -26,7 +26,7 @@ use sentry::ClientOptions;
 use typedb_driver::{Addresses, Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 
 use crate::{
-    cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
+    cli::{Args, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
@@ -559,14 +559,18 @@ fn parse_addresses(args: &Args) -> AddressInfo {
         for pair in translation.split(',') {
             let (public_address, private_address) = pair
                 .split_once('=')
-                .unwrap_or_else(|| panic!("Invalid address pair: {pair}. Must be of form public=private"));
+                .unwrap_or_else(|| {
+                    println_error!("invalid address pair '{}', must be of form '{}'.", format_argument!("{pair}"), format_argument!("<public=private,...>"));
+                    exit(ExitCode::UserInputError as i32);
+                });
             only_https = only_https && is_https_address(public_address);
             map.insert(public_address.to_string(), private_address.to_string());
         }
         println!("Translation map:: {map:?}"); // TODO: Remove
         AddressInfo { only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
     } else {
-        panic!("At least one of --address, --addresses, or --address-translation must be provided.");
+        println_error!("missing server address (at least one of --address, --addresses, or --address-translation must be provided).");
+        exit(ExitCode::UserInputError as i32);
     }
 }
 

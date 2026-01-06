@@ -128,20 +128,7 @@ fn main() {
         println!("{}", VERSION);
         exit(ExitCode::Success as i32);
     }
-    let address_info = parse_addresses(&args);
-    // TODO: Decide whether to block this or not
-    // if !args.tls_disabled && !address_info.only_https {
-    //     println_error!(
-    //         "\
-    //         TLS connections can only be enabled when connecting to HTTPS endpoints. \
-    //         For example, using 'https://<ip>:port'.\n\
-    //         Please modify the address or disable TLS ('{}'). {}\
-    //     ",
-    //         format_argument!("--tls-disabled"),
-    //         format_warning!("WARNING: this will send passwords over plaintext!"),
-    //     );
-    //     exit(ExitCode::UserInputError as i32);
-    // }
+    let addresses = parse_addresses(&args);
     let username = match args.username {
         Some(username) => username,
         None => {
@@ -166,7 +153,7 @@ fn main() {
         .tls_root_ca(tls_root_ca_path)
         .unwrap();
     let driver = match runtime.run(TypeDBDriver::new(
-        address_info.addresses,
+        addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),
         driver_options,
     )) {
@@ -538,44 +525,40 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
     }
 }
 
-struct AddressInfo {
-    only_https: bool,
-    addresses: Addresses,
-}
-
-fn parse_addresses(args: &Args) -> AddressInfo {
-    if let Some(address) = &args.address {
-        AddressInfo {
-            only_https: is_https_address(address),
-            addresses: Addresses::try_from_address_str(address).unwrap(),
-        }
-    } else if let Some(addresses) = &args.addresses {
+fn parse_addresses(args: &Args) -> Addresses {
+    if let Some(addresses) = &args.addresses {
         let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
-        let only_https = split.iter().all(|address| is_https_address(address));
-        AddressInfo { only_https, addresses: Addresses::try_from_addresses_str(split).unwrap() }
+        match Addresses::try_from_addresses_str(split) {
+            Ok(addresses) => addresses,
+            Err(err) => {
+                println_error!("invalid addresses '{addresses}': '{err}'");
+                exit(ExitCode::UserInputError as i32);
+            }
+        }
     } else if let Some(translation) = &args.address_translation {
         let mut map = HashMap::new();
-        let mut only_https = true;
         for pair in translation.split(',') {
-            let (public_address, private_address) = pair
-                .split_once('=')
-                .unwrap_or_else(|| {
-                    println_error!("invalid address pair '{}', must be of form '{}'.", format_argument!("{pair}"), format_argument!("<public=private,...>"));
-                    exit(ExitCode::UserInputError as i32);
-                });
-            only_https = only_https && is_https_address(public_address);
+            let (public_address, private_address) = pair.split_once('=').unwrap_or_else(|| {
+                println_error!(
+                    "invalid address pair '{}', must be of form '{}'.",
+                    format_argument!("{pair}"),
+                    format_argument!("<public=private,...>")
+                );
+                exit(ExitCode::UserInputError as i32);
+            });
             map.insert(public_address.to_string(), private_address.to_string());
         }
-        println!("Translation map:: {map:?}"); // TODO: Remove
-        AddressInfo { only_https, addresses: Addresses::try_from_translation_str(map).unwrap() }
+        match Addresses::try_from_translation_str(map) {
+            Ok(addresses) => addresses,
+            Err(err) => {
+                println_error!("invalid addresses '{translation}': '{err}'");
+                exit(ExitCode::UserInputError as i32);
+            }
+        }
     } else {
         println_error!("missing server address (at least one of --address, --addresses, or --address-translation must be provided).");
         exit(ExitCode::UserInputError as i32);
     }
-}
-
-fn is_https_address(address: &str) -> bool {
-    address.starts_with("https:")
 }
 
 fn init_diagnostics() {

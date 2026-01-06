@@ -3255,10 +3255,14 @@ dependencies = [
 name = "typedb-driver"
 version = "0.0.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-driver?rev=a44a645e22114ba966c317c31e86d05f5cb29d2c#a44a645e22114ba966c317c31e86d05f5cb29d2c"
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
 >>>>>>> f842420 (Update release notes and temporarily disable TLS checks)
+=======
+source = "git+https://github.com/typedb/typedb-driver?tag=3.7.0-alpha-2#afcc521f2ab83d26d30208a65c3c8b181c672994"
+>>>>>>> 64897bc (Update version to 3.7.0-alpha-2 and enhance CLI smoothness)
 dependencies = [
  "async-std",
  "chrono",
@@ -3283,7 +3287,11 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-protocol?rev=da3e316cb0022cb284083996f0659ad22db13aca#da3e316cb0022cb284083996f0659ad22db13aca"
+=======
+source = "git+https://github.com/typedb/typedb-protocol?tag=3.7.0-alpha-0#40454a8c58e119a066fa81dd502ca0004042b3d0"
+>>>>>>> 64897bc (Update version to 3.7.0-alpha-2 and enhance CLI smoothness)
 dependencies = [
  "prost",
  "tonic",

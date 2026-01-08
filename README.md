@@ -1,3 +1,5 @@
+[![TypeDB](https://github.com/typedb/.github/raw/master/profile/banner.png)](https://typedb.com/)
+
 # TypeDB Console
 
 [![Factory](https://factory.vaticle.com/api/status/typedb/typedb-console/badge.svg)](https://factory.vaticle.com/typedb/typedb-console)

@@ -56,14 +56,19 @@ pub(crate) fn database_create_init(context: &mut ConsoleContext, input: &[String
     data_args.extend(input.get(4).cloned());
 
     database_create(context, db_name)?;
+    println!("Successfully created database.");
+
+    println!("Initializing schema...");
     transaction_schema(context, db_name)?;
     transaction_source(context, &schema_args)?;
     transaction_commit(context, &[])?;
+    println!("Successfully initialized schema.");
 
+    println!("Loading data... (this can take a while, please wait)");
     transaction_write(context, db_name)?;
     transaction_source(context, &data_args)?;
     transaction_commit(context, &[])?;
-    println!("Successfully created and initialized database with schema and data.");
+    println!("Successfully loaded data. Database is ready.");
     Ok(())
 }
 

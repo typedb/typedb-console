@@ -71,8 +71,8 @@ features = {}
 
 	[dependencies.typedb-driver]
 		features = []
+		rev = "78283bf9dc8603aa60294311de1dd147c5a9f765"
 		git = "https://github.com/typedb/typedb-driver"
-		tag = "3.7.0-alpha-2"
 		default-features = false
 
 	[dependencies.serde_json]
@@ -81,7 +81,7 @@ features = {}
 		default-features = false
 
 	[dependencies.sentry]
-		features = ["backtrace", "contexts", "httpdate", "panic", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq"]
+		features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
 		version = "0.36.0"
 		default-features = false
 

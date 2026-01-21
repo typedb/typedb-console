@@ -23,7 +23,9 @@ use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
-use typedb_driver::{Addresses, Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
+use typedb_driver::{
+    Addresses, Credentials, DriverOptions, DriverTlsConfig, Transaction, TransactionType, TypeDBDriver,
+};
 
 use crate::{
     cli::{Args, USERNAME_VALUE_NAME},
@@ -147,11 +149,14 @@ fn main() {
     }
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
     let runtime = BackgroundRuntime::new();
-    let driver_options = DriverOptions::new()
-        .use_replication(!args.replication_disabled)
-        .is_tls_enabled(!args.tls_disabled)
-        .tls_root_ca(tls_root_ca_path)
-        .unwrap();
+    let driver_tls_config = match args.tls_disabled {
+        false => match tls_root_ca_path {
+            Some(tls_root_ca_path) => DriverTlsConfig::enabled_with_root_ca(tls_root_ca_path).unwrap(),
+            None => DriverTlsConfig::enabled_with_native_root_ca(),
+        },
+        true => DriverTlsConfig::disabled(),
+    };
+    let driver_options = DriverOptions::new(driver_tls_config).use_replication(!args.replication_disabled);
     let driver = match runtime.run(TypeDBDriver::new(
         addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),

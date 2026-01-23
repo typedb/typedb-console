@@ -12,77 +12,55 @@ use typedb_driver::TypeDBDriver;
 use crate::{repl::command::InputCompleterFn, BackgroundRuntime};
 
 pub(crate) struct CompletionCache {
-    entries: Option<Vec<String>>,
+    entries: Vec<String>,
+    fetch_fn: Box<dyn Fn() -> Option<Vec<String>> + Send>,
 }
 
 impl CompletionCache {
-    pub(crate) fn new() -> Self {
-        Self { entries: None }
+    fn update(&mut self) {
+        self.entries = (self.fetch_fn)().unwrap_or_default();
+    }
+
+    fn get(&self, input: &str) -> Vec<String> {
+        self.entries.iter().filter(|e| e.starts_with(input)).cloned().collect()
     }
 }
 
-pub(crate) fn database_name_completer_fn(
-    driver: Arc<TypeDBDriver>,
-    runtime: BackgroundRuntime,
-    cache: Arc<Mutex<CompletionCache>>,
-) -> Box<InputCompleterFn> {
-    // we have to do an annoying hack to let auto-complete function with a live database connection...
-    Box::new(move |input| {
-        let should_fetch = {
-            let cache = cache.lock().unwrap();
-            input.len() <= 1 || cache.entries.is_none()
-        };
-        if should_fetch {
+pub(crate) fn new_database_cache(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Arc<Mutex<CompletionCache>> {
+    Arc::new(Mutex::new(CompletionCache {
+        entries: Vec::default(),
+        fetch_fn: Box::new(move || {
             let driver = driver.clone();
-            let runtime = runtime.clone();
-            match runtime.run(async move { driver.databases().all().await }) {
-                Ok(dbs) => {
-                    let entries: Vec<String> = dbs.iter().map(|db| db.name().to_owned()).collect();
-                    let filtered = entries.iter().filter(|e| e.starts_with(input)).cloned().collect();
-                    cache.lock().unwrap().entries = Some(entries);
-                    filtered
-                }
-                Err(_) => Vec::new(),
-            }
-        } else {
-            let cache = cache.lock().unwrap();
-            cache
-                .entries
-                .as_ref()
-                .map_or_else(Vec::new, |entries| entries.iter().filter(|e| e.starts_with(input)).cloned().collect())
-        }
-    })
+            runtime
+                .clone()
+                .run(async move { driver.databases().all().await })
+                .ok()
+                .map(|dbs| dbs.iter().map(|db| db.name().to_owned()).collect())
+        }),
+    }))
 }
 
-pub(crate) fn user_name_completer_fn(
-    driver: Arc<TypeDBDriver>,
-    runtime: BackgroundRuntime,
-    cache: Arc<Mutex<CompletionCache>>,
-) -> Box<InputCompleterFn> {
-    Box::new(move |input| {
-        let should_fetch = {
-            let cache = cache.lock().unwrap();
-            input.len() <= 1 || cache.entries.is_none()
-        };
-        if should_fetch {
+pub(crate) fn new_user_cache(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Arc<Mutex<CompletionCache>> {
+    Arc::new(Mutex::new(CompletionCache {
+        entries: Vec::default(),
+        fetch_fn: Box::new(move || {
             let driver = driver.clone();
-            let runtime = runtime.clone();
-            match runtime.run(async move { driver.users().all().await }) {
-                Ok(users) => {
-                    let entries: Vec<String> = users.iter().map(|u| u.name().to_owned()).collect();
-                    let filtered = entries.iter().filter(|e| e.starts_with(input)).cloned().collect();
-                    cache.lock().unwrap().entries = Some(entries);
-                    filtered
-                }
-                Err(_) => Vec::new(),
-            }
-        } else {
-            let cache = cache.lock().unwrap();
-            cache
-                .entries
-                .as_ref()
-                .map_or_else(Vec::new, |entries| entries.iter().filter(|e| e.starts_with(input)).cloned().collect())
+            runtime
+                .clone()
+                .run(async move { driver.users().all().await })
+                .ok()
+                .map(|users| users.iter().map(|u| u.name().to_owned()).collect())
+        }),
+    }))
+}
+
+pub(crate) fn cached_completer(cache: Arc<Mutex<CompletionCache>>) -> Box<InputCompleterFn> {
+    Box::new(move |input| {
+        let mut cache = cache.lock().unwrap();
+        if input.len() == 1 {
+            cache.update();
         }
+        cache.get(input)
     })
 }
 

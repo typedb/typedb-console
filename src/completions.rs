@@ -46,9 +46,10 @@ pub(crate) fn database_name_completer_fn(
             }
         } else {
             let cache = cache.lock().unwrap();
-            cache.entries.as_ref().map_or_else(Vec::new, |entries| {
-                entries.iter().filter(|e| e.starts_with(input)).cloned().collect()
-            })
+            cache
+                .entries
+                .as_ref()
+                .map_or_else(Vec::new, |entries| entries.iter().filter(|e| e.starts_with(input)).cloned().collect())
         }
     })
 }
@@ -77,9 +78,10 @@ pub(crate) fn user_name_completer_fn(
             }
         } else {
             let cache = cache.lock().unwrap();
-            cache.entries.as_ref().map_or_else(Vec::new, |entries| {
-                entries.iter().filter(|e| e.starts_with(input)).cloned().collect()
-            })
+            cache
+                .entries
+                .as_ref()
+                .map_or_else(Vec::new, |entries| entries.iter().filter(|e| e.starts_with(input)).cloned().collect())
         }
     })
 }

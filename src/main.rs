@@ -16,7 +16,7 @@ use std::{
     path::{Path, PathBuf},
     process::exit,
     rc::Rc,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use clap::Parser;
@@ -29,7 +29,7 @@ use typedb_driver::{
 
 use crate::{
     cli::{Args, USERNAME_VALUE_NAME},
-    completions::{database_name_completer_fn, file_completer},
+    completions::{database_name_completer_fn, file_completer, user_name_completer_fn, CompletionCache},
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
         database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
@@ -330,6 +330,9 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
+    let db_completion_cache = Arc::new(Mutex::new(CompletionCache::new()));
+    let user_completion_cache = Arc::new(Mutex::new(CompletionCache::new()));
+
     let server_commands =
         Subcommand::new("server").add(CommandLeaf::new("version", "Retrieve server version.", server_version));
 
@@ -375,13 +378,13 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(CommandLeaf::new_with_input(
             "delete",
             "Delete the database with the given name.",
-            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone()))),
             database_delete,
         ))
         .add(CommandLeaf::new_with_input(
             "schema",
             "Retrieve the TypeQL representation of a database's schema.",
-            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone()))),
+            CommandInput::new_required("db", get_word, Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone()))),
             database_schema,
         ))
         .add(CommandLeaf::new_with_inputs(
@@ -401,7 +404,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
                 CommandInput::new_required(
                     "db",
                     get_word,
-                    Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+                    Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone())),
                 ),
                 CommandInput::new_required("schema file path", get_word, None),
                 CommandInput::new_required("data file path", get_word, None),
@@ -423,14 +426,22 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(CommandLeaf::new_with_input(
             "delete",
             "Delete existing user.",
-            CommandInput::new_required("name", get_word, None),
+            CommandInput::new_required(
+                "name",
+                get_word,
+                Some(user_name_completer_fn(driver.clone(), runtime.clone(), user_completion_cache.clone())),
+            ),
             user_delete,
         ))
         .add(CommandLeaf::new_with_inputs(
             "update-password",
             "Set existing user's password.",
             vec![
-                CommandInput::new_required("name", get_word, None),
+                CommandInput::new_required(
+                    "name",
+                    get_word,
+                    Some(user_name_completer_fn(driver.clone(), runtime.clone(), user_completion_cache.clone())),
+                ),
                 CommandInput::new_hidden("new password", get_word, get_word, None),
             ],
             user_update_password,
@@ -443,7 +454,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             CommandInput::new_required(
                 "db",
                 get_word,
-                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+                Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone())),
             ),
             transaction_read,
         ))
@@ -453,7 +464,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             CommandInput::new_required(
                 "db",
                 get_word,
-                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+                Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone())),
             ),
             transaction_write,
         ))
@@ -463,7 +474,7 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             CommandInput::new_required(
                 "db",
                 get_word,
-                Some(database_name_completer_fn(driver.clone(), runtime.clone())),
+                Some(database_name_completer_fn(driver.clone(), runtime.clone(), db_completion_cache.clone())),
             ),
             transaction_schema,
         ));

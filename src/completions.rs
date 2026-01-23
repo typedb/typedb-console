@@ -55,6 +55,7 @@ pub(crate) fn new_user_cache(driver: Arc<TypeDBDriver>, runtime: BackgroundRunti
 }
 
 pub(crate) fn cached_completer(cache: Arc<Mutex<CompletionCache>>) -> Box<InputCompleterFn> {
+    // we have to do an annoying hack to let auto-complete function with a live database connection...
     Box::new(move |input| {
         let mut cache = cache.lock().unwrap();
         if input.len() == 1 {

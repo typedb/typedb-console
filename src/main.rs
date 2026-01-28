@@ -30,6 +30,7 @@ use typedb_driver::{
 use crate::{
     cli::{Args, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
+    constants::DEFAULT_REQUEST_TIMEOUT,
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
         database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
@@ -156,7 +157,9 @@ fn main() {
         },
         true => DriverTlsConfig::disabled(),
     };
-    let driver_options = DriverOptions::new(driver_tls_config).use_replication(!args.replication_disabled);
+    let driver_options = DriverOptions::new(driver_tls_config)
+        .use_replication(!args.replication_disabled)
+        .request_timeout(DEFAULT_REQUEST_TIMEOUT);
     let driver = match runtime.run(TypeDBDriver::new(
         addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),

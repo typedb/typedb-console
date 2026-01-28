@@ -3440,6 +3440,7 @@ version = "0.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-driver?rev=a44a645e22114ba966c317c31e86d05f5cb29d2c#a44a645e22114ba966c317c31e86d05f5cb29d2c"
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
@@ -3450,6 +3451,9 @@ source = "git+https://github.com/typedb/typedb-driver?tag=3.7.0-alpha-2#afcc521f
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=78283bf9dc8603aa60294311de1dd147c5a9f765#78283bf9dc8603aa60294311de1dd147c5a9f765"
 >>>>>>> 5324ae3 (Update dependencies)
+=======
+source = "git+https://github.com/typedb/typedb-driver?rev=a0edf7452fa6a46ebd2d23f1b058d27b12fb9099#a0edf7452fa6a46ebd2d23f1b058d27b12fb9099"
+>>>>>>> 7b82073 (Add request timeout to all non-transactional operations)
 dependencies = [
  "async-std",
  "chrono",

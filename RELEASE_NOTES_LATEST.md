@@ -1,6 +1,6 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.7.0
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.8.0
 
 
 ## New Features
@@ -13,11 +13,15 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 
 ## Other Improvements
-- **Update Cargo.toml**
+- **Make it clear that `database create-init` can be a long running operation**
+  
+  `database create-init` now prints that it can take a while and the user should wait.
+  
+  
+- **Add TypeDB banner to README**
 
-- **Prepare release 3.7.0-rc0**
-  
-  We update the dependencies and bump the version to 3.7.0-rc0.
-  
-  
+- **Add contributing guidelines to CONTRIBUTING.md**
+
+- **Update README.md by removing Stack Overflow badges**
+
     

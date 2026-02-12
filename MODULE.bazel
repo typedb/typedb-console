@@ -1,0 +1,135 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+module(
+    name = "typedb_console",
+    version = "0.0.0",
+    compatibility_level = 1,
+)
+
+# Core BCR dependencies
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "rules_java", version = "8.6.2")
+bazel_dep(name = "rules_jvm_external", version = "6.6")
+bazel_dep(name = "rules_python", version = "1.0.0")
+bazel_dep(name = "rules_rust", version = "0.56.0")
+bazel_dep(name = "rules_kotlin", version = "2.0.0")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+
+# typedb ecosystem - local path overrides (until published to BCR)
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_dependencies",
+    path = "../dependencies",
+)
+
+bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_bazel_distribution",
+    path = "../bazel-distribution",
+)
+
+bazel_dep(name = "typeql", version = "0.0.0")
+local_path_override(
+    module_name = "typeql",
+    path = "../typeql",
+)
+
+bazel_dep(name = "typedb_driver", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_driver",
+    path = "../typedb-driver",
+)
+
+bazel_dep(name = "typedb_protocol", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_protocol",
+    path = "../typedb-protocol",
+)
+
+bazel_dep(name = "typedb_behaviour", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_behaviour",
+    path = "../typedb-behaviour",
+)
+
+# Python toolchain
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.11",
+)
+
+# Rust toolchain
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.81.0"],
+    extra_target_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+# Rust crates - import from typedb_dependencies' crate extension
+# This ensures type compatibility across all TypeDB modules
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+use_repo(crate, "crates")
+
+# Maven dependencies - import from typedb_dependencies
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+use_repo(maven, "maven")
+
+# Register Kotlin toolchain
+register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
+
+# workspace_refs for release validation
+workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
+workspace_refs(
+    name = "typedb_console_workspace_refs",
+    workspace_commit_dict = {},
+    workspace_tag_dict = {},
+)
+
+# TypeDB server artifacts for integration tests
+# These download the TypeDB server binary for assembly tests
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_file(
+    name = "typedb_artifact_linux-arm64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-arm64/versions/3.0.0/typedb-all-linux-arm64-3.0.0.tar.gz"],
+    downloaded_file_path = "typedb-all-linux-arm64-3.0.0.tar.gz",
+)
+
+http_file(
+    name = "typedb_artifact_linux-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-x86_64/versions/3.0.0/typedb-all-linux-x86_64-3.0.0.tar.gz"],
+    downloaded_file_path = "typedb-all-linux-x86_64-3.0.0.tar.gz",
+)
+
+http_file(
+    name = "typedb_artifact_mac-arm64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/3.0.0/typedb-all-mac-arm64-3.0.0.zip"],
+    downloaded_file_path = "typedb-all-mac-arm64-3.0.0.zip",
+)
+
+http_file(
+    name = "typedb_artifact_mac-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-x86_64/versions/3.0.0/typedb-all-mac-x86_64-3.0.0.zip"],
+    downloaded_file_path = "typedb-all-mac-x86_64-3.0.0.zip",
+)
+
+http_file(
+    name = "typedb_artifact_windows-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-windows-x86_64/versions/3.0.0/typedb-all-windows-x86_64-3.0.0.zip"],
+    downloaded_file_path = "typedb-all-windows-x86_64-3.0.0.zip",
+)

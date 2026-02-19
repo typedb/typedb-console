@@ -5,6 +5,7 @@
  */
 
 use std::{
+    collections::HashMap,
     env,
     env::temp_dir,
     error::Error,
@@ -22,16 +23,20 @@ use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
-use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
+use typedb_driver::{
+    Addresses, Credentials, DriverOptions, DriverTlsConfig, Transaction, TransactionType, TypeDBDriver,
+};
 
 use crate::{
-    cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
+    cli::{Args, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
+    constants::DEFAULT_REQUEST_TIMEOUT,
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
-        database_schema, transaction_close, transaction_commit, transaction_query, transaction_read,
-        transaction_rollback, transaction_schema, transaction_source, transaction_write, user_create, user_delete,
-        user_list, user_update_password,
+        database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
+        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
+        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
+        user_update_password,
     },
     repl::{
         command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
@@ -126,13 +131,7 @@ fn main() {
         println!("{}", VERSION);
         exit(ExitCode::Success as i32);
     }
-    let address = match args.address {
-        Some(address) => address,
-        None => {
-            println_error!("missing server address ('{}').", format_argument!("--address <{ADDRESS_VALUE_NAME}>"));
-            exit(ExitCode::UserInputError as i32);
-        }
-    };
+    let addresses = parse_addresses(&args);
     let username = match args.username {
         Some(username) => username,
         None => {
@@ -146,34 +145,36 @@ fn main() {
     if args.password.is_none() {
         args.password = Some(LineReaderHidden::new().readline(&format!("password for '{username}': ")));
     }
-    if !args.diagnostics_disable {
+    if !args.diagnostics_disabled {
         init_diagnostics()
     }
-    if !args.tls_disabled && !address.starts_with("https:") {
-        println_error!(
-            "\
-            TLS connections can only be enabled when connecting to HTTPS endpoints. \
-            For example, using 'https://<ip>:port'.\n\
-            Please modify the address or disable TLS ('{}'). {}\
-        ",
-            format_argument!("--tls-disabled"),
-            format_warning!("WARNING: this will send passwords over plaintext!"),
-        );
-        exit(ExitCode::UserInputError as i32);
-    }
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
-
     let runtime = BackgroundRuntime::new();
+    let driver_tls_config = match args.tls_disabled {
+        false => match tls_root_ca_path {
+            Some(tls_root_ca_path) => DriverTlsConfig::enabled_with_root_ca(tls_root_ca_path).unwrap(),
+            None => DriverTlsConfig::enabled_with_native_root_ca(),
+        },
+        true => DriverTlsConfig::disabled(),
+    };
+    let driver_options = DriverOptions::new(driver_tls_config)
+        .use_replication(!args.replication_disabled)
+        .request_timeout(DEFAULT_REQUEST_TIMEOUT);
     let driver = match runtime.run(TypeDBDriver::new(
-        address,
+        addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),
-        DriverOptions::new(!args.tls_disabled, tls_root_ca_path).unwrap(),
+        driver_options,
     )) {
         Ok(driver) => Arc::new(driver),
         Err(err) => {
             let tls_error =
                 if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
-            println_error!("Failed to create driver connection to server. {err}{tls_error}");
+            let replication_error = if args.replication_disabled {
+                "\nVerify that the connection address is **exactly** the same as the server address specified in its config."
+            } else {
+                ""
+            };
+            println_error!("Failed to create driver connection to server. {err}{tls_error}{replication_error}");
             exit(ExitCode::ConnectionError as i32);
         }
     };
@@ -184,9 +185,9 @@ fn main() {
         invocation_dir,
         repl_stack: vec![Rc::new(repl)],
         background_runtime: runtime,
+        driver,
         transaction: None,
         script_dir: None,
-        driver,
     };
 
     if !args.command.is_empty() && !args.script.is_empty() {
@@ -332,6 +333,28 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
+    let server_commands =
+        Subcommand::new("server").add(CommandLeaf::new("version", "Retrieve server version.", server_version));
+
+    let replica_commands = Subcommand::new("replica")
+        .add(CommandLeaf::new("list", "List replicas.", replica_list))
+        .add(CommandLeaf::new("primary", "Get current primary replica.", replica_primary))
+        .add(CommandLeaf::new_with_inputs(
+            "register",
+            "Register new replica. Requires a clustering address, not a connection address.",
+            vec![
+                CommandInput::new_required("replica id", get_word, None),
+                CommandInput::new_required("clustering address", get_word, None),
+            ],
+            replica_register,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "deregister",
+            "Deregister existing replica.",
+            CommandInput::new_required("replica id", get_word, None),
+            replica_deregister,
+        ));
+
     let database_commands = Subcommand::new("database")
         .add(CommandLeaf::new("list", "List databases on the server.", database_list))
         .add(CommandLeaf::new_with_input(
@@ -451,8 +474,10 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
     let history_path = home_dir().unwrap_or_else(|| temp_dir()).join(ENTRY_REPL_HISTORY);
 
     let repl = Repl::new(PROMPT.to_owned(), history_path, false, None)
+        .add(server_commands)
         .add(database_commands)
         .add(user_commands)
+        .add(replica_commands)
         .add(transaction_commands);
 
     repl
@@ -505,6 +530,42 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
         TransactionType::Read => "read",
         TransactionType::Write => "write",
         TransactionType::Schema => "schema",
+    }
+}
+
+fn parse_addresses(args: &Args) -> Addresses {
+    if let Some(addresses) = &args.addresses {
+        let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
+        match Addresses::try_from_addresses_str(split) {
+            Ok(addresses) => addresses,
+            Err(err) => {
+                println_error!("invalid addresses '{addresses}': '{err}'");
+                exit(ExitCode::UserInputError as i32);
+            }
+        }
+    } else if let Some(translation) = &args.address_translation {
+        let mut map = HashMap::new();
+        for pair in translation.split(',') {
+            let (public_address, private_address) = pair.split_once('=').unwrap_or_else(|| {
+                println_error!(
+                    "invalid address pair '{}', must be of form '{}'.",
+                    format_argument!("{pair}"),
+                    format_argument!("<public=private,...>")
+                );
+                exit(ExitCode::UserInputError as i32);
+            });
+            map.insert(public_address.to_string(), private_address.to_string());
+        }
+        match Addresses::try_from_translation_str(map) {
+            Ok(addresses) => addresses,
+            Err(err) => {
+                println_error!("invalid addresses '{translation}': '{err}'");
+                exit(ExitCode::UserInputError as i32);
+            }
+        }
+    } else {
+        println_error!("missing server address (at least one of --address, --addresses, or --address-translation must be provided).");
+        exit(ExitCode::UserInputError as i32);
     }
 }
 

@@ -6,7 +6,6 @@
 
 use clap::Parser;
 
-pub const ADDRESS_VALUE_NAME: &str = "host:port";
 pub const USERNAME_VALUE_NAME: &str = "username";
 
 #[derive(Parser, Debug)]
@@ -24,9 +23,34 @@ pub struct Args {
     #[arg(long, value_name = "path to script file")]
     pub script: Vec<String>,
 
-    /// TypeDB address to connect to. If using TLS encryption, this must start with "https://"
-    #[arg(long, value_name = ADDRESS_VALUE_NAME)]
-    pub address: Option<String>,
+    /// TypeDB address(es) to connect to.
+    /// Accepts either `--address host:port` or `--addresses host1:port1,host2:port2,host3:port3`
+    #[arg(
+        long = "address",
+        alias = "addresses",
+        value_name = "host:port[,host:port]",
+    conflicts_with_all = ["address_translation"]
+    )]
+    pub addresses: Option<String>,
+
+    /// A comma-separated list of 'public=private' address pairs. Public addresses are the user-facing
+    /// addresses of the replicas, and private addresses are the originally configured addresses
+    /// shared between the replicas.
+    #[arg(long = "address-translation",
+        alias = "addresses-translation",
+        value_name = "pub=priv[,pub=priv]",
+        conflicts_with_all = ["addresses"]
+    )]
+    pub address_translation: Option<String>,
+
+    /// If used in a Cluster environment (Cloud or Enterprise), limits Console to communicate only
+    /// to the addresses specified in the connection line. This disables attempts to redirect
+    /// requests to the other server replicas and automatically update connection addresses based on
+    /// the server's information.
+    /// Use for administrative / debug purposes to test a specific replica only: this option will
+    /// lower the success rate of Console's operations in production.
+    #[arg(long = "replication-disabled", default_value = "false")]
+    pub replication_disabled: bool,
 
     /// Username for authentication
     #[arg(long, value_name = USERNAME_VALUE_NAME)]
@@ -48,8 +72,8 @@ pub struct Args {
 
     /// Disable error reporting. Error reporting helps TypeDB improve by reporting
     /// errors and crashes to the development team.
-    #[arg(long = "diagnostics-disable", default_value = "false")]
-    pub diagnostics_disable: bool,
+    #[arg(long = "diagnostics-disabled", default_value = "false")]
+    pub diagnostics_disabled: bool,
 
     /// Print the Console binary version
     #[arg(long = "version")]

@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use crate::constants::common::SECONDS_IN_HOUR;
+use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE};
 
 pub mod common {
     pub const SECONDS_IN_MINUTE: u64 = 60;
@@ -15,3 +15,4 @@ pub mod common {
 }
 
 pub const DEFAULT_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+pub const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);

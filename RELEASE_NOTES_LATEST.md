@@ -8,6 +8,7 @@ Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/pub
 
 ## New Features
 
+
 ## Bugs Fixed
 
 

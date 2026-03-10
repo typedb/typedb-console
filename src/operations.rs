@@ -18,14 +18,72 @@ use ureq;
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
     printer::{print_document, print_row, print_servers_table},
-    repl::command::{parse_one_query, CommandResult, ReplError},
+    repl::{
+        command::{CommandResult, ReplError},
+        parser::{parse_one_query, parse_server_routing},
+    },
     transaction_repl, ConsoleContext,
 };
 
-pub(crate) fn server_version(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+pub(crate) fn server_version(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let server_version = context.background_runtime.run(async move { execute_server_version(&driver).await })?;
+    let routing = parse_server_routing(input)?;
+    let server_version =
+        context.background_runtime.run(async move { execute_server_version(&driver, routing).await })?;
     println!("{}", server_version);
+    Ok(())
+}
+
+pub(crate) fn server_list(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let routing = parse_server_routing(input)?;
+    let servers = context.background_runtime.run(async move { execute_servers(&driver, routing).await })?;
+    if servers.is_empty() {
+        println!("No servers are present.");
+    } else {
+        print_servers_table(servers);
+    }
+    Ok(())
+}
+
+pub(crate) fn server_primary(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let routing = parse_server_routing(input)?;
+    let primary_server =
+        context.background_runtime.run(async move { execute_primary_server(&driver, routing).await })?;
+    if let Some(primary_server) = primary_server {
+        println!("{}", primary_server.address());
+    } else {
+        println!("No primary server is present.");
+    }
+    Ok(())
+}
+
+// TODO: server_register and server_deregister are temporary methods
+pub(crate) fn server_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let server_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
+    let address = input[1].clone();
+    context
+        .background_runtime
+        .run(async move { driver.register_server(server_id, address).await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully registered server.");
+    Ok(())
+}
+
+pub(crate) fn server_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+    let driver = context.driver.clone();
+    let server_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    })?;
+    context
+        .background_runtime
+        .run(async move { driver.deregister_server(server_id).await })
+        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    println!("Successfully deregistered server.");
     Ok(())
 }
 
@@ -158,55 +216,6 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     } else {
         println!("Successfully updated user password.");
     }
-    Ok(())
-}
-
-pub(crate) fn server_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let servers = context.background_runtime.run(async move { execute_servers(&driver).await })?;
-    if servers.is_empty() {
-        println!("No servers are present.");
-    } else {
-        print_servers_table(servers);
-    }
-    Ok(())
-}
-
-pub(crate) fn server_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let primary_server = context.background_runtime.run(async move { execute_primary_server(&driver).await })?;
-    if let Some(primary_server) = primary_server {
-        println!("{}", primary_server.address());
-    } else {
-        println!("No primary server is present.");
-    }
-    Ok(())
-}
-
-pub(crate) fn server_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let server_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
-    })?;
-    let address = input[1].clone();
-    context
-        .background_runtime
-        .run(async move { driver.register_server(server_id, address).await })
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully registered server.");
-    Ok(())
-}
-
-pub(crate) fn server_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let server_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
-    })?;
-    context
-        .background_runtime
-        .run(async move { driver.deregister_server(server_id).await })
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully deregistered server.");
     Ok(())
 }
 
@@ -373,8 +382,19 @@ fn default_transaction_options() -> TransactionOptions {
     TransactionOptions::new().transaction_timeout(DEFAULT_TRANSACTION_TIMEOUT)
 }
 
-async fn execute_server_version(driver: &TypeDBDriver) -> CommandResult<ServerVersion> {
-    driver.server_version().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+async fn execute_server_version(driver: &TypeDBDriver, routing: ServerRouting) -> CommandResult<ServerVersion> {
+    driver.server_version_with_routing(routing).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+}
+
+async fn execute_servers(driver: &TypeDBDriver, routing: ServerRouting) -> CommandResult<HashSet<Server>> {
+    driver.servers_with_routing(routing).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+}
+
+async fn execute_primary_server(
+    driver: &TypeDBDriver,
+    routing: ServerRouting,
+) -> CommandResult<Option<AvailableServer>> {
+    driver.primary_server_with_routing(routing).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_databases_all(driver: &TypeDBDriver) -> CommandResult<Vec<Arc<Database>>> {
@@ -462,14 +482,6 @@ async fn execute_user_update_password(
     let current_user = execute_users_get_current(driver).await?;
     user.update_password(password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     Ok(current_user.name() == username)
-}
-
-async fn execute_servers(driver: &TypeDBDriver) -> CommandResult<HashSet<Server>> {
-    driver.servers().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
-}
-
-async fn execute_primary_server(driver: &TypeDBDriver) -> CommandResult<Option<AvailableServer>> {
-    driver.primary_server().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 struct FileResource {

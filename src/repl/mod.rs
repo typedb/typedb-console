@@ -15,6 +15,7 @@ use crate::repl::{
 
 pub(crate) mod command;
 pub(crate) mod line_reader;
+pub(crate) mod parser;
 
 pub(crate) trait ReplContext: Sized {
     fn current_repl(&self) -> &Repl<Self>;

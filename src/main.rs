@@ -39,8 +39,10 @@ use crate::{
         user_update_password,
     },
     repl::{
+        command::{CommandInput, CommandLeaf, Subcommand},
+        line_reader::LineReaderHidden,
+        parser::{get_word, parse_one_query},
         Repl, ReplContext,
-        command::{CommandInput, CommandLeaf, Subcommand, get_word, parse_one_query},
         line_reader::LineReaderHidden,
     },
     runtime::BackgroundRuntime,
@@ -327,9 +329,24 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
     let server_commands = Subcommand::new("server")
-        .add(CommandLeaf::new("version", "Retrieve server version.", server_version))
-        .add(CommandLeaf::new("list", "List servers.", server_list))
-        .add(CommandLeaf::new("primary", "Get current primary server.", server_primary))
+        .add(CommandLeaf::new_with_input(
+            "version",
+            "Retrieve server version. Optionally specify a server address to route the request to.",
+            CommandInput::new_optional("address", get_word, None),
+            server_version,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "list",
+            "List servers. Optionally specify a server address to route the request to.",
+            CommandInput::new_optional("address", get_word, None),
+            server_list,
+        ))
+        .add(CommandLeaf::new_with_input(
+            "primary",
+            "Get current primary server. Optionally specify a server address to route the request to.",
+            CommandInput::new_optional("address", get_word, None),
+            server_primary,
+        ))
         .add(CommandLeaf::new_with_inputs(
             "register",
             "Register new server. Requires a clustering address, not a connection address.",

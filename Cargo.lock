@@ -3954,6 +3954,7 @@ version = "0.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-driver?rev=a44a645e22114ba966c317c31e86d05f5cb29d2c#a44a645e22114ba966c317c31e86d05f5cb29d2c"
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
@@ -3973,6 +3974,9 @@ source = "git+https://github.com/typedb/typedb-driver?rev=4d8c3392e12fa688135cc9
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=808c536d46fd45c2e28f0050d1fe004a2b16e113#808c536d46fd45c2e28f0050d1fe004a2b16e113"
 >>>>>>> 81343c0 (Remove use_replication driver option (#323))
+=======
+source = "git+https://github.com/typedb/typedb-driver?rev=3a84fdbc51f1312cebb33d9d30bb9a96ad027e53#3a84fdbc51f1312cebb33d9d30bb9a96ad027e53"
+>>>>>>> 0677c7c (Add server routing to the server commands (#324))
 dependencies = [
  "async-std",
  "chrono",

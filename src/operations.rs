@@ -11,29 +11,16 @@ use itertools::Itertools;
 use sha2::Digest;
 use typedb_driver::{
     answer::{QueryAnswer, QueryType},
-    consistency_level::ConsistencyLevel,
-    AvailableServerReplica, Database, ServerReplica, ServerVersion, TransactionOptions, TransactionType, TypeDBDriver,
+    AvailableServer, Database, Server, ServerRouting, ServerVersion, TransactionOptions, TransactionType, TypeDBDriver,
 };
 use ureq;
 
 use crate::{
     constants::DEFAULT_TRANSACTION_TIMEOUT,
-    printer::{print_document, print_replicas_table, print_row},
+    printer::{print_document, print_row, print_servers_table},
     repl::command::{parse_one_query, CommandResult, ReplError},
     transaction_repl, ConsoleContext,
 };
-
-// TODO: After alpha, it's more reasonable to always call _with_consistency variants with a consistency
-// chosen base on `use_replication`
-#[macro_export]
-macro_rules! replication_aware_call {
-    ($driver:expr, $replicated:expr, $not_replicated:expr $(,)?) => {{
-        match $driver.options().use_replication {
-            true => $replicated,
-            false => $not_replicated,
-        }
-    }};
-}
 
 pub(crate) fn server_version(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
@@ -174,52 +161,52 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
     Ok(())
 }
 
-pub(crate) fn replica_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+pub(crate) fn server_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replicas = context.background_runtime.run(async move { execute_replicas(&driver).await })?;
-    if replicas.is_empty() {
-        println!("No replicas are present.");
+    let servers = context.background_runtime.run(async move { execute_servers(&driver).await })?;
+    if servers.is_empty() {
+        println!("No servers are present.");
     } else {
-        print_replicas_table(replicas);
+        print_servers_table(servers);
     }
     Ok(())
 }
 
-pub(crate) fn replica_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
+pub(crate) fn server_primary(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let primary_replica = context.background_runtime.run(async move { execute_primary_replica(&driver).await })?;
-    if let Some(primary_replica) = primary_replica {
-        println!("{}", primary_replica.address());
+    let primary_server = context.background_runtime.run(async move { execute_primary_server(&driver).await })?;
+    if let Some(primary_server) = primary_server {
+        println!("{}", primary_server.address());
     } else {
-        println!("No primary replica is present.");
+        println!("No primary server is present.");
     }
     Ok(())
 }
 
-pub(crate) fn replica_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+pub(crate) fn server_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replica_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    let server_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
     })?;
     let address = input[1].clone();
     context
         .background_runtime
-        .run(async move { driver.register_replica(replica_id, address).await })
+        .run(async move { driver.register_server(server_id, address).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully registered replica.");
+    println!("Successfully registered server.");
     Ok(())
 }
 
-pub(crate) fn replica_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
+pub(crate) fn server_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
-    let replica_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Replica id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
+    let server_id: u64 = input[0].parse().map_err(|_| {
+        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
     })?;
     context
         .background_runtime
-        .run(async move { driver.deregister_replica(replica_id).await })
+        .run(async move { driver.deregister_server(server_id).await })
         .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully deregistered replica.");
+    println!("Successfully deregistered server.");
     Ok(())
 }
 
@@ -227,10 +214,7 @@ pub(crate) fn transaction_read(context: &mut ConsoleContext, input: &[String]) -
     let driver = context.driver.clone();
     let db_name = &input[0];
     let db_name_owned = db_name.clone();
-    let options = match driver.options().use_replication {
-        true => default_transaction_options(),
-        false => default_transaction_options().read_consistency_level(ConsistencyLevel::Eventual),
-    };
+    let options = default_transaction_options();
     let transaction = context
         .background_runtime
         .run(async move { driver.transaction_with_options(db_name_owned, TransactionType::Read, options).await })
@@ -390,61 +374,34 @@ fn default_transaction_options() -> TransactionOptions {
 }
 
 async fn execute_server_version(driver: &TypeDBDriver) -> CommandResult<ServerVersion> {
-    replication_aware_call!(
-        driver,
-        driver.server_version().await,
-        driver.server_version_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.server_version().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_databases_all(driver: &TypeDBDriver) -> CommandResult<Vec<Arc<Database>>> {
-    replication_aware_call!(
-        driver,
-        driver.databases().all().await,
-        driver.databases().all_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.databases().all().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_databases_get(driver: &TypeDBDriver, db_name: String) -> CommandResult<Arc<Database>> {
-    replication_aware_call!(
-        driver,
-        driver.databases().get(db_name).await,
-        driver.databases().get_with_consistency(db_name, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.databases().get(db_name).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_databases_create(driver: &TypeDBDriver, db_name: String) -> CommandResult {
-    replication_aware_call!(
-        driver,
-        driver.databases().create(db_name).await,
-        driver.databases().create_with_consistency(db_name, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.databases().create(db_name).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_database_delete(driver: &TypeDBDriver, db_name: String) -> CommandResult {
     let db = execute_databases_get(driver, db_name).await?;
-    replication_aware_call!(driver, db.delete().await, db.delete_with_consistency(ConsistencyLevel::Eventual).await,)
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    db.delete().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_database_schema(driver: &TypeDBDriver, db_name: String) -> CommandResult<String> {
     let db = execute_databases_get(driver, db_name).await?;
-    replication_aware_call!(driver, db.schema().await, db.schema_with_consistency(ConsistencyLevel::Eventual).await,)
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    db.schema().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_database_type_schema(driver: &TypeDBDriver, db_name: String) -> CommandResult<String> {
     let db = execute_databases_get(driver, db_name).await?;
-    replication_aware_call!(
-        driver,
-        db.type_schema().await,
-        db.type_schema_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    db.type_schema().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_database_export(
@@ -454,12 +411,7 @@ async fn execute_database_export(
     data_file_path: PathBuf,
 ) -> CommandResult {
     let db = execute_databases_get(driver, db_name).await?;
-    replication_aware_call!(
-        driver,
-        db.export_to_file(schema_file_path, data_file_path).await,
-        db.export_to_file_with_consistency(schema_file_path, data_file_path, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    db.export_to_file(schema_file_path, data_file_path).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_databases_import(
@@ -476,54 +428,29 @@ async fn execute_databases_import(
 }
 
 async fn execute_users_all(driver: &TypeDBDriver) -> CommandResult<Vec<typedb_driver::User>> {
-    replication_aware_call!(
-        driver,
-        driver.users().all().await,
-        driver.users().all_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.users().all().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_users_get(driver: &TypeDBDriver, username: String) -> CommandResult<typedb_driver::User> {
-    replication_aware_call!(
-        driver,
-        driver.users().get(&username).await,
-        driver.users().get_with_consistency(&username, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
-    .ok_or_else(|| Box::new(ReplError { message: format!("User {} not found.", username) }) as Box<dyn Error + Send>)
+    driver.users().get(&username).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?.ok_or_else(|| {
+        Box::new(ReplError { message: format!("User {} not found.", username) }) as Box<dyn Error + Send>
+    })
 }
 
 async fn execute_users_get_current(driver: &TypeDBDriver) -> CommandResult<typedb_driver::User> {
-    replication_aware_call!(
-        driver,
-        driver.users().get_current().await,
-        driver.users().get_current_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?
-    .ok_or_else(|| {
+    driver.users().get_current().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?.ok_or_else(|| {
         Box::new(ReplError { message: "Could not fetch currently logged in user.".to_string() })
             as Box<dyn Error + Send>
     })
 }
 
 async fn execute_users_create(driver: &TypeDBDriver, username: String, password: String) -> CommandResult {
-    replication_aware_call!(
-        driver,
-        driver.users().create(username, password).await,
-        driver.users().create_with_consistency(username, password, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    driver.users().create(username, password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_user_delete(driver: &TypeDBDriver, username: String) -> CommandResult {
     let user = execute_users_get(driver, username.clone()).await?;
-    replication_aware_call!(
-        driver,
-        user.delete().await,
-        user.delete_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+    user.delete().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 async fn execute_user_update_password(
@@ -533,31 +460,16 @@ async fn execute_user_update_password(
 ) -> CommandResult<bool> {
     let user = execute_users_get(driver, username.clone()).await?;
     let current_user = execute_users_get_current(driver).await?;
-    replication_aware_call!(
-        driver,
-        user.update_password(password).await,
-        user.update_password_with_consistency(password, ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
+    user.update_password(password).await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
     Ok(current_user.name() == username)
 }
 
-async fn execute_replicas(driver: &TypeDBDriver) -> CommandResult<HashSet<ServerReplica>> {
-    replication_aware_call!(
-        driver,
-        driver.replicas().await,
-        driver.replicas_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+async fn execute_servers(driver: &TypeDBDriver) -> CommandResult<HashSet<Server>> {
+    driver.servers().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
-async fn execute_primary_replica(driver: &TypeDBDriver) -> CommandResult<Option<AvailableServerReplica>> {
-    replication_aware_call!(
-        driver,
-        driver.primary_replica().await,
-        driver.primary_replica_with_consistency(ConsistencyLevel::Eventual).await,
-    )
-    .map_err(|err| Box::new(err) as Box<dyn Error + Send>)
+async fn execute_primary_server(driver: &TypeDBDriver) -> CommandResult<Option<AvailableServer>> {
+    driver.primary_server().await.map_err(|err| Box::new(err) as Box<dyn Error + Send>)
 }
 
 struct FileResource {

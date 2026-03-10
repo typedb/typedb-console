@@ -34,23 +34,14 @@ pub struct Args {
     pub addresses: Option<String>,
 
     /// A comma-separated list of 'public=private' address pairs. Public addresses are the user-facing
-    /// addresses of the replicas, and private addresses are the originally configured addresses
-    /// shared between the replicas.
+    /// addresses of the servers, and private addresses are the originally configured addresses
+    /// shared between the servers.
     #[arg(long = "address-translation",
         alias = "addresses-translation",
         value_name = "pub=priv[,pub=priv]",
         conflicts_with_all = ["addresses"]
     )]
     pub address_translation: Option<String>,
-
-    /// If used in a Cluster environment (Cloud or Enterprise), limits Console to communicate only
-    /// to the addresses specified in the connection line. This disables attempts to redirect
-    /// requests to the other server replicas and automatically update connection addresses based on
-    /// the server's information.
-    /// Use for administrative / debug purposes to test a specific replica only: this option will
-    /// lower the success rate of Console's operations in production.
-    #[arg(long = "replication-disabled", default_value = "false")]
-    pub replication_disabled: bool,
 
     /// Username for authentication
     #[arg(long, value_name = USERNAME_VALUE_NAME)]

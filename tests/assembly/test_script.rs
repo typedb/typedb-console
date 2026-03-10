@@ -8,8 +8,6 @@ use std::{error::Error, io, process::Child, thread::sleep, time::Duration};
 
 use typedb_binary_runner::runner::TypeDBBinaryRunner;
 
-const DATABASE_NAME: &str = "script-test-db";
-
 const TYPEDB_SERVER_ARCHIVE_VAR: &str = "TYPEDB_SERVER_ARCHIVE";
 const TYPEDB_CONSOLE_ARCHIVE_VAR: &str = "TYPEDB_CONSOLE_ARCHIVE";
 

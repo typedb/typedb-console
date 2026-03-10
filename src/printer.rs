@@ -12,7 +12,7 @@ use typedb_driver::{
     IID,
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
-    Replica, ReplicaRole, ServerReplica, IID,
+    Replica, ReplicationRole, Server, IID,
 };
 
 const TABLE_INDENT: &'static str = "   ";
@@ -73,7 +73,7 @@ fn println(string: &str) {
     println!("{}", string)
 }
 
-pub(crate) fn print_replicas_table(replicas: HashSet<ServerReplica>) {
+pub(crate) fn print_servers_table(servers: HashSet<Server>) {
     const COLUMN_NUM: usize = 5;
     #[derive(Debug)]
     struct Row {
@@ -93,25 +93,25 @@ pub(crate) fn print_replicas_table(replicas: HashSet<ServerReplica>) {
         status: ("status".to_string(), Style::new()),
     });
 
-    for replica in replicas.into_iter().sorted_by_key(|replica| replica.id()) {
-        let role = match replica.role() {
-            Some(ReplicaRole::Primary) => "primary",
-            Some(ReplicaRole::Candidate) => "candidate",
-            Some(ReplicaRole::Secondary) => "secondary",
+    for server in servers.into_iter().sorted_by_key(|server| server.id()) {
+        let role = match server.role() {
+            Some(ReplicationRole::Primary) => "primary",
+            Some(ReplicationRole::Candidate) => "candidate",
+            Some(ReplicationRole::Secondary) => "secondary",
             None => "",
         }
         .to_string();
 
-        let term = replica.term().map(|t| t.to_string()).unwrap_or_default();
+        let term = server.term().map(|t| t.to_string()).unwrap_or_default();
 
-        let status = match &replica {
-            ServerReplica::Available(_) => ("available".to_string(), STYLE_GREEN),
-            ServerReplica::Unavailable { .. } => ("unavailable".to_string(), STYLE_RED),
+        let status = match &server {
+            Server::Available(_) => ("available".to_string(), STYLE_GREEN),
+            Server::Unavailable { .. } => ("unavailable".to_string(), STYLE_RED),
         };
 
         rows.push(Row {
-            id: replica.id().to_string(),
-            address: replica.address().map(|address| address.to_string()).unwrap_or_default(),
+            id: server.id().to_string(),
+            address: server.address().map(|address| address.to_string()).unwrap_or_default(),
             role,
             term,
             status,

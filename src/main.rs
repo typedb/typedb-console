@@ -33,7 +33,7 @@ use crate::{
     constants::DEFAULT_REQUEST_TIMEOUT,
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
-        database_schema, replica_deregister, replica_list, replica_primary, replica_register, server_version,
+        database_schema, server_deregister, server_list, server_primary, server_register, server_version,
         transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
         transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
         user_update_password,
@@ -157,9 +157,7 @@ fn main() {
         },
         true => DriverTlsConfig::disabled(),
     };
-    let driver_options = DriverOptions::new(driver_tls_config)
-        .use_replication(!args.replication_disabled)
-        .request_timeout(DEFAULT_REQUEST_TIMEOUT);
+    let driver_options = DriverOptions::new(driver_tls_config).request_timeout(DEFAULT_REQUEST_TIMEOUT);
     let driver = match runtime.run(TypeDBDriver::new(
         addresses,
         Credentials::new(&username, args.password.as_ref().unwrap()),
@@ -169,12 +167,7 @@ fn main() {
         Err(err) => {
             let tls_error =
                 if args.tls_disabled { "" } else { "\nVerify that the server is also configured with TLS encryption." };
-            let replication_error = if args.replication_disabled {
-                "\nVerify that the connection address is **exactly** the same as the server address specified in its config."
-            } else {
-                ""
-            };
-            println_error!("Failed to create driver connection to server. {err}{tls_error}{replication_error}");
+            println_error!("Failed to create driver connection to server. {err}{tls_error}");
             exit(ExitCode::ConnectionError as i32);
         }
     };
@@ -333,26 +326,24 @@ fn execute_commands(context: &mut ConsoleContext, mut input: &str, must_log_comm
 }
 
 fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<ConsoleContext> {
-    let server_commands =
-        Subcommand::new("server").add(CommandLeaf::new("version", "Retrieve server version.", server_version));
-
-    let replica_commands = Subcommand::new("replica")
-        .add(CommandLeaf::new("list", "List replicas.", replica_list))
-        .add(CommandLeaf::new("primary", "Get current primary replica.", replica_primary))
+    let server_commands = Subcommand::new("server")
+        .add(CommandLeaf::new("version", "Retrieve server version.", server_version))
+        .add(CommandLeaf::new("list", "List servers.", server_list))
+        .add(CommandLeaf::new("primary", "Get current primary server.", server_primary))
         .add(CommandLeaf::new_with_inputs(
             "register",
-            "Register new replica. Requires a clustering address, not a connection address.",
+            "Register new server. Requires a clustering address, not a connection address.",
             vec![
-                CommandInput::new_required("replica id", get_word, None),
+                CommandInput::new_required("server id", get_word, None),
                 CommandInput::new_required("clustering address", get_word, None),
             ],
-            replica_register,
+            server_register,
         ))
         .add(CommandLeaf::new_with_input(
             "deregister",
-            "Deregister existing replica.",
-            CommandInput::new_required("replica id", get_word, None),
-            replica_deregister,
+            "Deregister existing server.",
+            CommandInput::new_required("server id", get_word, None),
+            server_deregister,
         ));
 
     let database_commands = Subcommand::new("database")
@@ -477,7 +468,6 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
         .add(server_commands)
         .add(database_commands)
         .add(user_commands)
-        .add(replica_commands)
         .add(transaction_commands);
 
     repl

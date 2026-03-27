@@ -44,12 +44,6 @@ build:
         bazel test //tests/assembly:test-assembly --test_output=streamed
         bazel test //tests/assembly:test-script --test_output=streamed
 
-    test:
-      image: typedb-ubuntu-22.04
-      type: foreground
-      command: |
-        sleep 10800
-
     sync-dependencies:
       image: typedb-ubuntu-22.04
       filter:

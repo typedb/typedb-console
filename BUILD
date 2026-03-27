@@ -168,6 +168,7 @@ checkstyle_test(
         ".circleci/windows/package_binary_as_exe.patch",
         "LICENSE",
         "VERSION",
+        "MODULE.bazel.lock",
     ] + glob([
         "*.md",
         "Cargo.*",

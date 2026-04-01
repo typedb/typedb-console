@@ -3955,6 +3955,7 @@ version = "0.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typedb-driver?rev=a44a645e22114ba966c317c31e86d05f5cb29d2c#a44a645e22114ba966c317c31e86d05f5cb29d2c"
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=6661cee8f53a23c04ea66e0dd638e114a7738096#6661cee8f53a23c04ea66e0dd638e114a7738096"
@@ -3977,6 +3978,9 @@ source = "git+https://github.com/typedb/typedb-driver?rev=808c536d46fd45c2e28f00
 =======
 source = "git+https://github.com/typedb/typedb-driver?rev=3a84fdbc51f1312cebb33d9d30bb9a96ad027e53#3a84fdbc51f1312cebb33d9d30bb9a96ad027e53"
 >>>>>>> 0677c7c (Add server routing to the server commands (#324))
+=======
+source = "git+https://github.com/typedb/typedb-driver?rev=245499e5d27fd6b5dcae5714301308d3bbe45b7b#245499e5d27fd6b5dcae5714301308d3bbe45b7b"
+>>>>>>> 7ba3608 (Updates after rebase)
 dependencies = [
  "async-std",
  "chrono",
@@ -4036,10 +4040,14 @@ checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 name = "typeql"
 version = "0.0.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/typedb/typeql?rev=7029e9f036540ad75d9bdc3afb1207409741d42a#7029e9f036540ad75d9bdc3afb1207409741d42a"
 =======
 source = "git+https://github.com/typedb/typeql?rev=bff6f17c22650f7f540100180b869c88b2f82270#bff6f17c22650f7f540100180b869c88b2f82270"
 >>>>>>> ddaa823 (Update dependencies after rebase)
+=======
+source = "git+https://github.com/typedb/typeql?rev=0e12f4aeb3f95fccbf7bdd8c7fda2d1a5e916825#0e12f4aeb3f95fccbf7bdd8c7fda2d1a5e916825"
+>>>>>>> 7ba3608 (Updates after rebase)
 dependencies = [
  "chrono",
  "itertools 0.14.0",

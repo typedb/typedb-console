@@ -1,13 +1,13 @@
-diff --git a/WORKSPACE b/WORKSPACE
-index 4a7855a..d2c3b4a 100644
---- a/WORKSPACE
-+++ b/WORKSPACE
-@@ -2,7 +2,7 @@
- # License, v. 2.0. If a copy of the MPL was not distributed with this
+diff --git a/MODULE.bazel b/MODULE.bazel
+index bd05d48..cac168f 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -3,7 +3,7 @@
  # file, You can obtain one at https://mozilla.org/MPL/2.0/.
  
--workspace(name = "typedb_console")
-+workspace(name = "v")
- 
- ################################
- # Load @typedb_dependencies #
+ module(
+-    name = "typedb_console",
++    name = "v",
+     version = "0.0.0",
+     compatibility_level = 1,
+ )

@@ -3,4 +3,3 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Intentionally empty - dependencies managed via MODULE.bazel
-workspace(name = "typedb_console")

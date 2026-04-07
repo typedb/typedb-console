@@ -16,5 +16,5 @@ git apply .circleci\windows\package_binary_as_exe.patch
 
 git rev-parse HEAD > version_snapshot.txt
 set /p VER=<version_snapshot.txt
-bazel --output_user_root=C:/b run --verbose_failures --define version=%VER% //:deploy-windows-x86_64-zip --compilation_mode=opt -- snapshot
+bazel --output_user_root=C:/b run --verbose_failures --enable_runfiles --define version=%VER% //:deploy-windows-x86_64-zip --compilation_mode=opt -- snapshot
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%

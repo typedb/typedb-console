@@ -242,7 +242,7 @@ workflows:
       - deploy-artifact-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [master, development, "3.0", "bazel-8-windows-snapshot-tests"]
+              only: [master, development, "3.0"]
 
   release:
     jobs:

@@ -145,8 +145,9 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
-        "@typedb_driver",
-        "@typeql",
+        "@typedb_protocol+",
+        "@typedb_driver+",
+        "@typeql+",
     ],
     tags = ["manual"], # in order for bazel test //... to not fail
     version_file = "VERSION",

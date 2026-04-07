@@ -145,7 +145,6 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@typedb_console_workspace_refs//:refs.json",
     tagged_deps = [
-        "@typedb_protocol+",
         "@typedb_driver+",
         "@typeql+",
     ],

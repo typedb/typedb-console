@@ -106,12 +106,10 @@ workspace_refs(
     workspace_commit_dict = {
         "typeql+": "1ef9ff633cbe564ce661de0686aa7ba7b0fac0ad",
         "typedb_driver+": "b657d41034f1039490403ca6f950e20d1c064eda",
-        "typedb_protocol+": "d932b39be41bf5455108f225295208029a236543",
     },
     workspace_tag_dict = {
         "typeql+": "3.8.3-rc0",
         "typedb_driver+": "3.8.2-rc0",
-        "typedb_protocol+": "3.7.1-rc1",
     },
 )
 

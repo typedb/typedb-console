@@ -4,7 +4,9 @@
 
 try-import ./.bazel-remote-cache.rc
 
-build --incompatible_strict_action_env --enable_runfiles
+# Allow empty globs (many checkstyle_test patterns may not match)
+common --noincompatible_disallow_empty_glob
 
-run --incompatible_strict_action_env --enable_runfiles
-test --incompatible_strict_action_env --enable_runfiles
+build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.bazel_cache
+run --incompatible_strict_action_env
+test --incompatible_strict_action_env --test_env=PATH

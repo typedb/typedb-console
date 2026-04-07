@@ -15,5 +15,5 @@ REM Bazel binary must produce a `.exe` instead of a binary without a file extens
 git apply .circleci\windows\package_binary_as_exe.patch
 
 SET /p VER=<VERSION
-bazel --output_user_root=C:/b run --verbose_failures --define version=%VER% //:deploy-windows-x86_64-zip --compilation_mode=opt -- release
+bazel --output_user_root=C:/b run --verbose_failures --enable_runfiles --define version=%VER% //:deploy-windows-x86_64-zip --compilation_mode=opt -- release
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%

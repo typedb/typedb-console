@@ -33,10 +33,9 @@ use crate::{
     constants::DEFAULT_REQUEST_TIMEOUT,
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
-        database_schema, server_deregister, server_list, server_primary, server_register, server_version,
-        transaction_close, transaction_commit, transaction_query, transaction_read, transaction_rollback,
-        transaction_schema, transaction_source, transaction_write, user_create, user_delete, user_list,
-        user_update_password,
+        database_schema, server_list, server_primary, server_version, transaction_close, transaction_commit,
+        transaction_query, transaction_read, transaction_rollback, transaction_schema, transaction_source,
+        transaction_write, user_create, user_delete, user_list, user_update_password,
     },
     repl::{
         command::{CommandInput, CommandLeaf, Subcommand},
@@ -346,21 +345,6 @@ fn entry_repl(driver: Arc<TypeDBDriver>, runtime: BackgroundRuntime) -> Repl<Con
             "Get current primary server. Optionally specify a server address to route the request to.",
             CommandInput::new_optional("address", get_word, None),
             server_primary,
-        ))
-        .add(CommandLeaf::new_with_inputs(
-            "register",
-            "Register new server. Requires a clustering address, not a connection address.",
-            vec![
-                CommandInput::new_required("server id", get_word, None),
-                CommandInput::new_required("clustering address", get_word, None),
-            ],
-            server_register,
-        ))
-        .add(CommandLeaf::new_with_input(
-            "deregister",
-            "Deregister existing server.",
-            CommandInput::new_required("server id", get_word, None),
-            server_deregister,
         ));
 
     let database_commands = Subcommand::new("database")

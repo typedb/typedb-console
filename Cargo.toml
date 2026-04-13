@@ -203,10 +203,14 @@ features = {}
 		[workspace.dependencies.typedb-driver]
 			features = []
 <<<<<<< HEAD
+<<<<<<< HEAD
 			rev = "a44a645e22114ba966c317c31e86d05f5cb29d2c"
 =======
 			rev = "245499e5d27fd6b5dcae5714301308d3bbe45b7b"
 >>>>>>> 7ba3608 (Updates after rebase)
+=======
+			rev = "058dbeffedc3105e2c0cabcbe8a812cd33100e0a"
+>>>>>>> 68e7ba4 (Remove servers management from console)
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 

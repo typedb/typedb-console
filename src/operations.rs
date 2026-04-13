@@ -60,34 +60,6 @@ pub(crate) fn server_primary(context: &mut ConsoleContext, input: &[String]) -> 
     Ok(())
 }
 
-// TODO: server_register and server_deregister are temporary methods
-pub(crate) fn server_register(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let server_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
-    })?;
-    let address = input[1].clone();
-    context
-        .background_runtime
-        .run(async move { driver.register_server(server_id, address).await })
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully registered server.");
-    Ok(())
-}
-
-pub(crate) fn server_deregister(context: &mut ConsoleContext, input: &[String]) -> CommandResult {
-    let driver = context.driver.clone();
-    let server_id: u64 = input[0].parse().map_err(|_| {
-        Box::new(ReplError { message: format!("Server id '{}' must be a number.", input[0]) }) as Box<dyn Error + Send>
-    })?;
-    context
-        .background_runtime
-        .run(async move { driver.deregister_server(server_id).await })
-        .map_err(|err| Box::new(err) as Box<dyn Error + Send>)?;
-    println!("Successfully deregistered server.");
-    Ok(())
-}
-
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
     let driver = context.driver.clone();
     let databases = context.background_runtime.run(async move { execute_databases_all(&driver).await })?;

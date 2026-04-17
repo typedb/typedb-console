@@ -11,14 +11,14 @@ use std::{
 };
 
 use rustyline::{
+    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
+    Modifiers, RepeatCount,
     completion::Completer,
     error::ReadlineError,
     highlight::Highlighter,
     hint::Hinter,
     history::{FileHistory, History},
     validate::{ValidationContext, ValidationResult, Validator},
-    Cmd, CompletionType, ConditionalEventHandler, Config, Editor, Event, EventHandler, Helper, KeyCode, KeyEvent,
-    Modifiers, RepeatCount,
 };
 
 use crate::repl::command::CommandDefinitions;
@@ -178,11 +178,7 @@ impl ConditionalEventHandler for SearchHistory {
     fn handle(&self, _evt: &Event, _n: RepeatCount, _positive: bool, ctx: &rustyline::EventContext) -> Option<Cmd> {
         if ctx.line().is_empty() {
             *self.search_mode.lock().unwrap() = SearchMode::InNormalHistory;
-            if self.forward {
-                Some(Cmd::NextHistory)
-            } else {
-                Some(Cmd::PreviousHistory)
-            }
+            if self.forward { Some(Cmd::NextHistory) } else { Some(Cmd::PreviousHistory) }
         } else {
             let mode = *self.search_mode.lock().unwrap();
             match mode {

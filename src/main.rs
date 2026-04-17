@@ -25,7 +25,7 @@ use sentry::ClientOptions;
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 
 use crate::{
-    cli::{Args, ADDRESS_VALUE_NAME, USERNAME_VALUE_NAME},
+    cli::{ADDRESS_VALUE_NAME, Args, USERNAME_VALUE_NAME},
     completions::{database_name_completer_fn, file_completer},
     operations::{
         database_create, database_create_init, database_delete, database_export, database_import, database_list,
@@ -34,9 +34,9 @@ use crate::{
         user_list, user_update_password,
     },
     repl::{
-        command::{get_word, parse_one_query, CommandInput, CommandLeaf, Subcommand},
-        line_reader::LineReaderHidden,
         Repl, ReplContext,
+        command::{CommandInput, CommandLeaf, Subcommand, get_word, parse_one_query},
+        line_reader::LineReaderHidden,
     },
     runtime::BackgroundRuntime,
 };
@@ -509,10 +509,10 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
 }
 
 fn init_diagnostics() {
-    let _ = sentry::init((
-        DIAGNOSTICS_REPORTING_URI,
-        ClientOptions { release: Some(VERSION.into()), ..Default::default() },
-    ));
+    let _ = sentry::init((DIAGNOSTICS_REPORTING_URI, ClientOptions {
+        release: Some(VERSION.into()),
+        ..Default::default()
+    }));
 }
 
 struct CommandError {

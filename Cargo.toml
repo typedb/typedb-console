@@ -86,12 +86,12 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/assembly/test_script.rs"
-	name = "test-script"
-
-[[test]]
 	path = "tests/assembly/test_assembly.rs"
 	name = "test-assembly"
+
+[[test]]
+	path = "tests/assembly/test_script.rs"
+	name = "test-script"
 
 [[bin]]
 	path = "src/main.rs"

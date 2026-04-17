@@ -15,13 +15,13 @@ use std::{
 };
 
 use rustyline::{
-    completion::{extract_word, Completer},
+    completion::{Completer, extract_word},
     highlight::Highlighter,
     hint::Hinter,
 };
 use typeql::common::error::TypeQLError;
 
-use crate::repl::{line_reader::LineReaderHidden, ReplContext};
+use crate::repl::{ReplContext, line_reader::LineReaderHidden};
 
 pub(crate) trait Command<Context> {
     fn token(&self) -> &CommandToken;
@@ -387,7 +387,7 @@ impl CommandInput {
                     None => {
                         return Err(Box::new(ReplError {
                             message: format!("Could not read input for '{}'", self.usage),
-                        }))
+                        }));
                     }
                     Some(end) => end,
                 };
@@ -609,11 +609,7 @@ impl<Context: ReplContext> Hinter for Subcommand<Context> {
 
         if candidates.len() == 1 {
             let candidate = candidates.into_iter().next().unwrap();
-            if candidate.len() < last_word.len() {
-                None
-            } else {
-                Some(candidate[last_word.len()..].to_owned())
-            }
+            if candidate.len() < last_word.len() { None } else { Some(candidate[last_word.len()..].to_owned()) }
         } else {
             None
         }

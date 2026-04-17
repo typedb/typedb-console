@@ -6,9 +6,9 @@
 
 use clap::builder::styling::{AnsiColor, Color, Style};
 use typedb_driver::{
+    IID,
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
-    IID,
 };
 
 const TABLE_INDENT: &'static str = "   ";

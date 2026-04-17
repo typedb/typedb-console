@@ -39,14 +39,14 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    tag = "3.8.3-rc0",
+    tag = "3.8.4-rc0",
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/typedb/typedb-driver",
-    tag = "3.8.2-rc0",
+    tag = "3.8.4-rc0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
@@ -74,8 +74,8 @@ python.toolchain(
 # Rust toolchain
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
-    edition = "2021",
-    versions = ["1.81.0"],
+    edition = "2024",
+    versions = ["1.93.0"],
     extra_target_triples = [
         "aarch64-apple-darwin",
         "aarch64-unknown-linux-gnu",
@@ -103,13 +103,9 @@ register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(
     name = "typedb_console_workspace_refs",
-    workspace_commit_dict = {
-        "typeql+": "1ef9ff633cbe564ce661de0686aa7ba7b0fac0ad",
-        "typedb_driver+": "b657d41034f1039490403ca6f950e20d1c064eda",
-    },
     workspace_tag_dict = {
-        "typeql+": "3.8.3-rc0",
-        "typedb_driver+": "3.8.2-rc0",
+        "typeql+": "3.8.4-rc0",
+        "typedb_driver+": "3.8.4-rc0",
     },
 )
 

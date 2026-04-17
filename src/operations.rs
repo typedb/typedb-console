@@ -9,16 +9,17 @@ use std::{error::Error, fs::read_to_string, path::PathBuf, process::exit, rc::Rc
 use futures::stream::StreamExt;
 use sha2::Digest;
 use typedb_driver::{
-    answer::{QueryAnswer, QueryType},
     TransactionOptions, TransactionType,
+    answer::{QueryAnswer, QueryType},
 };
 use ureq;
 
 use crate::{
+    ConsoleContext,
     constants::DEFAULT_TRANSACTION_TIMEOUT,
     printer::{print_document, print_row},
-    repl::command::{parse_one_query, CommandResult, ReplError},
-    transaction_repl, ConsoleContext,
+    repl::command::{CommandResult, ReplError, parse_one_query},
+    transaction_repl,
 };
 
 pub(crate) fn database_list(context: &mut ConsoleContext, _input: &[String]) -> CommandResult {
@@ -198,7 +199,9 @@ pub(crate) fn user_update_password(context: &mut ConsoleContext, input: &[String
         Ok(current_user.name == username)
     })?;
     if updated_current_user {
-        println!("Successfully updated current user's password, exiting console. Please log in with the updated credentials.");
+        println!(
+            "Successfully updated current user's password, exiting console. Please log in with the updated credentials."
+        );
         exit(0);
     } else {
         println!("Successfully updated user password.");
@@ -326,7 +329,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
                         query_count + 1,
                         query
                     ),
-                }) as Box<dyn Error + Send>)
+                }) as Box<dyn Error + Send>);
             }
             Ok(_) => {
                 input = &input[next_query_index..];
@@ -348,7 +351,7 @@ pub(crate) fn transaction_source(context: &mut ConsoleContext, input: &[String])
                         query_count + 1,
                         input
                     ),
-                }) as Box<dyn Error + Send>)
+                }) as Box<dyn Error + Send>);
             }
             Ok(_) => query_count += 1,
         }

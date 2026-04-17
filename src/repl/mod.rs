@@ -6,7 +6,7 @@
 
 use std::{error::Error, path::PathBuf, process::exit};
 
-use rustyline::{history::MemHistory, Config};
+use rustyline::{Config, history::MemHistory};
 
 use crate::repl::{
     command::{Command, CommandLeaf, CommandResult, ExecutableCommand, Subcommand},
@@ -53,11 +53,7 @@ impl<Context: ReplContext + 'static> Repl<Context> {
 
     pub(crate) fn get_input(&self, has_changes: bool) -> (rustyline::Result<String>, Option<bool>) {
         let mut editor = RustylineReader::new(self.commands.clone(), self.history_file.clone(), self.multiline_input);
-        if has_changes {
-            editor.readline(&format!("*{}", self.prompt))
-        } else {
-            editor.readline(&self.prompt)
-        }
+        if has_changes { editor.readline(&format!("*{}", self.prompt)) } else { editor.readline(&self.prompt) }
     }
 
     pub(crate) fn match_first_command<'a>(

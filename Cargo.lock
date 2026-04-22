@@ -2679,7 +2679,6 @@ version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
- "indexmap 2.13.0",
  "itoa",
  "memchr",
  "serde",
@@ -3253,7 +3252,7 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-driver?tag=3.10.0#68180a86fb48a5ee8a0bc9ad87dd229342b31dd3"
+source = "git+https://github.com/typedb/typedb-driver?rev=8efd05bb43ee3651461f1e5ca49c453c694bc92f#8efd05bb43ee3651461f1e5ca49c453c694bc92f"
 dependencies = [
  "async-std",
  "chrono",
@@ -3278,7 +3277,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?tag=3.10.0#a622877416d0020c96fb4b3e69ded40fed551151"
+source = "git+https://github.com/typedb/typedb-protocol?rev=1df3e8a89eec2326abb11ee7950af6d8d036892b#1df3e8a89eec2326abb11ee7950af6d8d036892b"
 dependencies = [
  "prost",
  "tonic",
@@ -3302,7 +3301,7 @@ checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?tag=3.10.1#d085b21341f0153d158e38234d2a711d2ac801b2"
+source = "git+https://github.com/typedb/typeql?rev=4798d8afb86c59700250f7d3e4fbb3358f8e4fd2#4798d8afb86c59700250f7d3e4fbb3358f8e4fd2"
 dependencies = [
  "chrono",
  "itertools 0.10.5",

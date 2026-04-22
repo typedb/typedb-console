@@ -119,7 +119,7 @@ workspace_refs(
     workspace_commit_dict = {
         "typeql+": "4798d8afb86c59700250f7d3e4fbb3358f8e4fd2",
         "typedb_driver+": "8efd05bb43ee3651461f1e5ca49c453c694bc92f",
-        "typedeb_protocol+": "1df3e8a89eec2326abb11ee7950af6d8d036892b",
+        "typedb_protocol+": "1df3e8a89eec2326abb11ee7950af6d8d036892b",
     },
     workspace_tag_dict = {
     },

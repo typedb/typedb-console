@@ -38,21 +38,21 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "f5d3d53f12c350fceeaacb82b768b2ec18e5d696",
+    commit = "4798d8afb86c59700250f7d3e4fbb3358f8e4fd2",
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/typedb/typedb-driver",
-    commit = "b6fc256ca5b560c568c09ba4bbbcac89350aab7c",
+    commit = "8efd05bb43ee3651461f1e5ca49c453c694bc92f",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "3428a6321740f0e06eb8c4a7b732d6426cc852aa",
+    commit = "1df3e8a89eec2326abb11ee7950af6d8d036892b",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
@@ -116,10 +116,12 @@ register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(
     name = "typedb_console_workspace_refs",
+    workspace_commit_dict = {
+        "typeql+": "4798d8afb86c59700250f7d3e4fbb3358f8e4fd2",
+        "typedb_driver+": "8efd05bb43ee3651461f1e5ca49c453c694bc92f",
+        "typedeb_protocol+": "1df3e8a89eec2326abb11ee7950af6d8d036892b",
+    },
     workspace_tag_dict = {
-        "typedb_protocol+": "3.10.0",
-        "typeql+": "3.10.1",
-        "typedb_driver+": "3.10.0",
     },
 )
 

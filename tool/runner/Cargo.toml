@@ -6,21 +6,18 @@ features = {}
 
 [package]
 	name = "typedb_binary_runner"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "lib.rs"
+	crate-type = ["lib"]
 
 [dependencies]
 
 	[dependencies.clap]
-		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.45"
-		default-features = false
+		workspace = true
 
 	[dependencies.tempdir]
-		features = []
-		version = "0.3.7"
-		default-features = false
+		workspace = true
 

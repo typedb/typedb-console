@@ -509,10 +509,10 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
 }
 
 fn init_diagnostics() {
-    let _ = sentry::init((DIAGNOSTICS_REPORTING_URI, ClientOptions {
-        release: Some(VERSION.into()),
-        ..Default::default()
-    }));
+    let _ = sentry::init((
+        DIAGNOSTICS_REPORTING_URI,
+        ClientOptions { release: Some(VERSION.into()), ..Default::default() },
+    ));
 }
 
 struct CommandError {

@@ -56,12 +56,12 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/assembly/test_assembly.rs"
-	name = "test-assembly"
-
-[[test]]
 	path = "tests/assembly/test_script.rs"
 	name = "test-script"
+
+[[test]]
+	path = "tests/assembly/test_assembly.rs"
+	name = "test-assembly"
 
 [[bin]]
 	path = "src/main.rs"
@@ -132,7 +132,7 @@ features = {}
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-			rev = "60e0057f523ec9958deb06f2a2087e78f4ff7b6b"
+			rev = "8b2d62d918e20254edd99cfab5c837928dd4147d"
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 

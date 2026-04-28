@@ -75,8 +75,8 @@ features = {}
 	[workspace.dependencies]
 
 		[workspace.dependencies.tokio]
-			features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-			version = "1.52.0"
+			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+			version = "1.52.1"
 			default-features = false
 
 		[workspace.dependencies.glob]
@@ -126,18 +126,18 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
+			rev = "7029e9f036540ad75d9bdc3afb1207409741d42a"
 			git = "https://github.com/typedb/typeql"
-			tag = "3.10.1"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
+			rev = "a44a645e22114ba966c317c31e86d05f5cb29d2c"
 			git = "https://github.com/typedb/typedb-driver"
-			tag = "3.10.0"
 			default-features = false
 
 		[workspace.dependencies.serde_json]
-			features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+			features = ["default", "raw_value", "std"]
 			version = "1.0.149"
 			default-features = false
 

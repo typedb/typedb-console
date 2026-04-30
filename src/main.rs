@@ -42,7 +42,6 @@ use crate::{
         line_reader::LineReaderHidden,
         parser::{get_word, parse_one_query},
         Repl, ReplContext,
-        line_reader::LineReaderHidden,
     },
     runtime::BackgroundRuntime,
 };

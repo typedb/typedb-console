@@ -23,7 +23,7 @@ use crate::{
         command::{CommandResult, ReplError},
         parser::{parse_one_query, parse_server_routing},
     },
-    transaction_repl, ConsoleContext,
+    transaction_repl,
 };
 
 pub(crate) fn server_version(context: &mut ConsoleContext, input: &[String]) -> CommandResult {

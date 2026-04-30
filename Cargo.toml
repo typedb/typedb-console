@@ -24,12 +24,9 @@ features = {}
 
 	[dependencies.futures]
 		workspace = true
-<<<<<<< HEAD
-=======
 
 	[dependencies.itertools]
 		workspace = true
->>>>>>> 7ba3608 (Updates after rebase)
 
 	[dependencies.rpassword]
 		workspace = true
@@ -47,48 +44,15 @@ features = {}
 		workspace = true
 
 	[dependencies.typeql]
-<<<<<<< HEAD
-<<<<<<< HEAD
-		workspace = true
-=======
-		features = []
-		rev = "bff6f17c22650f7f540100180b869c88b2f82270"
-		git = "https://github.com/typedb/typeql"
-		default-features = false
->>>>>>> ddaa823 (Update dependencies after rebase)
-
-	[dependencies.typedb-driver]
-<<<<<<< HEAD
-		workspace = true
-=======
-		features = []
-		rev = "3a84fdbc51f1312cebb33d9d30bb9a96ad027e53"
-		git = "https://github.com/typedb/typedb-driver"
-		default-features = false
->>>>>>> f842420 (Update release notes and temporarily disable TLS checks)
-=======
 		workspace = true
 
 	[dependencies.typedb-driver]
 		workspace = true
->>>>>>> 7ba3608 (Updates after rebase)
 
 	[dependencies.serde_json]
 		workspace = true
 
 	[dependencies.sentry]
-<<<<<<< HEAD
-<<<<<<< HEAD
-		workspace = true
-=======
-		features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
-		version = "0.36.0"
-		default-features = false
->>>>>>> 5324ae3 (Update dependencies)
-
-	[dependencies.ureq]
-		workspace = true
-=======
 		workspace = true
 
 	[dependencies.ureq]
@@ -97,15 +61,10 @@ features = {}
 [[test]]
 	path = "tests/assembly/test_script.rs"
 	name = "test-script"
->>>>>>> 7ba3608 (Updates after rebase)
 
 [[test]]
 	path = "tests/assembly/test_assembly.rs"
 	name = "test-assembly"
-
-[[test]]
-	path = "tests/assembly/test_script.rs"
-	name = "test-script"
 
 [[bin]]
 	path = "src/main.rs"
@@ -119,13 +78,8 @@ features = {}
 	[workspace.dependencies]
 
 		[workspace.dependencies.tokio]
-<<<<<<< HEAD
-			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
 			version = "1.52.1"
-=======
-			features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
-			version = "1.48.0"
->>>>>>> 7ba3608 (Updates after rebase)
 			default-features = false
 
 		[workspace.dependencies.glob]
@@ -135,30 +89,22 @@ features = {}
 
 		[workspace.dependencies.futures]
 			features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-<<<<<<< HEAD
 			version = "0.3.32"
-=======
-			version = "0.3.31"
 			default-features = false
 
 		[workspace.dependencies.itertools]
 			features = ["default", "use_alloc", "use_std"]
-			version = "0.10.5"
->>>>>>> 7ba3608 (Updates after rebase)
+			version = "0.14.0"
 			default-features = false
 
 		[workspace.dependencies.rpassword]
 			features = []
-			version = "7.4.0"
+			version = "7.5.1"
 			default-features = false
 
 		[workspace.dependencies.home]
 			features = []
-<<<<<<< HEAD
 			version = "0.5.12"
-=======
-			version = "0.5.11"
->>>>>>> 7ba3608 (Updates after rebase)
 			default-features = false
 
 		[workspace.dependencies.sha2]
@@ -173,11 +119,7 @@ features = {}
 
 		[workspace.dependencies.clap]
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-<<<<<<< HEAD
 			version = "4.6.1"
-=======
-			version = "4.5.52"
->>>>>>> 7ba3608 (Updates after rebase)
 			default-features = false
 
 		[workspace.dependencies.typedb_binary_runner]
@@ -192,36 +134,19 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-<<<<<<< HEAD
-			rev = "7029e9f036540ad75d9bdc3afb1207409741d42a"
-=======
-			rev = "0e12f4aeb3f95fccbf7bdd8c7fda2d1a5e916825"
->>>>>>> 7ba3608 (Updates after rebase)
+			rev = "4b716f4c25c98438d30d61645e566e00262d8e76"
 			git = "https://github.com/typedb/typeql"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-<<<<<<< HEAD
-<<<<<<< HEAD
-			rev = "a44a645e22114ba966c317c31e86d05f5cb29d2c"
-=======
-			rev = "245499e5d27fd6b5dcae5714301308d3bbe45b7b"
->>>>>>> 7ba3608 (Updates after rebase)
-=======
-			rev = "058dbeffedc3105e2c0cabcbe8a812cd33100e0a"
->>>>>>> 68e7ba4 (Remove servers management from console)
+			rev = "77f84787f5dbc5ca2260a4522c0fbdfa92f73224"
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 
 		[workspace.dependencies.serde_json]
-<<<<<<< HEAD
 			features = ["default", "raw_value", "std"]
 			version = "1.0.149"
-=======
-			features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-			version = "1.0.145"
->>>>>>> 7ba3608 (Updates after rebase)
 			default-features = false
 
 		[workspace.dependencies.sentry]

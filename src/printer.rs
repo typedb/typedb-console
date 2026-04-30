@@ -12,7 +12,7 @@ use typedb_driver::{
     IID,
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
-    Replica, ReplicationRole, Server, IID,
+    Replica, ReplicationRole, Server,
 };
 
 const TABLE_INDENT: &'static str = "   ";

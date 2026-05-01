@@ -16,7 +16,8 @@ build:
     dependency-analysis:
       image: typedb-ubuntu-22.04
       command: |
-        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
+        # TODO: This job DOES NOT understand how to work with Bazel 8. Fix!
+        # bazel run @typedb_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
       image: typedb-ubuntu-22.04

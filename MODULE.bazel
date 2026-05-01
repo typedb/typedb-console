@@ -125,67 +125,14 @@ workspace_refs(
     },
 )
 
-# TypeDB server artifacts for integration tests
-# These download the TypeDB server binary for assembly tests
-http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
-
-http_file(
-    name = "typedb_artifact_linux-arm64",
-    urls = ["https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d/typedb-all-linux-arm64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.tar.gz"],
-    downloaded_file_path = "typedb-all-linux-arm64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.tar.gz",
+# TypeDB server artifacts for assembly tests
+# Uses the artifacts declared in typedb-driver
+native_artifact_files = use_extension("@typedb_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
+use_repo(
+    native_artifact_files,
+    "typedb_artifact_linux-x86_64",
+    "typedb_artifact_linux-arm64",
+    "typedb_artifact_mac-x86_64",
+    "typedb_artifact_mac-arm64",
+    "typedb_artifact_windows-x86_64",
 )
-
-http_file(
-    name = "typedb_artifact_linux-x86_64",
-    urls = ["https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d/typedb-all-linux-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.tar.gz"],
-    downloaded_file_path = "typedb-all-linux-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.tar.gz",
-)
-
-http_file(
-    name = "typedb_artifact_mac-arm64",
-    urls = ["https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d/typedb-all-mac-arm64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip"],
-    downloaded_file_path = "typedb-all-mac-arm64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip",
-)
-
-http_file(
-    name = "typedb_artifact_mac-x86_64",
-    urls = ["https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d/typedb-all-mac-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip"],
-    downloaded_file_path = "typedb-all-mac-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip",
-)
-
-http_file(
-    name = "typedb_artifact_windows-x86_64",
-    urls = ["https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d/typedb-all-windows-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip"],
-    downloaded_file_path = "typedb-all-windows-x86_64-1e4fe6c41b2c90ca3aced97c3c575fb2cad9747d.zip",
-)
-
-#
-#http_file(
-#    name = "typedb_artifact_linux-arm64",
-#    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-arm64/versions/3.8.0/typedb-all-linux-arm64-3.8.0.tar.gz"],
-#    downloaded_file_path = "typedb-all-linux-arm64-3.8.0.tar.gz",
-#)
-#
-#http_file(
-#    name = "typedb_artifact_linux-x86_64",
-#    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-x86_64/versions/3.8.0/typedb-all-linux-x86_64-3.8.0.tar.gz"],
-#    downloaded_file_path = "typedb-all-linux-x86_64-3.8.0.tar.gz",
-#)
-#
-#http_file(
-#    name = "typedb_artifact_mac-arm64",
-#    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/3.8.0/typedb-all-mac-arm64-3.8.0.zip"],
-#    downloaded_file_path = "typedb-all-mac-arm64-3.8.0.zip",
-#)
-#
-#http_file(
-#    name = "typedb_artifact_mac-x86_64",
-#    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-x86_64/versions/3.8.0/typedb-all-mac-x86_64-3.8.0.zip"],
-#    downloaded_file_path = "typedb-all-mac-x86_64-3.8.0.zip",
-#)
-#
-#http_file(
-#    name = "typedb_artifact_windows-x86_64",
-#    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-windows-x86_64/versions/3.8.0/typedb-all-windows-x86_64-3.8.0.zip"],
-#    downloaded_file_path = "typedb-all-windows-x86_64-3.8.0.zip",
-#)

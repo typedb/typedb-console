@@ -38,10 +38,10 @@ use crate::{
         transaction_write, user_create, user_delete, user_list, user_update_password,
     },
     repl::{
+        Repl, ReplContext,
         command::{CommandInput, CommandLeaf, Subcommand},
         line_reader::LineReaderHidden,
         parser::{get_word, parse_one_query},
-        Repl, ReplContext,
     },
     runtime::BackgroundRuntime,
 };
@@ -554,7 +554,9 @@ fn parse_addresses(args: &Args) -> Addresses {
             }
         }
     } else {
-        println_error!("missing server address (at least one of --address, --addresses, or --address-translation must be provided).");
+        println_error!(
+            "missing server address (at least one of --address, --addresses, or --address-translation must be provided)."
+        );
         exit(ExitCode::UserInputError as i32);
     }
 }

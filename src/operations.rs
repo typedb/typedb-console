@@ -10,8 +10,8 @@ use futures::stream::StreamExt;
 use itertools::Itertools;
 use sha2::Digest;
 use typedb_driver::{
-    answer::{QueryAnswer, QueryType},
     AvailableServer, Database, Server, ServerRouting, ServerVersion, TransactionOptions, TransactionType, TypeDBDriver,
+    answer::{QueryAnswer, QueryType},
 };
 use ureq;
 

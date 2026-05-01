@@ -9,10 +9,9 @@ use std::collections::HashSet;
 use clap::builder::styling::{AnsiColor, Color, Style};
 use itertools::Itertools;
 use typedb_driver::{
-    IID,
+    IID, Replica, ReplicationRole, Server,
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
-    Replica, ReplicationRole, Server,
 };
 
 const TABLE_INDENT: &'static str = "   ";

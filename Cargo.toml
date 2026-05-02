@@ -134,13 +134,13 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "4b716f4c25c98438d30d61645e566e00262d8e76"
+			rev = "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b"
 			git = "https://github.com/typedb/typeql"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-			rev = "77f84787f5dbc5ca2260a4522c0fbdfa92f73224"
+			rev = "3dc312cd04c0f0728b8b67a05e9eceae9994949f"
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 

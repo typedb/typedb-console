@@ -20,46 +20,46 @@ bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
 # typedb ecosystem dependencies
-bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
-    module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "32a7fde17ad17b775a8ccc0867c87f119749e7ea",
-)
-
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "a6363bf0b6208cabcfbf8865601e9eb03641559f",
+    commit = "6c81a5180ed94a11c989e06a4ff8215df6da163e",
+)
+
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+git_override(
+    module_name = "typedb_dependencies",
+    remote = "https://github.com/typedb/dependencies",
+    commit = "48ef6e41f9f0deadc0d59bb0e9d4a58efd0099af",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "7029e9f036540ad75d9bdc3afb1207409741d42a",
+    commit = "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b",
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/typedb/typedb-driver",
-    commit = "a44a645e22114ba966c317c31e86d05f5cb29d2c",
+    commit = "3dc312cd04c0f0728b8b67a05e9eceae9994949f",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "da3e316cb0022cb284083996f0659ad22db13aca",
+    commit = "25ab3fb02715062bd036f8b83908de92b106a202",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "dabc971c4b9b9e63196c45b748e5cb6037e71076",
+    commit = "d3bb01333c67b41eeac23d2291e243b047cb518d",
 )
 
 # Python toolchain
@@ -117,44 +117,22 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": "7029e9f036540ad75d9bdc3afb1207409741d42a",
-        "typedb_driver+": "a44a645e22114ba966c317c31e86d05f5cb29d2c",
-        "typedb_protocol+": "da3e316cb0022cb284083996f0659ad22db13aca",
+        "typeql+": "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b",
+        "typedb_driver+": "3dc312cd04c0f0728b8b67a05e9eceae9994949f",
+        "typedb_protocol+": "25ab3fb02715062bd036f8b83908de92b106a202",
     },
     workspace_tag_dict = {
     },
 )
 
-# TypeDB server artifacts for integration tests
-# These download the TypeDB server binary for assembly tests
-http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
-
-http_file(
-    name = "typedb_artifact_linux-arm64",
-    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-arm64/versions/3.8.0/typedb-all-linux-arm64-3.8.0.tar.gz"],
-    downloaded_file_path = "typedb-all-linux-arm64-3.8.0.tar.gz",
-)
-
-http_file(
-    name = "typedb_artifact_linux-x86_64",
-    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-x86_64/versions/3.8.0/typedb-all-linux-x86_64-3.8.0.tar.gz"],
-    downloaded_file_path = "typedb-all-linux-x86_64-3.8.0.tar.gz",
-)
-
-http_file(
-    name = "typedb_artifact_mac-arm64",
-    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/3.8.0/typedb-all-mac-arm64-3.8.0.zip"],
-    downloaded_file_path = "typedb-all-mac-arm64-3.8.0.zip",
-)
-
-http_file(
-    name = "typedb_artifact_mac-x86_64",
-    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-x86_64/versions/3.8.0/typedb-all-mac-x86_64-3.8.0.zip"],
-    downloaded_file_path = "typedb-all-mac-x86_64-3.8.0.zip",
-)
-
-http_file(
-    name = "typedb_artifact_windows-x86_64",
-    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-all-windows-x86_64/versions/3.8.0/typedb-all-windows-x86_64-3.8.0.zip"],
-    downloaded_file_path = "typedb-all-windows-x86_64-3.8.0.zip",
+# TypeDB server artifacts for assembly tests
+# Uses the artifacts declared in typedb-driver
+native_artifact_files = use_extension("@typedb_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
+use_repo(
+    native_artifact_files,
+    "typedb_artifact_linux-x86_64",
+    "typedb_artifact_linux-arm64",
+    "typedb_artifact_mac-x86_64",
+    "typedb_artifact_mac-arm64",
+    "typedb_artifact_windows-x86_64",
 )

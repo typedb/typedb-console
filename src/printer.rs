@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use clap::builder::styling::{AnsiColor, Color, Style};
+use itertools::Itertools;
 use typedb_driver::{
-    IID,
+    IID, Replica, ReplicationRole, Server,
     answer::{ConceptDocument, ConceptRow},
     concept::{Concept, Value},
 };
@@ -15,28 +18,30 @@ const TABLE_INDENT: &'static str = "   ";
 const CONTENT_INDENT: &'static str = "    ";
 const TABLE_DASHES: usize = 7;
 
-pub const ERROR_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Red))).bold();
-pub const WARNING_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))).bold();
-pub const ARGUMENT_STYLE: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
+pub const STYLE_RED: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Red)));
+pub const STYLE_GREEN: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green)));
+pub const STYLE_ERROR: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Red))).bold();
+pub const STYLE_WARNING: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))).bold();
+pub const STYLE_ARGUMENT: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
 
 #[macro_export]
 macro_rules! format_error {
     ($($arg:tt)*) => {
-        $crate::format_colored!($crate::printer::ERROR_STYLE, $($arg)*)
+        $crate::format_colored!($crate::printer::STYLE_ERROR, $($arg)*)
     };
 }
 
 #[macro_export]
 macro_rules! format_warning {
     ($($arg:tt)*) => {
-        $crate::format_colored!($crate::printer::WARNING_STYLE, $($arg)*)
+        $crate::format_colored!($crate::printer::STYLE_WARNING, $($arg)*)
     };
 }
 
 #[macro_export]
 macro_rules! format_argument {
     ($($arg:tt)*) => {
-        $crate::format_colored!($crate::printer::ARGUMENT_STYLE, $($arg)*)
+        $crate::format_colored!($crate::printer::STYLE_ARGUMENT, $($arg)*)
     };
 }
 
@@ -65,6 +70,103 @@ macro_rules! println_error {
 
 fn println(string: &str) {
     println!("{}", string)
+}
+
+pub(crate) fn print_servers_table(servers: HashSet<Server>) {
+    const COLUMN_NUM: usize = 5;
+    #[derive(Debug)]
+    struct Row {
+        id: String,
+        address: String,
+        role: String,
+        term: String,
+        status: (String, Style),
+    }
+
+    let mut rows = Vec::new();
+    rows.push(Row {
+        id: "id".to_string(),
+        address: "address".to_string(),
+        role: "role".to_string(),
+        term: "term".to_string(),
+        status: ("status".to_string(), Style::new()),
+    });
+
+    for server in servers.into_iter().sorted_by_key(|server| server.id()) {
+        let role = match server.role() {
+            Some(ReplicationRole::Primary) => "primary",
+            Some(ReplicationRole::Candidate) => "candidate",
+            Some(ReplicationRole::Secondary) => "secondary",
+            None => "",
+        }
+        .to_string();
+
+        let term = server.term().map(|t| t.to_string()).unwrap_or_default();
+
+        let status = match &server {
+            Server::Available(_) => ("available".to_string(), STYLE_GREEN),
+            Server::Unavailable { .. } => ("unavailable".to_string(), STYLE_RED),
+        };
+
+        rows.push(Row {
+            id: server.id().to_string(),
+            address: server.address().map(|address| address.to_string()).unwrap_or_default(),
+            role,
+            term,
+            status,
+        });
+    }
+
+    // Compute max content length per column (without padding)
+    let mut width_id = 0usize;
+    let mut width_address = 0usize;
+    let mut width_role = 0usize;
+    let mut width_term = 0usize;
+    let mut width_status = 0usize;
+
+    for r in &rows {
+        width_id = width_id.max(r.id.len());
+        width_address = width_address.max(r.address.len());
+        width_role = width_role.max(r.role.len());
+        width_term = width_term.max(r.term.len());
+        width_status = width_status.max(r.status.0.len());
+    }
+
+    // Add 2 spaces per column (one at the beginning and one at the end)
+    width_id += 2;
+    width_address += 2;
+    width_role += 2;
+    width_term += 2;
+    width_status += 2;
+
+    fn print_cell(content: &str, width: usize, style: Option<Style>) {
+        // One space on the left, one at the right, rest is extra right padding
+        let content_len = content.len();
+        let base_len = content_len + 2; // left + right space
+        let extra_padding = width.saturating_sub(base_len);
+        let styled_content = format_colored!(style.unwrap_or_default(), "{content}");
+        print!(" {}{} ", styled_content, " ".repeat(extra_padding));
+    }
+
+    const PIPES_NUM: usize = COLUMN_NUM - 1;
+    let total_width = width_id + width_address + width_role + width_term + width_status + PIPES_NUM;
+
+    for (row_index, row) in rows.iter().enumerate() {
+        print_cell(&row.id, width_id, None);
+        print!("|");
+        print_cell(&row.address, width_address, None);
+        print!("|");
+        print_cell(&row.role, width_role, None);
+        print!("|");
+        print_cell(&row.term, width_term, None);
+        print!("|");
+        print_cell(&row.status.0, width_status, Some(row.status.1));
+        println!();
+
+        if row_index == 0 {
+            println!("{}", "-".repeat(total_width));
+        }
+    }
 }
 
 pub(crate) fn print_document(document: ConceptDocument) {

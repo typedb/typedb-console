@@ -53,7 +53,8 @@ fn test_console() -> Result<(), Box<dyn Error>> {
 fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
     let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
         .expect("Failed to create server binary runner");
-    let args = ["--server.address", "0.0.0.0:1729", "--diagnostics.reporting.metrics", "false"];
+    // note: run in development mode to avoid polluting analytics data when using tagged releases
+    let args = ["--server.address", "0.0.0.0:1729", "--development-mode.enabled", "true"];
     let child: io::Result<Child> = runner.run(&args);
     (runner, child.expect("Failed to spawn child server process."))
 }

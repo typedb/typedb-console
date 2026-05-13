@@ -34,6 +34,10 @@ pub struct Args {
     #[arg(long = "null-values", value_name = "value")]
     pub null_values: Vec<String>,
 
+    /// Process at most this many data rows from the CSV. If not provided, all rows are processed.
+    #[arg(long = "max-rows", value_name = "n")]
+    pub max_rows: Option<usize>,
+
     /// Path to a TypeQL schema file to run in a schema transaction before data loading.
     #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
     pub schema_file: Option<String>,

@@ -51,7 +51,7 @@ async fn main() {
     });
 
     let inputs = parse_query_inputs(&query);
-    let rows = read_csv_rows(&args.data, args.header, &inputs, &args.null_values)
+    let rows = read_csv_rows(&args.data, args.header, &inputs, &args.null_values, args.max_rows)
         .unwrap_or_else(|err| fatal(format!("failed to read data file '{}': {err}", args.data)));
 
     let addresses = parse_addresses(&args.addresses);
@@ -173,6 +173,7 @@ fn read_csv_rows(
     has_header: bool,
     inputs: &[GivenInput],
     null_values: &[String],
+    max_rows: Option<usize>,
 ) -> Result<QueryGivenRows, String> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(has_header)
@@ -197,7 +198,8 @@ fn read_csv_rows(
     };
 
     let mut rows = Vec::new();
-    for (row_idx, record) in reader.records().enumerate() {
+    let row_limit = max_rows.unwrap_or(usize::MAX);
+    for (row_idx, record) in reader.records().take(row_limit).enumerate() {
         let record = record.map_err(|err| format!("reading CSV row {}: {err}", row_idx + 1))?;
         let mut entries = Vec::with_capacity(inputs.len());
         for (input, &col) in inputs.iter().zip(&column_indices) {

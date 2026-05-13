@@ -134,14 +134,14 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b"
 			git = "https://github.com/typedb/typeql"
+			tag = "3.11.0-rc0"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-			rev = "3dc312cd04c0f0728b8b67a05e9eceae9994949f"
 			git = "https://github.com/typedb/typedb-driver"
+			tag = "3.11.0-rc1"
 			default-features = false
 
 		[workspace.dependencies.serde_json]

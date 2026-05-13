@@ -34,6 +34,14 @@ pub struct Args {
     #[arg(long = "null-values", value_name = "value")]
     pub null_values: Vec<String>,
 
+    /// Path to a TypeQL schema file to run in a schema transaction before data loading.
+    #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
+    pub schema_file: Option<String>,
+
+    /// Create the database if it does not already exist.
+    #[arg(long = "create-db", default_value = "false")]
+    pub create_db: bool,
+
     /// TypeDB address(es) to connect to.
     /// Accepts either `--address host:port` or `--addresses host1:port1,host2:port2,host3:port3`
     #[arg(long = "address", alias = "addresses", value_name = "host:port[,host:port]")]

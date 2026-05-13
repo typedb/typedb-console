@@ -46,6 +46,9 @@ async fn main() {
 
     let query = read_to_string(&args.query)
         .unwrap_or_else(|err| fatal(format!("failed to read query file '{}': {err}", args.query)));
+    let schema = args.schema_file.as_deref().map(|path| {
+        read_to_string(path).unwrap_or_else(|err| fatal(format!("failed to read schema file '{path}': {err}")))
+    });
 
     let inputs = parse_query_inputs(&query);
     let rows = read_csv_rows(&args.data, args.header, &inputs, &args.null_values)
@@ -62,6 +65,30 @@ async fn main() {
     let driver = TypeDBDriver::new(addresses, Credentials::new(&username, &password), DriverOptions::new(tls_config))
         .await
         .unwrap_or_else(|err| fatal(format!("failed to connect to TypeDB: {err}")));
+
+    if args.create_db {
+        let exists = driver
+            .databases()
+            .contains(args.database.clone())
+            .await
+            .unwrap_or_else(|err| fatal(format!("failed to check if database '{}' exists: {err}", args.database)));
+        if !exists {
+            driver
+                .databases()
+                .create(args.database.clone())
+                .await
+                .unwrap_or_else(|err| fatal(format!("failed to create database '{}': {err}", args.database)));
+        }
+    }
+
+    if let Some(schema) = schema {
+        let schema_tx = driver
+            .transaction(args.database.clone(), TransactionType::Schema)
+            .await
+            .unwrap_or_else(|err| fatal(format!("failed to open schema transaction on '{}': {err}", args.database)));
+        schema_tx.query(schema).await.unwrap_or_else(|err| fatal(format!("schema query failed: {err}")));
+        schema_tx.commit().await.unwrap_or_else(|err| fatal(format!("failed to commit schema transaction: {err}")));
+    }
 
     let transaction = driver
         .transaction(args.database.clone(), TransactionType::Write)

@@ -29,6 +29,11 @@ pub struct Args {
     #[arg(long = "header", default_value = "false")]
     pub header: bool,
 
+    /// Strings in the data file to treat as null/empty values. May be repeated.
+    /// If not provided, only empty strings are treated as null.
+    #[arg(long = "null-values", value_name = "value")]
+    pub null_values: Vec<String>,
+
     /// TypeDB address(es) to connect to.
     /// Accepts either `--address host:port` or `--addresses host1:port1,host2:port2,host3:port3`
     #[arg(long = "address", alias = "addresses", value_name = "host:port[,host:port]")]

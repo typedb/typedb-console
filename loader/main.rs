@@ -48,7 +48,7 @@ async fn main() {
         .unwrap_or_else(|err| fatal(format!("failed to read query file '{}': {err}", args.query)));
 
     let inputs = parse_query_inputs(&query);
-    let rows = read_csv_rows(&args.data, args.header, &inputs)
+    let rows = read_csv_rows(&args.data, args.header, &inputs, &args.null_values)
         .unwrap_or_else(|err| fatal(format!("failed to read data file '{}': {err}", args.data)));
 
     let addresses = parse_addresses(&args.addresses);
@@ -141,7 +141,12 @@ fn into_given_input(arg: Argument) -> GivenInput {
     GivenInput { name, cell_type, optional }
 }
 
-fn read_csv_rows(path: &str, has_header: bool, inputs: &[GivenInput]) -> Result<QueryGivenRows, String> {
+fn read_csv_rows(
+    path: &str,
+    has_header: bool,
+    inputs: &[GivenInput],
+    null_values: &[String],
+) -> Result<QueryGivenRows, String> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(has_header)
         .from_path(path)
@@ -172,7 +177,7 @@ fn read_csv_rows(path: &str, has_header: bool, inputs: &[GivenInput]) -> Result<
             let cell = record.get(col).ok_or_else(|| {
                 format!("CSV row {} missing column {} for input '${}'", row_idx + 1, col, input.name)
             })?;
-            entries.push(parse_cell(cell, input).map_err(|err| {
+            entries.push(parse_cell(cell, input, null_values).map_err(|err| {
                 format!("CSV row {} column '${}': {err}", row_idx + 1, input.name)
             })?);
         }
@@ -181,9 +186,14 @@ fn read_csv_rows(path: &str, has_header: bool, inputs: &[GivenInput]) -> Result<
     Ok(QueryGivenRows(rows))
 }
 
-fn parse_cell(cell: &str, input: &GivenInput) -> Result<QueryGivenEntry, String> {
-    if input.optional && cell.is_empty() {
-        return Ok(QueryGivenEntry::Empty);
+fn parse_cell(cell: &str, input: &GivenInput, null_values: &[String]) -> Result<QueryGivenEntry, String> {
+    let is_null = if null_values.is_empty() { cell.is_empty() } else { null_values.iter().any(|v| v == cell) };
+    if is_null {
+        return if input.optional {
+            Ok(QueryGivenEntry::Empty)
+        } else {
+            Err("null value in non-optional column".to_owned())
+        };
     }
     let value = match input.cell_type {
         CellType::Boolean => Value::Boolean(parse_bool(cell)?),

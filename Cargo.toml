@@ -73,7 +73,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["tool/runner"]
+	members = ["tool/runner", "loader"]
 
 	[workspace.dependencies]
 
@@ -158,4 +158,8 @@ features = {}
 			features = ["default", "gzip", "tls"]
 			version = "2.12.1"
 			default-features = false
+
+# Temporary local override for typedb-driver.
+[patch."https://github.com/typedb/typedb-driver"]
+typedb-driver = { path = "/Users/samuelbutcher/vaticle/typedb-driver/rust" }
 

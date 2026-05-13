@@ -159,7 +159,10 @@ features = {}
 			version = "2.12.1"
 			default-features = false
 
-# Temporary local override for typedb-driver.
+# Temporary local overrides for typedb-driver and typeql.
 [patch."https://github.com/typedb/typedb-driver"]
 typedb-driver = { path = "/Users/samuelbutcher/vaticle/typedb-driver/rust" }
+
+[patch."https://github.com/typedb/typeql"]
+typeql = { path = "/Users/samuelbutcher/vaticle/typeql/rust" }
 

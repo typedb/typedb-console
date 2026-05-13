@@ -23,6 +23,14 @@ features = {}
 	[dependencies.typedb-driver]
 		workspace = true
 
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.chrono]
+		version = "0.4"
+		default-features = false
+		features = ["std"]
+
 	[dependencies.rpassword]
 		workspace = true
 

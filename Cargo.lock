@@ -3209,12 +3209,14 @@ dependencies = [
 name = "typedb-console-loader"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "clap",
  "csv",
  "futures",
  "rpassword",
  "tokio",
  "typedb-driver",
+ "typeql",
 ]
 
 [[package]]

@@ -38,6 +38,11 @@ pub struct Args {
     #[arg(long = "max-rows", value_name = "n")]
     pub max_rows: Option<usize>,
 
+    /// Number of rows submitted in each `query_with_inputs` invocation. Each batch is committed
+    /// in its own write transaction.
+    #[arg(long = "batch-rows", value_name = "n", default_value = "1000")]
+    pub batch_rows: usize,
+
     /// Path to a TypeQL schema file to run in a schema transaction before data loading.
     #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
     pub schema_file: Option<String>,

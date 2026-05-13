@@ -1,3 +1,8 @@
+## Breaking changes
+This release breaks backwards compatibility.
+This version is only compatible with TypeDB server versions >= 3.11.0.
+Connections to older servers will be rejected.
+
 ## Distribution
 
 Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.11.0-rc1

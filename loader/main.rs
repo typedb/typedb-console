@@ -105,7 +105,7 @@ async fn main() {
         for rejection in &batch.rejected {
             eprintln!("row {}: {}", rejection.row_number, rejection.message);
             rejects
-                .record(rejection.row_number, rejection.record.as_ref(), &rejection.message)
+                .record_row(rejection.row_number, rejection.record.as_ref(), &rejection.message)
                 .unwrap_or_else(|err| fatal(err));
         }
         stats.rows_rejected += batch.rejected.len();
@@ -116,10 +116,9 @@ async fn main() {
                 Ok(()) => stats.rows_committed += parsed_count,
                 Err(err) => {
                     eprintln!("batch {batch_idx}: {parsed_count} rows rejected by commit: {err}");
-                    let message = format!("batch {batch_idx} commit failed: {err}");
-                    for (row_number, record) in batch.row_numbers.iter().zip(batch.records.iter()) {
-                        rejects.record(*row_number, Some(record), &message).unwrap_or_else(|err| fatal(err));
-                    }
+                    rejects
+                        .record_batch_failure(&batch.row_numbers, &batch.records, batch_idx, &err)
+                        .unwrap_or_else(|err| fatal(err));
                     stats.rows_rejected += parsed_count;
                 }
             }

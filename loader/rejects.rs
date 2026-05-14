@@ -26,7 +26,7 @@ impl RejectsWriter {
         Self { csv_path, log_path, headers, csv_writer: None, log_writer: None, written: 0 }
     }
 
-    pub(crate) fn record(
+    pub(crate) fn record_row(
         &mut self,
         row_number: usize,
         record: Option<&StringRecord>,
@@ -43,6 +43,32 @@ impl RejectsWriter {
         writeln!(self.log_writer.as_mut().unwrap(), "row {row_number}: {message}")
             .map_err(|err| format!("writing rejection log to '{}': {err}", self.log_path.display()))?;
         self.written += 1;
+        Ok(())
+    }
+
+    pub(crate) fn record_batch_failure(
+        &mut self,
+        row_numbers: &[usize],
+        records: &[StringRecord],
+        batch_idx: usize,
+        message: &str,
+    ) -> Result<(), String> {
+        if records.is_empty() {
+            return Ok(());
+        }
+        self.ensure_open()?;
+        let csv_writer = self.csv_writer.as_mut().unwrap();
+        for record in records {
+            csv_writer
+                .write_record(record)
+                .map_err(|err| format!("writing rejected row to '{}': {err}", self.csv_path.display()))?;
+        }
+        let first = *row_numbers.first().unwrap();
+        let last = *row_numbers.last().unwrap();
+        let label = if first == last { format!("row {first}") } else { format!("rows {first}-{last}") };
+        writeln!(self.log_writer.as_mut().unwrap(), "{label}, batch {batch_idx}: {message}")
+            .map_err(|err| format!("writing rejection log to '{}': {err}", self.log_path.display()))?;
+        self.written += records.len();
         Ok(())
     }
 

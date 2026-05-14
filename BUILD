@@ -22,15 +22,8 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = [
-        "BUILD",
-        "Cargo.toml",
-        "Cargo.lock",
-        "MODULE.bazel",
-        "WORKSPACE",
-        "deployment.bzl",
-        "console.sh",
-    ] + glob([
+    include = glob([
+        "*",
         ".circleci/**/*",
         ".factory/*",
     ]),
@@ -40,6 +33,8 @@ checkstyle_test(
         ".bazel-cache-credential.json",
         ".circleci/windows/short_workspace.patch",
         ".circleci/windows/package_binary_as_exe.patch",
+        "LICENSE",
+        "VERSION",
         "MODULE.bazel.lock",
     ],
     license_type = "mpl-header",

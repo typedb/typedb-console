@@ -99,6 +99,13 @@ async fn main() {
     let started = Instant::now();
     let mut batch_idx = 0usize;
     let mut stop_now = false;
+    let mut stop_reason: Option<String> = None;
+    let mut set_stop = |reason: String, stop_now: &mut bool, stop_reason: &mut Option<String>| {
+        *stop_now = true;
+        if stop_reason.is_none() {
+            *stop_reason = Some(reason);
+        }
+    };
 
     while let Some(batch) = loader.next_batch(args.batch_rows) {
         batch_idx += 1;
@@ -111,7 +118,7 @@ async fn main() {
         }
         stats.rows_rejected += batch.rejected.len();
         if args.stop_on_error && !batch.rejected.is_empty() {
-            stop_now = true;
+            set_stop("aborted due to --stop-on-error".to_owned(), &mut stop_now, &mut stop_reason);
         }
 
         let parsed_count = batch.rows.len();
@@ -125,9 +132,19 @@ async fn main() {
                         .unwrap_or_else(|err| fatal(err));
                     stats.rows_rejected += parsed_count;
                     if args.stop_on_error {
-                        stop_now = true;
+                        set_stop("aborted due to --stop-on-error".to_owned(), &mut stop_now, &mut stop_reason);
                     }
                 }
+            }
+        }
+
+        if let Some(limit) = args.max_rejects {
+            if stats.rows_rejected > limit {
+                set_stop(
+                    format!("aborted: rejected rows ({}) exceeded --max-rejects {}", stats.rows_rejected, limit),
+                    &mut stop_now,
+                    &mut stop_reason,
+                );
             }
         }
 
@@ -143,8 +160,8 @@ async fn main() {
         println!("  Rejects CSV:    {}", rejects.csv_path().display());
         println!("  Rejects log:    {}", rejects.log_path().display());
     }
-    if stop_now {
-        eprintln!("error: aborted due to --stop-on-error");
+    if let Some(reason) = stop_reason {
+        eprintln!("error: {reason}");
         exit(1);
     }
 }

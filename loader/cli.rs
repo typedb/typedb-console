@@ -58,6 +58,11 @@ pub struct Args {
     #[arg(long = "stop-on-error", default_value = "false")]
     pub stop_on_error: bool,
 
+    /// Abort once the total number of rejected rows exceeds this threshold.
+    /// Applies independently of --stop-on-error.
+    #[arg(long = "max-rejects", value_name = "n")]
+    pub max_rejects: Option<usize>,
+
     /// Path to a TypeQL schema file to run in a schema transaction before data loading.
     #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
     pub schema_file: Option<String>,

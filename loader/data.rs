@@ -4,65 +4,129 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
 use chrono::{NaiveDate, NaiveDateTime};
+use csv::{Reader, StringRecord};
 use typedb_driver::{
     concept::{
         Value,
         value::{Decimal, Duration},
     },
-    transaction::{QueryGivenEntry, QueryGivenRow, QueryGivenRows},
+    transaction::{QueryGivenEntry, QueryGivenRow},
 };
 
 use crate::query::{CellType, GivenInput};
 
-pub(crate) fn read_csv_rows(
-    path: &str,
-    has_header: bool,
-    inputs: &[GivenInput],
-    null_values: &[String],
-    max_rows: Option<usize>,
-) -> Result<QueryGivenRows, String> {
-    let mut reader = csv::ReaderBuilder::new()
-        .has_headers(has_header)
-        .from_path(path)
-        .map_err(|err| format!("opening CSV: {err}"))?;
+pub(crate) struct CsvLoader {
+    reader: Reader<BufReader<File>>,
+    column_indices: Vec<usize>,
+    inputs: Vec<GivenInput>,
+    null_values: Vec<String>,
+    rows_read: usize,
+    row_limit: usize,
+    file_size: u64,
+}
 
-    let column_indices: Vec<usize> = if has_header {
-        let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?;
-        let header_index: HashMap<&str, usize> =
-            headers.iter().enumerate().map(|(idx, name)| (name, idx)).collect();
-        inputs
-            .iter()
-            .map(|input| {
-                header_index
-                    .get(input.name.as_str())
-                    .copied()
-                    .ok_or_else(|| format!("CSV header missing column '{}' required by query", input.name))
-            })
-            .collect::<Result<_, _>>()?
-    } else {
-        (0..inputs.len()).collect()
-    };
+pub(crate) struct BatchOutcome {
+    pub(crate) rows: Vec<QueryGivenRow>,
+    pub(crate) rows_attempted: usize,
+    pub(crate) rejected: Vec<RowError>,
+}
 
-    let mut rows = Vec::new();
-    let row_limit = max_rows.unwrap_or(usize::MAX);
-    for (row_idx, record) in reader.records().take(row_limit).enumerate() {
-        let record = record.map_err(|err| format!("reading CSV row {}: {err}", row_idx + 1))?;
-        let mut entries = Vec::with_capacity(inputs.len());
-        for (input, &col) in inputs.iter().zip(&column_indices) {
+pub(crate) struct RowError {
+    pub(crate) row_number: usize,
+    pub(crate) message: String,
+}
+
+impl CsvLoader {
+    pub(crate) fn open(
+        path: &str,
+        has_header: bool,
+        inputs: Vec<GivenInput>,
+        null_values: Vec<String>,
+        max_rows: Option<usize>,
+    ) -> Result<Self, String> {
+        let file = File::open(path).map_err(|err| format!("opening CSV: {err}"))?;
+        let file_size = file.metadata().map_err(|err| format!("reading CSV metadata: {err}"))?.len();
+        let mut reader = csv::ReaderBuilder::new().has_headers(has_header).from_reader(BufReader::new(file));
+
+        let column_indices: Vec<usize> = if has_header {
+            let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?;
+            let header_index: HashMap<&str, usize> =
+                headers.iter().enumerate().map(|(idx, name)| (name, idx)).collect();
+            inputs
+                .iter()
+                .map(|input| {
+                    header_index
+                        .get(input.name.as_str())
+                        .copied()
+                        .ok_or_else(|| format!("CSV header missing column '{}' required by query", input.name))
+                })
+                .collect::<Result<_, _>>()?
+        } else {
+            (0..inputs.len()).collect()
+        };
+
+        Ok(Self {
+            reader,
+            column_indices,
+            inputs,
+            null_values,
+            rows_read: 0,
+            row_limit: max_rows.unwrap_or(usize::MAX),
+            file_size,
+        })
+    }
+
+    pub(crate) fn file_size(&self) -> u64 {
+        self.file_size
+    }
+
+    pub(crate) fn bytes_position(&self) -> u64 {
+        self.reader.position().byte()
+    }
+
+    pub(crate) fn next_batch(&mut self, batch_size: usize) -> Option<BatchOutcome> {
+        if self.rows_read >= self.row_limit {
+            return None;
+        }
+        let mut rows = Vec::with_capacity(batch_size);
+        let mut rejected = Vec::new();
+        let mut attempted = 0usize;
+        let mut record = StringRecord::new();
+        while attempted < batch_size && self.rows_read < self.row_limit {
+            match self.reader.read_record(&mut record) {
+                Ok(true) => {}
+                Ok(false) => break,
+                Err(err) => {
+                    self.rows_read += 1;
+                    attempted += 1;
+                    rejected.push(RowError { row_number: self.rows_read, message: format!("CSV: {err}") });
+                    continue;
+                }
+            }
+            self.rows_read += 1;
+            attempted += 1;
+            let row_number = self.rows_read;
+            match self.parse_row(&record) {
+                Ok(row) => rows.push(row),
+                Err(message) => rejected.push(RowError { row_number, message }),
+            }
+        }
+        if attempted == 0 { None } else { Some(BatchOutcome { rows, rows_attempted: attempted, rejected }) }
+    }
+
+    fn parse_row(&self, record: &StringRecord) -> Result<QueryGivenRow, String> {
+        let mut entries = Vec::with_capacity(self.inputs.len());
+        for (input, &col) in self.inputs.iter().zip(&self.column_indices) {
             let cell = record
                 .get(col)
-                .ok_or_else(|| format!("CSV row {} missing column {} for input '${}'", row_idx + 1, col, input.name))?;
-            entries.push(
-                parse_cell(cell, input, null_values)
-                    .map_err(|err| format!("CSV row {} column '${}': {err}", row_idx + 1, input.name))?,
-            );
+                .ok_or_else(|| format!("missing column {} for input '${}'", col, input.name))?;
+            entries.push(parse_cell(cell, input, &self.null_values).map_err(|err| format!("column '${}': {err}", input.name))?);
         }
-        rows.push(QueryGivenRow(entries));
+        Ok(QueryGivenRow(entries))
     }
-    Ok(QueryGivenRows(rows))
 }
 
 fn parse_cell(cell: &str, input: &GivenInput, null_values: &[String]) -> Result<QueryGivenEntry, String> {

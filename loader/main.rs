@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::read_to_string, path::Path, process::exit};
+use std::{fs::read_to_string, path::Path, process::exit, time::Instant};
 
 use clap::Parser;
 use typedb_driver::{
@@ -14,12 +14,14 @@ use typedb_driver::{
 
 use crate::{
     cli::{Args, USERNAME_VALUE_NAME},
-    data::read_csv_rows,
+    data::CsvLoader,
+    progress::{LoadStats, print_progress, print_summary},
     query::parse_query_inputs,
 };
 
 mod cli;
 mod data;
+mod progress;
 mod query;
 
 #[tokio::main]
@@ -43,8 +45,8 @@ async fn main() {
     });
 
     let inputs = parse_query_inputs(&query).unwrap_or_else(|err| fatal(err));
-    let rows = read_csv_rows(&args.data, args.header, &inputs, &args.null_values, args.max_rows)
-        .unwrap_or_else(|err| fatal(format!("failed to read data file '{}': {err}", args.data)));
+    let mut loader = CsvLoader::open(&args.data, args.header, inputs, args.null_values, args.max_rows)
+        .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", args.data)));
 
     let addresses = parse_addresses(&args.addresses);
     let tls_config = if args.tls_disabled {
@@ -85,28 +87,53 @@ async fn main() {
     if args.batch_rows == 0 {
         fatal("--batch-rows must be greater than 0");
     }
-    let mut remaining = rows.0;
-    let total = remaining.len();
-    let mut loaded = 0usize;
+
+    let total_bytes = loader.file_size();
+    let mut stats = LoadStats::default();
+    let started = Instant::now();
     let mut batch_idx = 0usize;
-    while !remaining.is_empty() {
-        let take = remaining.len().min(args.batch_rows);
-        let batch: Vec<_> = remaining.drain(..take).collect();
+
+    while let Some(batch) = loader.next_batch(args.batch_rows) {
         batch_idx += 1;
-        let transaction = driver.transaction(args.database.clone(), TransactionType::Write).await.unwrap_or_else(|err| {
-            fatal(format!("failed to open write transaction on '{}': {err}", args.database))
-        });
-        transaction
-            .query_with_inputs(&query, QueryGivenRows(batch))
-            .await
-            .unwrap_or_else(|err| fatal(format!("query failed on batch {batch_idx}: {err}")));
-        transaction
-            .commit()
-            .await
-            .unwrap_or_else(|err| fatal(format!("failed to commit batch {batch_idx}: {err}")));
-        loaded += take;
-        println!("Committed batch {batch_idx}: {loaded}/{total} rows.");
+        stats.rows_attempted += batch.rows_attempted;
+        for err in &batch.rejected {
+            eprintln!("row {}: {}", err.row_number, err.message);
+        }
+        stats.rows_rejected += batch.rejected.len();
+
+        let parsed_count = batch.rows.len();
+        if parsed_count > 0 {
+            match commit_batch(&driver, &args.database, &query, batch.rows).await {
+                Ok(()) => stats.rows_committed += parsed_count,
+                Err(err) => {
+                    eprintln!("batch {batch_idx}: {parsed_count} rows rejected by commit: {err}");
+                    stats.rows_rejected += parsed_count;
+                }
+            }
+        }
+
+        print_progress(&stats, started, loader.bytes_position(), total_bytes);
     }
+
+    print_summary(&stats, started);
+}
+
+async fn commit_batch(
+    driver: &TypeDBDriver,
+    database: &str,
+    query: &str,
+    rows: Vec<typedb_driver::transaction::QueryGivenRow>,
+) -> Result<(), String> {
+    let transaction = driver
+        .transaction(database.to_owned(), TransactionType::Write)
+        .await
+        .map_err(|err| format!("opening write transaction on '{database}': {err}"))?;
+    transaction
+        .query_with_inputs(query, QueryGivenRows(rows))
+        .await
+        .map_err(|err| format!("query failed: {err}"))?;
+    transaction.commit().await.map_err(|err| format!("commit failed: {err}"))?;
+    Ok(())
 }
 
 fn parse_addresses(addresses: &str) -> Addresses {

@@ -43,7 +43,7 @@ impl RejectsWriter {
         writeln!(self.log_writer.as_mut().unwrap(), "row {row_number}: {message}")
             .map_err(|err| format!("writing rejection log to '{}': {err}", self.log_path.display()))?;
         self.written += 1;
-        Ok(())
+        self.flush()
     }
 
     pub(crate) fn record_batch_failure(
@@ -69,7 +69,7 @@ impl RejectsWriter {
         writeln!(self.log_writer.as_mut().unwrap(), "{label}, batch {batch_idx}: {message}")
             .map_err(|err| format!("writing rejection log to '{}': {err}", self.log_path.display()))?;
         self.written += records.len();
-        Ok(())
+        self.flush()
     }
 
     pub(crate) fn flush(&mut self) -> Result<(), String> {

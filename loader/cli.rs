@@ -43,6 +43,11 @@ pub struct Args {
     #[arg(long = "batch-rows", value_name = "n", default_value = "1000")]
     pub batch_rows: usize,
 
+    /// Maximum number of batches submitted concurrently to the server.
+    /// 1 means strictly sequential (default).
+    #[arg(long = "parallel-batches", value_name = "n", default_value = "1")]
+    pub parallel_batches: usize,
+
     /// Path to write rejected rows to in CSV form.
     /// Defaults to `<data-file-stem>-rejects.csv` next to the data file.
     #[arg(long = "rejects-file", value_name = "path to rejects file (.csv)")]

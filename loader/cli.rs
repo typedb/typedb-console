@@ -53,6 +53,11 @@ pub struct Args {
     #[arg(long = "rejects-log", value_name = "path to rejects log file")]
     pub rejects_log: Option<String>,
 
+    /// Abort on the first row or batch error instead of skipping and continuing.
+    /// The offending row(s) are still written to the rejects file before exit.
+    #[arg(long = "stop-on-error", default_value = "false")]
+    pub stop_on_error: bool,
+
     /// Path to a TypeQL schema file to run in a schema transaction before data loading.
     #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
     pub schema_file: Option<String>,

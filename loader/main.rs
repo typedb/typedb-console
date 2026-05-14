@@ -98,6 +98,7 @@ async fn main() {
     let mut stats = LoadStats::default();
     let started = Instant::now();
     let mut batch_idx = 0usize;
+    let mut stop_now = false;
 
     while let Some(batch) = loader.next_batch(args.batch_rows) {
         batch_idx += 1;
@@ -109,6 +110,9 @@ async fn main() {
                 .unwrap_or_else(|err| fatal(err));
         }
         stats.rows_rejected += batch.rejected.len();
+        if args.stop_on_error && !batch.rejected.is_empty() {
+            stop_now = true;
+        }
 
         let parsed_count = batch.rows.len();
         if parsed_count > 0 {
@@ -120,11 +124,17 @@ async fn main() {
                         .record_batch_failure(&batch.row_numbers, &batch.records, batch_idx, &err)
                         .unwrap_or_else(|err| fatal(err));
                     stats.rows_rejected += parsed_count;
+                    if args.stop_on_error {
+                        stop_now = true;
+                    }
                 }
             }
         }
 
         print_progress(&stats, started, loader.bytes_position(), total_bytes);
+        if stop_now {
+            break;
+        }
     }
 
     rejects.flush().unwrap_or_else(|err| fatal(err));
@@ -132,6 +142,10 @@ async fn main() {
     if rejects.was_written() {
         println!("  Rejects CSV:    {}", rejects.csv_path().display());
         println!("  Rejects log:    {}", rejects.log_path().display());
+    }
+    if stop_now {
+        eprintln!("error: aborted due to --stop-on-error");
+        exit(1);
     }
 }
 

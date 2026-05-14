@@ -20,7 +20,9 @@ use crate::query::{CellType, GivenInput};
 
 pub(crate) struct CsvLoader {
     reader: Reader<BufReader<File>>,
+    headers: Option<StringRecord>,
     column_indices: Vec<usize>,
+    expected_columns: usize,
     inputs: Vec<GivenInput>,
     null_values: Vec<String>,
     rows_read: usize,
@@ -30,12 +32,15 @@ pub(crate) struct CsvLoader {
 
 pub(crate) struct BatchOutcome {
     pub(crate) rows: Vec<QueryGivenRow>,
+    pub(crate) records: Vec<StringRecord>,
+    pub(crate) row_numbers: Vec<usize>,
     pub(crate) rows_attempted: usize,
-    pub(crate) rejected: Vec<RowError>,
+    pub(crate) rejected: Vec<RowRejection>,
 }
 
-pub(crate) struct RowError {
+pub(crate) struct RowRejection {
     pub(crate) row_number: usize,
+    pub(crate) record: Option<StringRecord>,
     pub(crate) message: String,
 }
 
@@ -49,13 +54,16 @@ impl CsvLoader {
     ) -> Result<Self, String> {
         let file = File::open(path).map_err(|err| format!("opening CSV: {err}"))?;
         let file_size = file.metadata().map_err(|err| format!("reading CSV metadata: {err}"))?.len();
-        let mut reader = csv::ReaderBuilder::new().has_headers(has_header).from_reader(BufReader::new(file));
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(has_header)
+            .flexible(true)
+            .from_reader(BufReader::new(file));
 
-        let column_indices: Vec<usize> = if has_header {
-            let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?;
+        let (headers, column_indices) = if has_header {
+            let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?.clone();
             let header_index: HashMap<&str, usize> =
                 headers.iter().enumerate().map(|(idx, name)| (name, idx)).collect();
-            inputs
+            let indices = inputs
                 .iter()
                 .map(|input| {
                     header_index
@@ -63,14 +71,18 @@ impl CsvLoader {
                         .copied()
                         .ok_or_else(|| format!("CSV header missing column '{}' required by query", input.name))
                 })
-                .collect::<Result<_, _>>()?
+                .collect::<Result<Vec<_>, _>>()?;
+            (Some(headers), indices)
         } else {
-            (0..inputs.len()).collect()
+            (None, (0..inputs.len()).collect())
         };
 
+        let expected_columns = headers.as_ref().map(|h| h.len()).unwrap_or(inputs.len());
         Ok(Self {
             reader,
+            headers,
             column_indices,
+            expected_columns,
             inputs,
             null_values,
             rows_read: 0,
@@ -87,34 +99,61 @@ impl CsvLoader {
         self.reader.position().byte()
     }
 
+    pub(crate) fn headers(&self) -> Option<&StringRecord> {
+        self.headers.as_ref()
+    }
+
     pub(crate) fn next_batch(&mut self, batch_size: usize) -> Option<BatchOutcome> {
         if self.rows_read >= self.row_limit {
             return None;
         }
         let mut rows = Vec::with_capacity(batch_size);
+        let mut records = Vec::with_capacity(batch_size);
+        let mut row_numbers = Vec::with_capacity(batch_size);
         let mut rejected = Vec::new();
         let mut attempted = 0usize;
-        let mut record = StringRecord::new();
         while attempted < batch_size && self.rows_read < self.row_limit {
+            let mut record = StringRecord::new();
             match self.reader.read_record(&mut record) {
                 Ok(true) => {}
                 Ok(false) => break,
                 Err(err) => {
                     self.rows_read += 1;
                     attempted += 1;
-                    rejected.push(RowError { row_number: self.rows_read, message: format!("CSV: {err}") });
+                    rejected.push(RowRejection {
+                        row_number: self.rows_read,
+                        record: None,
+                        message: format!("CSV: {err}"),
+                    });
                     continue;
                 }
             }
             self.rows_read += 1;
             attempted += 1;
             let row_number = self.rows_read;
+            if record.len() != self.expected_columns {
+                let actual = record.len();
+                rejected.push(RowRejection {
+                    row_number,
+                    record: Some(record),
+                    message: format!("expected {} columns, got {}", self.expected_columns, actual),
+                });
+                continue;
+            }
             match self.parse_row(&record) {
-                Ok(row) => rows.push(row),
-                Err(message) => rejected.push(RowError { row_number, message }),
+                Ok(row) => {
+                    rows.push(row);
+                    records.push(record);
+                    row_numbers.push(row_number);
+                }
+                Err(message) => rejected.push(RowRejection { row_number, record: Some(record), message }),
             }
         }
-        if attempted == 0 { None } else { Some(BatchOutcome { rows, rows_attempted: attempted, rejected }) }
+        if attempted == 0 {
+            None
+        } else {
+            Some(BatchOutcome { rows, records, row_numbers, rows_attempted: attempted, rejected })
+        }
     }
 
     fn parse_row(&self, record: &StringRecord) -> Result<QueryGivenRow, String> {

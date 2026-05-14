@@ -43,6 +43,16 @@ pub struct Args {
     #[arg(long = "batch-rows", value_name = "n", default_value = "1000")]
     pub batch_rows: usize,
 
+    /// Path to write rejected rows to in CSV form.
+    /// Defaults to `<data-file-stem>-rejects.csv` next to the data file.
+    #[arg(long = "rejects-file", value_name = "path to rejects file (.csv)")]
+    pub rejects_file: Option<String>,
+
+    /// Path to write the per-rejection error log to.
+    /// Defaults to `<data-file-stem>-rejects.log` next to the data file.
+    #[arg(long = "rejects-log", value_name = "path to rejects log file")]
+    pub rejects_log: Option<String>,
+
     /// Path to a TypeQL schema file to run in a schema transaction before data loading.
     #[arg(long = "schema-file", value_name = "path to schema file (.tql)")]
     pub schema_file: Option<String>,

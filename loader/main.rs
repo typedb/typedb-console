@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::read_to_string, path::Path, process::exit, time::Instant};
+use std::{fs::read_to_string, path::{Path, PathBuf}, process::exit, time::Instant};
 
 use clap::Parser;
 use typedb_driver::{
@@ -17,12 +17,14 @@ use crate::{
     data::CsvLoader,
     progress::{LoadStats, print_progress, print_summary},
     query::parse_query_inputs,
+    rejects::{RejectsWriter, default_rejects_path},
 };
 
 mod cli;
 mod data;
 mod progress;
 mod query;
+mod rejects;
 
 #[tokio::main]
 async fn main() {
@@ -89,6 +91,10 @@ async fn main() {
     }
 
     let total_bytes = loader.file_size();
+    let rejects_csv_path = args.rejects_file.map(PathBuf::from).unwrap_or_else(|| default_rejects_path(&args.data, "csv"));
+    let rejects_log_path = args.rejects_log.map(PathBuf::from).unwrap_or_else(|| default_rejects_path(&args.data, "log"));
+    let mut rejects = RejectsWriter::new(rejects_csv_path, rejects_log_path, loader.headers().cloned());
+
     let mut stats = LoadStats::default();
     let started = Instant::now();
     let mut batch_idx = 0usize;
@@ -96,8 +102,11 @@ async fn main() {
     while let Some(batch) = loader.next_batch(args.batch_rows) {
         batch_idx += 1;
         stats.rows_attempted += batch.rows_attempted;
-        for err in &batch.rejected {
-            eprintln!("row {}: {}", err.row_number, err.message);
+        for rejection in &batch.rejected {
+            eprintln!("row {}: {}", rejection.row_number, rejection.message);
+            rejects
+                .record(rejection.row_number, rejection.record.as_ref(), &rejection.message)
+                .unwrap_or_else(|err| fatal(err));
         }
         stats.rows_rejected += batch.rejected.len();
 
@@ -107,6 +116,10 @@ async fn main() {
                 Ok(()) => stats.rows_committed += parsed_count,
                 Err(err) => {
                     eprintln!("batch {batch_idx}: {parsed_count} rows rejected by commit: {err}");
+                    let message = format!("batch {batch_idx} commit failed: {err}");
+                    for (row_number, record) in batch.row_numbers.iter().zip(batch.records.iter()) {
+                        rejects.record(*row_number, Some(record), &message).unwrap_or_else(|err| fatal(err));
+                    }
                     stats.rows_rejected += parsed_count;
                 }
             }
@@ -115,7 +128,12 @@ async fn main() {
         print_progress(&stats, started, loader.bytes_position(), total_bytes);
     }
 
+    rejects.flush().unwrap_or_else(|err| fatal(err));
     print_summary(&stats, started);
+    if rejects.was_written() {
+        println!("  Rejects CSV:    {}", rejects.csv_path().display());
+        println!("  Rejects log:    {}", rejects.log_path().display());
+    }
 }
 
 async fn commit_batch(

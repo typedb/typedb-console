@@ -18,7 +18,19 @@ rust_binary(
     name = "loader-native",
     srcs = glob(["*.rs"]),
     deps = [
+        "@typedb_driver//rust:typedb_driver",
+        "@typeql//rust:typeql",
+
+        # External dependencies
+        "@crates//:chrono",
         "@crates//:clap",
+        "@crates//:csv",
+        "@crates//:futures",
+        "@crates//:rpassword",
+        "@crates//:serde",
+        "@crates//:serde_json",
+        "@crates//:sha2",
+        "@crates//:tokio",
     ],
     tags = [
         "crate-name=typedb-console-loader"

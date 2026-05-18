@@ -90,6 +90,21 @@
 			version = "2.12.1"
 			default-features = false
 
+		[workspace.dependencies.csv]
+			features = []
+			version = "1.3"
+			default-features = false
+
+		[workspace.dependencies.chrono]
+			features = ["std"]
+			version = "0.4"
+			default-features = false
+
+		[workspace.dependencies.serde]
+			features = ["derive", "std"]
+			version = "1.0"
+			default-features = false
+
 # Temporary local overrides for typedb-driver and typeql.
 [patch."https://github.com/typedb/typedb-driver"]
 typedb-driver = { path = "/Users/samuelbutcher/vaticle/typedb-driver/rust" }

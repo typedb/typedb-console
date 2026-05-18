@@ -26,7 +26,7 @@ pub struct Args {
     pub data: Option<String>,
 
     /// Whether the data file contains a header row.
-    #[arg(long = "header")]
+    #[arg(long = "header", num_args = 0..=1, default_missing_value = "true")]
     pub header: Option<bool>,
 
     /// Strings in the data file to treat as null/empty values. May be repeated.
@@ -61,7 +61,7 @@ pub struct Args {
 
     /// Abort on the first row or batch error instead of skipping and continuing.
     /// The offending row(s) are still written to the rejects file before exit.
-    #[arg(long = "stop-on-error")]
+    #[arg(long = "stop-on-error", num_args = 0..=1, default_missing_value = "true")]
     pub stop_on_error: Option<bool>,
 
     /// Abort once the total number of rejected rows exceeds this threshold.
@@ -75,7 +75,7 @@ pub struct Args {
     pub schema_file: Option<String>,
 
     /// Create the database if it does not already exist. Ignored (with a warning) when resuming.
-    #[arg(long = "create-db")]
+    #[arg(long = "create-db", num_args = 0..=1, default_missing_value = "true")]
     pub create_db: Option<bool>,
 
     /// TypeDB address(es) to connect to.
@@ -92,7 +92,7 @@ pub struct Args {
     pub password: Option<String>,
 
     /// Connect to TypeDB with TLS encryption. Disable with caution.
-    #[arg(long = "tls-disabled")]
+    #[arg(long = "tls-disabled", num_args = 0..=1, default_missing_value = "true")]
     pub tls_disabled: Option<bool>,
 
     /// Path to the TLS encryption root CA file.

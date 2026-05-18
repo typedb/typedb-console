@@ -10,7 +10,10 @@ use std::{
     io::{self, BufRead, Write},
     path::{Path, PathBuf},
     process::exit,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Instant,
 };
 
@@ -91,6 +94,24 @@ impl ResolvedParams {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
+
+    // Install a Ctrl+C handler that requests graceful shutdown on the first interrupt and
+    // hard-exits on the second. The main loop polls `shutdown` between batches and drains
+    // anything in flight before terminating, so the final checkpoint reflects what really happened.
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_signal = shutdown.clone();
+    tokio::spawn(async move {
+        if tokio::signal::ctrl_c().await.is_err() {
+            return;
+        }
+        shutdown_signal.store(true, Ordering::SeqCst);
+        eprintln!("\nInterrupt received; finishing in-flight batches. Press Ctrl+C again to force exit.");
+        if tokio::signal::ctrl_c().await.is_err() {
+            return;
+        }
+        eprintln!("Force-exiting.");
+        std::process::exit(130);
+    });
 
     let resume_checkpoint: Option<Checkpoint> = match args.resume.as_deref() {
         Some(path) => Some(Checkpoint::load(Path::new(path)).unwrap_or_else(|err| fatal(err))),
@@ -319,6 +340,9 @@ async fn main() {
     }
 
     loop {
+        if !stop_now && shutdown.load(Ordering::SeqCst) {
+            set_stop("aborted: interrupted by user", &mut stop_now, &mut stop_reason);
+        }
         while producing && !stop_now && in_flight.len() < resolved.parallel_batches {
             let batch = match loader.next_batch(resolved.batch_rows) {
                 Some(b) => b,

@@ -67,16 +67,19 @@ network commit it accompanies.
 Normal completion: CSV reader returns `None` → main stops dispatching → drain
 remaining workers → flush rejects → print summary.
 
-Triggered stop (`--stop-on-error` or `--max-rejects`): set `stop_now` → main
-stops dispatching new batches but **lets in-flight workers finish gracefully**.
-Their results are processed normally (stats updated, rejections written), so
-the final picture reflects everything that actually happened. Once the
-in-flight set drains, flush rejects → print summary → exit non-zero with the
-captured stop reason.
+Triggered stop (`--stop-on-error`, `--max-rejects`, or SIGINT): set `stop_now`
+→ main stops dispatching new batches but **lets in-flight workers finish
+gracefully**. Their results are processed normally (stats updated, rejections
+written, checkpoint advanced), so the final picture — and the on-disk
+checkpoint — reflect everything that actually happened. Once the in-flight
+set drains, flush rejects → print summary → exit non-zero with the captured
+stop reason.
 
-Worst-case extra latency on triggered stop is the longest running in-flight
-batch's commit time. SIGINT/Ctrl-C remains the escape hatch if a transaction
-hangs (tokio cancels the runtime).
+The SIGINT handler is two-stage: the first Ctrl+C sets the shutdown flag and
+triggers the graceful drain above. A second Ctrl+C force-exits with status
+130, bypassing the drain — use this if a transaction is hung. Worst-case
+extra latency on a graceful stop is the longest in-flight batch's commit
+time.
 
 ## Sequential default
 

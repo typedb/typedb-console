@@ -5,7 +5,7 @@
  */
 
 use std::{
-    fs::File,
+    fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
 };
@@ -16,6 +16,7 @@ pub(crate) struct RejectsWriter {
     csv_path: PathBuf,
     log_path: PathBuf,
     headers: Option<StringRecord>,
+    append: bool,
     csv_writer: Option<csv::Writer<File>>,
     log_writer: Option<BufWriter<File>>,
     written: usize,
@@ -23,7 +24,13 @@ pub(crate) struct RejectsWriter {
 
 impl RejectsWriter {
     pub(crate) fn new(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
-        Self { csv_path, log_path, headers, csv_writer: None, log_writer: None, written: 0 }
+        Self { csv_path, log_path, headers, append: false, csv_writer: None, log_writer: None, written: 0 }
+    }
+
+    /// Constructs a writer that opens both files in append mode, preserving prior content from an
+    /// earlier run. The CSV header is not re-written when the file already exists.
+    pub(crate) fn new_append(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
+        Self { csv_path, log_path, headers, append: true, csv_writer: None, log_writer: None, written: 0 }
     }
 
     pub(crate) fn record_row(
@@ -96,19 +103,38 @@ impl RejectsWriter {
 
     fn ensure_open(&mut self) -> Result<(), String> {
         if self.csv_writer.is_none() {
-            let file = File::create(&self.csv_path)
-                .map_err(|err| format!("creating rejects CSV '{}': {err}", self.csv_path.display()))?;
+            let already_exists = self.append && self.csv_path.exists();
+            let file = if self.append {
+                OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&self.csv_path)
+                    .map_err(|err| format!("opening rejects CSV '{}': {err}", self.csv_path.display()))?
+            } else {
+                File::create(&self.csv_path)
+                    .map_err(|err| format!("creating rejects CSV '{}': {err}", self.csv_path.display()))?
+            };
             let mut writer = csv::WriterBuilder::new().flexible(true).from_writer(file);
-            if let Some(headers) = &self.headers {
-                writer
-                    .write_record(headers)
-                    .map_err(|err| format!("writing rejects CSV header: {err}"))?;
+            if !already_exists {
+                if let Some(headers) = &self.headers {
+                    writer
+                        .write_record(headers)
+                        .map_err(|err| format!("writing rejects CSV header: {err}"))?;
+                }
             }
             self.csv_writer = Some(writer);
         }
         if self.log_writer.is_none() {
-            let file = File::create(&self.log_path)
-                .map_err(|err| format!("creating rejects log '{}': {err}", self.log_path.display()))?;
+            let file = if self.append {
+                OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&self.log_path)
+                    .map_err(|err| format!("opening rejects log '{}': {err}", self.log_path.display()))?
+            } else {
+                File::create(&self.log_path)
+                    .map_err(|err| format!("creating rejects log '{}': {err}", self.log_path.display()))?
+            };
             self.log_writer = Some(BufWriter::new(file));
         }
         Ok(())

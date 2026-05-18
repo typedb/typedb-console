@@ -36,6 +36,10 @@ pub(crate) struct BatchOutcome {
     pub(crate) row_numbers: Vec<usize>,
     pub(crate) rows_attempted: usize,
     pub(crate) rejected: Vec<RowRejection>,
+    /// First CSV record of this batch as a sequence of raw cell strings, for checkpoint display.
+    pub(crate) first_row: Option<Vec<String>>,
+    /// Byte position immediately after the last record of this batch.
+    pub(crate) byte_end: u64,
 }
 
 pub(crate) struct RowRejection {
@@ -51,6 +55,31 @@ impl CsvLoader {
         inputs: Vec<GivenInput>,
         null_values: Vec<String>,
         max_rows: Option<usize>,
+    ) -> Result<Self, String> {
+        Self::new(path, has_header, inputs, null_values, max_rows, None)
+    }
+
+    /// Opens the CSV and seeks to `byte_offset` after consuming the header (if any). The byte
+    /// position is taken to be a record boundary in the underlying file (typically a stored
+    /// `byte_end` from a previous batch).
+    pub(crate) fn resume_at(
+        path: &str,
+        has_header: bool,
+        inputs: Vec<GivenInput>,
+        null_values: Vec<String>,
+        max_rows: Option<usize>,
+        byte_offset: u64,
+    ) -> Result<Self, String> {
+        Self::new(path, has_header, inputs, null_values, max_rows, Some(byte_offset))
+    }
+
+    fn new(
+        path: &str,
+        has_header: bool,
+        inputs: Vec<GivenInput>,
+        null_values: Vec<String>,
+        max_rows: Option<usize>,
+        seek_to: Option<u64>,
     ) -> Result<Self, String> {
         let file = File::open(path).map_err(|err| format!("opening CSV: {err}"))?;
         let file_size = file.metadata().map_err(|err| format!("reading CSV metadata: {err}"))?.len();
@@ -76,6 +105,14 @@ impl CsvLoader {
         } else {
             (None, (0..inputs.len()).collect())
         };
+
+        if let Some(offset) = seek_to {
+            if offset > 0 {
+                let mut pos = csv::Position::new();
+                pos.set_byte(offset);
+                reader.seek(pos).map_err(|err| format!("seeking CSV to byte {offset}: {err}"))?;
+            }
+        }
 
         let expected_columns = headers.as_ref().map(|h| h.len()).unwrap_or(inputs.len());
         Ok(Self {
@@ -112,6 +149,7 @@ impl CsvLoader {
         let mut row_numbers = Vec::with_capacity(batch_size);
         let mut rejected = Vec::new();
         let mut attempted = 0usize;
+        let mut first_row: Option<Vec<String>> = None;
         while attempted < batch_size && self.rows_read < self.row_limit {
             let mut record = StringRecord::new();
             match self.reader.read_record(&mut record) {
@@ -131,6 +169,9 @@ impl CsvLoader {
             self.rows_read += 1;
             attempted += 1;
             let row_number = self.rows_read;
+            if first_row.is_none() {
+                first_row = Some(record.iter().map(|s| s.to_owned()).collect());
+            }
             if record.len() != self.expected_columns {
                 let actual = record.len();
                 rejected.push(RowRejection {
@@ -152,7 +193,8 @@ impl CsvLoader {
         if attempted == 0 {
             None
         } else {
-            Some(BatchOutcome { rows, records, row_numbers, rows_attempted: attempted, rejected })
+            let byte_end = self.bytes_position();
+            Some(BatchOutcome { rows, records, row_numbers, rows_attempted: attempted, rejected, first_row, byte_end })
         }
     }
 

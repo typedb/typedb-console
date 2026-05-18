@@ -1,0 +1,6 @@
+name,age,active
+alice,30,true
+bob,not-a-number,false
+carol,42,true
+dan,19,nope
+eve,55,true

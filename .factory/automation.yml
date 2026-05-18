@@ -45,6 +45,7 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //console/tests/assembly:test-assembly --test_output=streamed
         bazel test //console/tests/assembly:test-script --test_output=streamed
+        bazel test //loader/tests/assembly:test-loader --test_output=streamed
 
     sync-dependencies:
       image: typedb-ubuntu-22.04

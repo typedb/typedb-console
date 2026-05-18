@@ -3216,6 +3216,7 @@ dependencies = [
  "rpassword",
  "tokio",
  "typedb-driver",
+ "typedb_binary_runner",
  "typeql",
 ]
 

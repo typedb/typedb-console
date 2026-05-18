@@ -26,7 +26,7 @@ goto exit
 
 :startloader
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
-%TYPEDB_HOME%\loader\typedb_console_loader_bin.exe %ARGS%
+%TYPEDB_HOME%\loader\typedb_loader_bin.exe %ARGS%
 goto exit
 
 :exit

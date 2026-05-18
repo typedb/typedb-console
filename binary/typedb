@@ -22,7 +22,7 @@ case "$1" in
         exec ${TYPEDB_CONSOLE_BIN} "${@:2}"
         ;;
     loader)
-        TYPEDB_LOADER_BIN="${TYPEDB_HOME}/loader/typedb_console_loader_bin"
+        TYPEDB_LOADER_BIN="${TYPEDB_HOME}/loader/typedb_loader_bin"
         exec ${TYPEDB_LOADER_BIN} "${@:2}"
         ;;
     "")

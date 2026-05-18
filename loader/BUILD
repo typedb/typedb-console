@@ -28,7 +28,7 @@ rust_binary(
 
 pkg_tar(
     name = "loader-artifact-native",
-    files = {":loader-native" : "loader/typedb_console_loader_bin"},
+    files = {":loader-native" : "loader/typedb_loader_bin"},
     extension = "tar.gz",
     visibility = ["//visibility:public"]
 )

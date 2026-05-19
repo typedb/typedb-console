@@ -15,6 +15,21 @@ use sha2::{Digest, Sha256};
 
 pub(crate) const CHECKPOINT_VERSION: u32 = 1;
 
+/// Hashes captured at the start of a run for integrity-checking on resume. All three are taken
+/// together: a run either has all hashes or none (when checkpointing is disabled).
+///
+/// Fields are flattened into the parent struct on the wire so the JSON layout is unchanged from
+/// when these lived directly on `Checkpoint`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct Hashes {
+    #[serde(rename = "query_hash")]
+    pub query: String,
+    #[serde(rename = "data_hash")]
+    pub data: String,
+    #[serde(rename = "schema_hash")]
+    pub schema: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct CheckpointParams {
     pub query: String,
@@ -60,9 +75,8 @@ pub(crate) struct CompletedBatch {
 pub(crate) struct Checkpoint {
     pub version: u32,
     pub params: CheckpointParams,
-    pub query_hash: String,
-    pub data_hash: String,
-    pub schema_hash: String,
+    #[serde(flatten)]
+    pub hashes: Hashes,
     pub watermark: usize,
     pub watermark_bytes: u64,
     pub completed_above_watermark: Vec<CompletedBatch>,
@@ -70,18 +84,11 @@ pub(crate) struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new(
-        params: CheckpointParams,
-        query_hash: String,
-        data_hash: String,
-        schema_hash: String,
-    ) -> Self {
+    pub(crate) fn new(params: CheckpointParams, hashes: Hashes) -> Self {
         Self {
             version: CHECKPOINT_VERSION,
             params,
-            query_hash,
-            data_hash,
-            schema_hash,
+            hashes,
             watermark: 0,
             watermark_bytes: 0,
             completed_above_watermark: Vec::new(),
@@ -104,10 +111,8 @@ impl Checkpoint {
         Ok(checkpoint)
     }
 
-    pub(crate) fn set_hashes(&mut self, query_hash: String, data_hash: String, schema_hash: String) {
-        self.query_hash = query_hash;
-        self.data_hash = data_hash;
-        self.schema_hash = schema_hash;
+    pub(crate) fn set_hashes(&mut self, hashes: Hashes) {
+        self.hashes = hashes;
     }
 
     pub(crate) fn record_dispatch(&mut self, batch: InFlightBatch) {

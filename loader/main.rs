@@ -28,8 +28,8 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{
-        Checkpoint, CheckpointParams, CheckpointWriter, InFlightBatch, default_checkpoint_path,
-        hash_file, hash_string,
+        Checkpoint, CheckpointParams, CheckpointWriter, Hashes, InFlightBatch,
+        default_checkpoint_path, hash_file, hash_string,
     },
     cli::{Args, USERNAME_VALUE_NAME},
     data::{CsvLoader, RowRejection},
@@ -212,21 +212,11 @@ async fn main() {
         Some(CheckpointWriter::new(path))
     };
 
-    // Hash the query file and data file (always, when checkpointing is enabled).
-    let query_hash = if checkpoint_writer.is_some() {
-        hash_string(&query_text)
-    } else {
-        String::new()
-    };
-    let data_hash = if checkpoint_writer.is_some() {
+    // Hashes are computed iff checkpointing is enabled; resume implies checkpointing, so any
+    // resume path can rely on these being present.
+    let hashes: Option<Hashes> = if checkpoint_writer.is_some() {
         println!("Hashing data file (first 64 MB)...");
-        hash_file(Path::new(&resolved.data)).unwrap_or_else(|err| fatal(err))
-    } else {
-        String::new()
-    };
-
-    // Hash the live schema.
-    let schema_hash = if checkpoint_writer.is_some() {
+        let data = hash_file(Path::new(&resolved.data)).unwrap_or_else(|err| fatal(err));
         println!("Fetching live schema for hashing...");
         let database = driver
             .databases()
@@ -237,14 +227,15 @@ async fn main() {
             .schema()
             .await
             .unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
-        hash_string(&schema_text)
+        Some(Hashes { query: hash_string(&query_text), data, schema: hash_string(&schema_text) })
     } else {
-        String::new()
+        None
     };
 
     // Validate against checkpoint and prompt for in-flight handling before initialising state.
     let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
-        validate_resume(&resolved, prior, &query_hash, &data_hash, &schema_hash);
+        let hashes = hashes.as_ref().expect("resume requires checkpointing, which always produces hashes");
+        validate_resume(&resolved, prior, hashes);
         resolve_in_flight_skips(&prior.in_flight)
     } else {
         HashSet::new()
@@ -265,19 +256,16 @@ async fn main() {
         Some(mut prior) => {
             // Update hashes to the freshly computed values so the checkpoint stays in sync with
             // the actual data, schema, and query going forward.
-            prior.set_hashes(query_hash.clone(), data_hash.clone(), schema_hash.clone());
+            if let Some(hashes) = hashes.as_ref() {
+                prior.set_hashes(hashes.clone());
+            }
             // Apply user skip decisions before any batches are read.
             for &idx in &skipped_in_flight {
                 prior.mark_in_flight_as_skipped(idx);
             }
             prior
         }
-        None => Checkpoint::new(
-            resolved.to_checkpoint_params(),
-            query_hash.clone(),
-            data_hash.clone(),
-            schema_hash.clone(),
-        ),
+        None => Checkpoint::new(resolved.to_checkpoint_params(), hashes.clone().unwrap_or_default()),
     };
 
     let seek_byte_offset = state.watermark_bytes;
@@ -577,13 +565,7 @@ fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<
     Ok(resolved)
 }
 
-fn validate_resume(
-    resolved: &ResolvedParams,
-    prior: &Checkpoint,
-    query_hash: &str,
-    data_hash: &str,
-    schema_hash: &str,
-) {
+fn validate_resume(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashes) {
     let mut warnings: Vec<String> = Vec::new();
 
     if resolved.header != prior.params.header {
@@ -604,16 +586,16 @@ fn validate_resume(
             prior.params.data, resolved.data
         ));
     }
-    if !data_hash.is_empty() && data_hash != prior.data_hash {
+    if hashes.data != prior.hashes.data {
         warnings.push(format!(
             "data file hash mismatch: checkpoint expected {}, actual {}",
-            prior.data_hash, data_hash
+            prior.hashes.data, hashes.data
         ));
     }
-    if !schema_hash.is_empty() && schema_hash != prior.schema_hash {
+    if hashes.schema != prior.hashes.schema {
         warnings.push(format!(
             "live TypeDB schema hash mismatch: checkpoint expected {}, actual {}",
-            prior.schema_hash, schema_hash
+            prior.hashes.schema, hashes.schema
         ));
     }
     if resolved.query != prior.params.query {
@@ -622,10 +604,10 @@ fn validate_resume(
             prior.params.query, resolved.query
         ));
     }
-    if !query_hash.is_empty() && query_hash != prior.query_hash {
+    if hashes.query != prior.hashes.query {
         warnings.push(format!(
             "query file content hash mismatch: checkpoint expected {}, actual {}",
-            prior.query_hash, query_hash
+            prior.hashes.query, hashes.query
         ));
     }
     if resolved.database != prior.params.database {

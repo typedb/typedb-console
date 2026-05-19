@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::read_to_string,
     io::{self, BufRead, Write},
     path::{Path, PathBuf},
@@ -124,6 +124,12 @@ async fn main() {
 
     let resolved = resolve_params(&args, resume_checkpoint.as_ref().map(|c| &c.params))
         .unwrap_or_else(|err| fatal(err));
+    if resolved.batch_rows == 0 {
+        fatal("--batch-rows must be greater than 0");
+    }
+    if resolved.parallel_batches == 0 {
+        fatal("--parallel-batches must be greater than 0");
+    }
     let password = args
         .password
         .clone()
@@ -186,17 +192,7 @@ async fn main() {
         schema_tx.commit().await.unwrap_or_else(|err| fatal(format!("failed to commit schema transaction: {err}")));
     }
 
-    if resolved.batch_rows == 0 {
-        fatal("--batch-rows must be greater than 0");
-    }
-    if resolved.parallel_batches == 0 {
-        fatal("--parallel-batches must be greater than 0");
-    }
-
     let checkpoint_writer = if args.no_checkpoint {
-        if resuming {
-            fatal("--no-checkpoint cannot be combined with --resume");
-        }
         None
     } else {
         let path = if resuming {
@@ -247,13 +243,12 @@ async fn main() {
     };
 
     // Validate against checkpoint and prompt for in-flight handling before initialising state.
-    let in_flight_decisions = if let Some(prior) = resume_checkpoint.as_ref() {
+    let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
         validate_resume(&resolved, prior, &query_hash, &data_hash, &schema_hash);
-        resolve_in_flight_decisions(&prior.in_flight)
+        resolve_in_flight_skips(&prior.in_flight)
     } else {
-        InFlightDecisions::default()
+        HashSet::new()
     };
-
 
     let rejects_csv_path = resolved
         .rejects_file
@@ -272,10 +267,8 @@ async fn main() {
             // the actual data, schema, and query going forward.
             prior.set_hashes(query_hash.clone(), data_hash.clone(), schema_hash.clone());
             // Apply user skip decisions before any batches are read.
-            for (&idx, decision) in in_flight_decisions.0.iter() {
-                if matches!(decision, ReprocessDecision::Skip) {
-                    prior.mark_in_flight_as_skipped(idx);
-                }
+            for &idx in &skipped_in_flight {
+                prior.mark_in_flight_as_skipped(idx);
             }
             prior
         }
@@ -328,8 +321,7 @@ async fn main() {
 
     let mut stats = LoadStats::default();
     let started = Instant::now();
-    let mut stop_now = false;
-    let mut stop_reason: Option<String> = None;
+    let mut stop = Stop::default();
     let mut producing = true;
     let mut in_flight: FuturesUnordered<JoinHandle<BatchResult>> = FuturesUnordered::new();
 
@@ -340,10 +332,10 @@ async fn main() {
     }
 
     loop {
-        if !stop_now && shutdown.load(Ordering::SeqCst) {
-            set_stop("aborted: interrupted by user", &mut stop_now, &mut stop_reason);
+        if !stop.requested() && shutdown.load(Ordering::SeqCst) {
+            stop.request("aborted: interrupted by user");
         }
-        while producing && !stop_now && in_flight.len() < resolved.parallel_batches {
+        while producing && !stop.requested() && in_flight.len() < resolved.parallel_batches {
             let batch = match loader.next_batch(resolved.batch_rows) {
                 Some(b) => b,
                 None => {
@@ -386,7 +378,7 @@ async fn main() {
         }
         stats.rows_rejected += result.parse_rejected.len();
         if resolved.stop_on_error && !result.parse_rejected.is_empty() {
-            set_stop("aborted due to --stop-on-error", &mut stop_now, &mut stop_reason);
+            stop.request("aborted due to --stop-on-error");
         }
 
         if result.parsed_count > 0 {
@@ -399,7 +391,7 @@ async fn main() {
                         .unwrap_or_else(|err| fatal(err));
                     stats.rows_rejected += result.parsed_count;
                     if resolved.stop_on_error {
-                        set_stop("aborted due to --stop-on-error", &mut stop_now, &mut stop_reason);
+                        stop.request("aborted due to --stop-on-error");
                     }
                 }
             }
@@ -414,11 +406,10 @@ async fn main() {
 
         if let Some(limit) = resolved.max_rejects {
             if stats.rows_rejected > limit {
-                set_stop(
-                    &format!("aborted: rejected rows ({}) exceeded --max-rejects {}", stats.rows_rejected, limit),
-                    &mut stop_now,
-                    &mut stop_reason,
-                );
+                stop.request(&format!(
+                    "aborted: rejected rows ({}) exceeded --max-rejects {}",
+                    stats.rows_rejected, limit
+                ));
             }
         }
 
@@ -434,9 +425,32 @@ async fn main() {
     if let Some(writer) = &checkpoint_writer {
         println!("  Checkpoint:     {}", writer.path().display());
     }
-    if let Some(reason) = stop_reason {
+    if let Some(reason) = stop.into_reason() {
         eprintln!("error: {reason}");
         exit(1);
+    }
+}
+
+/// Tracks a one-shot stop request: the first reason wins, so messages produced by later
+/// stop conditions don't overwrite the trigger that started the drain.
+#[derive(Default)]
+struct Stop {
+    reason: Option<String>,
+}
+
+impl Stop {
+    fn requested(&self) -> bool {
+        self.reason.is_some()
+    }
+
+    fn request(&mut self, reason: &str) {
+        if self.reason.is_none() {
+            self.reason = Some(reason.to_owned());
+        }
+    }
+
+    fn into_reason(self) -> Option<String> {
+        self.reason
     }
 }
 
@@ -490,13 +504,6 @@ async fn commit_batch(
         .map_err(|err| format!("query failed: {err}"))?;
     transaction.commit().await.map_err(|err| format!("commit failed: {err}"))?;
     Ok(())
-}
-
-fn set_stop(reason: &str, stop_now: &mut bool, stop_reason: &mut Option<String>) {
-    *stop_now = true;
-    if stop_reason.is_none() {
-        *stop_reason = Some(reason.to_owned());
-    }
 }
 
 fn parse_addresses(addresses: &str) -> Addresses {
@@ -640,65 +647,50 @@ fn validate_resume(
     }
 }
 
-#[derive(Default)]
-struct InFlightDecisions(HashMap<usize, ReprocessDecision>);
-
-#[derive(Clone, Copy)]
-enum ReprocessDecision {
-    Reprocess,
-    Skip,
+enum InFlightMode {
+    ReprocessAll,
+    SkipAll,
+    DecideEach,
 }
 
-fn resolve_in_flight_decisions(in_flight: &[InFlightBatch]) -> InFlightDecisions {
+/// Returns the batch indices the user chose to skip (treat as already committed). Indices
+/// not returned should be reprocessed.
+fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<usize> {
     if in_flight.is_empty() {
-        return InFlightDecisions::default();
+        return HashSet::new();
     }
     eprintln!("\nThe checkpoint records {} in-flight batch(es) from the previous run.", in_flight.len());
     eprintln!("These batches were dispatched but never confirmed as committed. Verify them against the database before deciding.");
     for batch in in_flight {
         eprintln!("  - batch {} (first row: {})", batch.batch_idx, format_first_row(&batch.first_row));
     }
-    let mut decisions = HashMap::new();
     eprintln!("\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)");
     let choice = prompt("Choose action").trim().to_ascii_lowercase();
     let mode = match choice.as_str() {
-        "" | "a" | "all" => "all",
-        "s" | "skip" | "skip all" => "skip",
-        "d" | "each" | "decide" => "each",
+        "" | "a" | "all" => InFlightMode::ReprocessAll,
+        "s" | "skip" | "skip all" => InFlightMode::SkipAll,
+        "d" | "each" | "decide" => InFlightMode::DecideEach,
         other => {
             eprintln!("Unknown choice '{other}', defaulting to reprocess all.");
-            "all"
+            InFlightMode::ReprocessAll
         }
     };
     match mode {
-        "all" => {
-            for batch in in_flight {
-                decisions.insert(batch.batch_idx, ReprocessDecision::Reprocess);
-            }
-        }
-        "skip" => {
-            for batch in in_flight {
-                decisions.insert(batch.batch_idx, ReprocessDecision::Skip);
-            }
-        }
-        "each" => {
-            for batch in in_flight {
+        InFlightMode::ReprocessAll => HashSet::new(),
+        InFlightMode::SkipAll => in_flight.iter().map(|b| b.batch_idx).collect(),
+        InFlightMode::DecideEach => in_flight
+            .iter()
+            .filter(|batch| {
                 let q = format!(
                     "Reprocess batch {} (first row: {})?",
                     batch.batch_idx,
                     format_first_row(&batch.first_row)
                 );
-                let decision = if confirm(&q) {
-                    ReprocessDecision::Reprocess
-                } else {
-                    ReprocessDecision::Skip
-                };
-                decisions.insert(batch.batch_idx, decision);
-            }
-        }
-        _ => unreachable!(),
+                !confirm(&q)
+            })
+            .map(|batch| batch.batch_idx)
+            .collect(),
     }
-    InFlightDecisions(decisions)
 }
 
 fn format_first_row(row: &[String]) -> String {

@@ -13,7 +13,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-pub(crate) const CHECKPOINT_VERSION: u32 = 2;
+pub(crate) const CHECKPOINT_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct CheckpointParams {
@@ -231,9 +231,15 @@ pub(crate) fn hash_string(s: &str) -> String {
 }
 
 pub(crate) fn default_checkpoint_path(data_path: &str) -> PathBuf {
+    sibling_path(data_path, "checkpoint.json")
+}
+
+/// Builds a path next to `data_path` whose filename is `<data-stem>-<suffix>`. Falls back to
+/// a bare `data-<suffix>` if the data path has no stem or parent.
+pub(crate) fn sibling_path(data_path: &str, suffix: &str) -> PathBuf {
     let data = Path::new(data_path);
     let stem = data.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "data".to_owned());
-    let filename = format!("{stem}-checkpoint.json");
+    let filename = format!("{stem}-{suffix}");
     match data.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent.join(filename),
         _ => PathBuf::from(filename),

@@ -28,8 +28,8 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{
-        Checkpoint, CheckpointParams, CheckpointState, CheckpointWriter, InFlightBatch,
-        default_checkpoint_path, hash_file, hash_string,
+        Checkpoint, CheckpointParams, CheckpointWriter, InFlightBatch, default_checkpoint_path,
+        hash_file, hash_string,
     },
     cli::{Args, USERNAME_VALUE_NAME},
     data::{CsvLoader, RowRejection},
@@ -267,20 +267,19 @@ async fn main() {
         .unwrap_or_else(|| default_rejects_path(&resolved.data, "log"));
 
     let mut state = match resume_checkpoint {
-        Some(prior) => {
-            let mut state = CheckpointState::from_checkpoint(prior);
+        Some(mut prior) => {
             // Update hashes to the freshly computed values so the checkpoint stays in sync with
             // the actual data, schema, and query going forward.
-            state.set_hashes(query_hash.clone(), data_hash.clone(), schema_hash.clone());
+            prior.set_hashes(query_hash.clone(), data_hash.clone(), schema_hash.clone());
             // Apply user skip decisions before any batches are read.
             for (&idx, decision) in in_flight_decisions.0.iter() {
                 if matches!(decision, ReprocessDecision::Skip) {
-                    state.mark_in_flight_as_skipped(idx);
+                    prior.mark_in_flight_as_skipped(idx);
                 }
             }
-            state
+            prior
         }
-        None => CheckpointState::new(
+        None => Checkpoint::new(
             resolved.to_checkpoint_params(),
             query_hash.clone(),
             data_hash.clone(),
@@ -288,10 +287,11 @@ async fn main() {
         ),
     };
 
-    let seek_byte_offset = state.watermark_bytes();
-    let mut next_batch_idx = state.watermark() + 1;
+    let seek_byte_offset = state.watermark_bytes;
+    let mut next_batch_idx = state.watermark + 1;
     // Batches the prior run already completed (out-of-order) -- read past them but don't dispatch.
-    let completed_above_watermark: HashSet<usize> = state.completed_above_watermark().keys().copied().collect();
+    let completed_above_watermark: HashSet<usize> =
+        state.completed_above_watermark.iter().map(|c| c.batch_idx).collect();
 
     let mut loader = if seek_byte_offset > 0 {
         CsvLoader::resume_at(
@@ -299,7 +299,7 @@ async fn main() {
             resolved.header,
             inputs,
             resolved.null_values.clone(),
-            resolved.max_rows.map(|m| m.saturating_sub(state.watermark() * resolved.batch_rows)),
+            resolved.max_rows.map(|m| m.saturating_sub(state.watermark * resolved.batch_rows)),
             seek_byte_offset,
         )
         .unwrap_or_else(|err| fatal(format!("failed to resume data file '{}': {err}", resolved.data)))
@@ -336,7 +336,7 @@ async fn main() {
     // Persist the initial state so a fresh run leaves a checkpoint file even before the first
     // batch finishes.
     if let Some(writer) = &checkpoint_writer {
-        writer.write(&state.snapshot()).unwrap_or_else(|err| fatal(err));
+        writer.write(&state).unwrap_or_else(|err| fatal(err));
     }
 
     loop {
@@ -363,7 +363,7 @@ async fn main() {
             let byte_end = batch.byte_end;
             state.record_dispatch(InFlightBatch { batch_idx, byte_end, first_row });
             if let Some(writer) = &checkpoint_writer {
-                writer.write(&state.snapshot()).unwrap_or_else(|err| fatal(err));
+                writer.write(&state).unwrap_or_else(|err| fatal(err));
             }
 
             let driver = driver.clone();
@@ -409,7 +409,7 @@ async fn main() {
         // has been recorded one way or another (committed, or written to the rejects file).
         state.record_finish(result.batch_idx);
         if let Some(writer) = &checkpoint_writer {
-            writer.write(&state.snapshot()).unwrap_or_else(|err| fatal(err));
+            writer.write(&state).unwrap_or_else(|err| fatal(err));
         }
 
         if let Some(limit) = resolved.max_rejects {

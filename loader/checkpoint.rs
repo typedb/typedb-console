@@ -5,7 +5,6 @@
  */
 
 use std::{
-    collections::BTreeMap,
     fs::{self, File},
     io::{BufReader, Read, Write},
     path::{Path, PathBuf},
@@ -51,6 +50,12 @@ pub(crate) struct CompletedBatch {
     pub byte_end: u64,
 }
 
+/// Tracks committed and in-flight batches and maintains a watermark = the highest batch index
+/// such that every batch <= it has finished. Non-consecutive completions are parked in
+/// `completed_above_watermark` until the watermark catches up.
+///
+/// Sole owner is the main task; mutated and serialised from one thread, so the vectors stay
+/// small (bounded by `parallel_batches`) and linear scans are cheap.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Checkpoint {
     pub version: u32,
@@ -65,6 +70,25 @@ pub(crate) struct Checkpoint {
 }
 
 impl Checkpoint {
+    pub(crate) fn new(
+        params: CheckpointParams,
+        query_hash: String,
+        data_hash: String,
+        schema_hash: String,
+    ) -> Self {
+        Self {
+            version: CHECKPOINT_VERSION,
+            params,
+            query_hash,
+            data_hash,
+            schema_hash,
+            watermark: 0,
+            watermark_bytes: 0,
+            completed_above_watermark: Vec::new(),
+            in_flight: Vec::new(),
+        }
+    }
+
     pub(crate) fn load(path: &Path) -> Result<Self, String> {
         let file = File::open(path).map_err(|err| format!("opening checkpoint '{}': {err}", path.display()))?;
         let checkpoint: Checkpoint = serde_json::from_reader(BufReader::new(file))
@@ -79,6 +103,58 @@ impl Checkpoint {
         }
         Ok(checkpoint)
     }
+
+    pub(crate) fn set_hashes(&mut self, query_hash: String, data_hash: String, schema_hash: String) {
+        self.query_hash = query_hash;
+        self.data_hash = data_hash;
+        self.schema_hash = schema_hash;
+    }
+
+    pub(crate) fn record_dispatch(&mut self, batch: InFlightBatch) {
+        self.in_flight.push(batch);
+    }
+
+    /// Records that a batch has finished (either committed or rejected). The `byte_end` is taken
+    /// from the prior dispatch record. If the finished batch is contiguous with the watermark,
+    /// the watermark slides forward, also absorbing any previously-parked completions.
+    pub(crate) fn record_finish(&mut self, batch_idx: usize) {
+        let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_idx) else {
+            return;
+        };
+        self.absorb_finished_batch(batch_idx, byte_end);
+    }
+
+    /// Drops an in-flight entry without dispatching it. Used on resume when the user chooses to
+    /// treat an in-flight batch as already committed. Advances the watermark just like a
+    /// normal completion would.
+    pub(crate) fn mark_in_flight_as_skipped(&mut self, batch_idx: usize) {
+        if let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_idx) {
+            self.absorb_finished_batch(batch_idx, byte_end);
+        }
+    }
+
+    fn absorb_finished_batch(&mut self, batch_idx: usize, byte_end: u64) {
+        if batch_idx == self.watermark + 1 {
+            self.watermark = batch_idx;
+            self.watermark_bytes = byte_end;
+            while let Some(byte_end) = take_completed(&mut self.completed_above_watermark, self.watermark + 1) {
+                self.watermark += 1;
+                self.watermark_bytes = byte_end;
+            }
+        } else {
+            self.completed_above_watermark.push(CompletedBatch { batch_idx, byte_end });
+        }
+    }
+}
+
+fn take_in_flight(in_flight: &mut Vec<InFlightBatch>, batch_idx: usize) -> Option<u64> {
+    let pos = in_flight.iter().position(|b| b.batch_idx == batch_idx)?;
+    Some(in_flight.swap_remove(pos).byte_end)
+}
+
+fn take_completed(completed: &mut Vec<CompletedBatch>, batch_idx: usize) -> Option<u64> {
+    let pos = completed.iter().position(|c| c.batch_idx == batch_idx)?;
+    Some(completed.swap_remove(pos).byte_end)
 }
 
 pub(crate) struct CheckpointWriter {
@@ -119,141 +195,6 @@ impl CheckpointWriter {
             format!("renaming checkpoint into place at '{}': {err}", self.path.display())
         })?;
         Ok(())
-    }
-}
-
-/// Tracks committed and in-flight batches and maintains a watermark = the highest batch index
-/// such that every batch <= it has finished. Non-consecutive completions are parked in
-/// `completed_above_watermark` until the watermark catches up.
-pub(crate) struct CheckpointState {
-    params: CheckpointParams,
-    query_hash: String,
-    data_hash: String,
-    schema_hash: String,
-    watermark: usize,
-    watermark_bytes: u64,
-    completed_above_watermark: BTreeMap<usize, u64>,
-    in_flight: BTreeMap<usize, InFlightBatch>,
-}
-
-impl CheckpointState {
-    pub(crate) fn new(
-        params: CheckpointParams,
-        query_hash: String,
-        data_hash: String,
-        schema_hash: String,
-    ) -> Self {
-        Self {
-            params,
-            query_hash,
-            data_hash,
-            schema_hash,
-            watermark: 0,
-            watermark_bytes: 0,
-            completed_above_watermark: BTreeMap::new(),
-            in_flight: BTreeMap::new(),
-        }
-    }
-
-    pub(crate) fn from_checkpoint(checkpoint: Checkpoint) -> Self {
-        let mut completed = BTreeMap::new();
-        for c in checkpoint.completed_above_watermark {
-            completed.insert(c.batch_idx, c.byte_end);
-        }
-        let mut in_flight = BTreeMap::new();
-        for b in checkpoint.in_flight {
-            in_flight.insert(b.batch_idx, b);
-        }
-        Self {
-            params: checkpoint.params,
-            query_hash: checkpoint.query_hash,
-            data_hash: checkpoint.data_hash,
-            schema_hash: checkpoint.schema_hash,
-            watermark: checkpoint.watermark,
-            watermark_bytes: checkpoint.watermark_bytes,
-            completed_above_watermark: completed,
-            in_flight,
-        }
-    }
-
-    pub(crate) fn watermark(&self) -> usize {
-        self.watermark
-    }
-
-    pub(crate) fn watermark_bytes(&self) -> u64 {
-        self.watermark_bytes
-    }
-
-    pub(crate) fn completed_above_watermark(&self) -> &BTreeMap<usize, u64> {
-        &self.completed_above_watermark
-    }
-
-    pub(crate) fn set_hashes(&mut self, query_hash: String, data_hash: String, schema_hash: String) {
-        self.query_hash = query_hash;
-        self.data_hash = data_hash;
-        self.schema_hash = schema_hash;
-    }
-
-    pub(crate) fn record_dispatch(&mut self, batch: InFlightBatch) {
-        self.in_flight.insert(batch.batch_idx, batch);
-    }
-
-    /// Records that a batch has finished (either committed or rejected). Returns true if the
-    /// in-flight set was changed. The byte_end is taken from the prior dispatch record.
-    pub(crate) fn record_finish(&mut self, batch_idx: usize) -> bool {
-        let Some(batch) = self.in_flight.remove(&batch_idx) else {
-            return false;
-        };
-        let byte_end = batch.byte_end;
-        if batch_idx == self.watermark + 1 {
-            self.watermark = batch_idx;
-            self.watermark_bytes = byte_end;
-            while let Some(&next_end) = self.completed_above_watermark.get(&(self.watermark + 1)) {
-                self.watermark += 1;
-                self.watermark_bytes = next_end;
-                self.completed_above_watermark.remove(&self.watermark);
-            }
-        } else {
-            self.completed_above_watermark.insert(batch_idx, byte_end);
-        }
-        true
-    }
-
-    /// Drops an in-flight entry without advancing the watermark. Used on resume when the user
-    /// chooses to treat an in-flight batch as already committed.
-    pub(crate) fn mark_in_flight_as_skipped(&mut self, batch_idx: usize) {
-        if let Some(batch) = self.in_flight.remove(&batch_idx) {
-            let byte_end = batch.byte_end;
-            if batch_idx == self.watermark + 1 {
-                self.watermark = batch_idx;
-                self.watermark_bytes = byte_end;
-                while let Some(&next_end) = self.completed_above_watermark.get(&(self.watermark + 1)) {
-                    self.watermark += 1;
-                    self.watermark_bytes = next_end;
-                    self.completed_above_watermark.remove(&self.watermark);
-                }
-            } else {
-                self.completed_above_watermark.insert(batch_idx, byte_end);
-            }
-        }
-    }
-
-    pub(crate) fn snapshot(&self) -> Checkpoint {
-        Checkpoint {
-            version: CHECKPOINT_VERSION,
-            params: self.params.clone(),
-            query_hash: self.query_hash.clone(),
-            data_hash: self.data_hash.clone(),
-            schema_hash: self.schema_hash.clone(),
-            watermark: self.watermark,
-            watermark_bytes: self.watermark_bytes,
-            completed_above_watermark: self
-                .completed_above_watermark
-                .iter()
-                .map(|(&batch_idx, &byte_end)| CompletedBatch { batch_idx, byte_end })
-                .collect(),
-            in_flight: self.in_flight.values().cloned().collect(),
-        }
     }
 }
 

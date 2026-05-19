@@ -304,8 +304,8 @@ async fn main() {
     let total_bytes = loader.file_size();
 
     let driver = Arc::new(driver);
-    let database = Arc::new(resolved.database.clone());
-    let query_text = Arc::new(query_text);
+    let database: Arc<str> = Arc::from(resolved.database.as_str());
+    let query_text: Arc<str> = Arc::from(query_text);
 
     let mut stats = LoadStats::default();
     let started = Instant::now();
@@ -454,8 +454,8 @@ struct BatchResult {
 
 async fn process_batch(
     driver: Arc<TypeDBDriver>,
-    database: Arc<String>,
-    query_text: Arc<String>,
+    database: Arc<str>,
+    query_text: Arc<str>,
     batch_idx: usize,
     batch: data::BatchOutcome,
 ) -> BatchResult {

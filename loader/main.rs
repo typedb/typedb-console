@@ -525,6 +525,13 @@ fn fatal_with(code: ExitCode, message: impl AsRef<str>) -> ! {
     exit(code as i32);
 }
 
+/// Folds a `--no-X` opt-out flag into the value supplied by its companion `--X`. clap's
+/// `conflicts_with` ensures both can't be set at once, so the `no_x = true` case wins iff `flag`
+/// is `None`.
+fn merge_no_flag(flag: Option<bool>, no_flag: bool) -> Option<bool> {
+    flag.or(if no_flag { Some(false) } else { None })
+}
+
 fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<ResolvedParams, String> {
     // Hard-error if --batch-rows is provided on resume with a different value.
     if let (Some(cli_batch), Some(prior)) = (args.batch_rows, checkpoint) {
@@ -562,14 +569,18 @@ fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<
         query: pick_string(&args.query, checkpoint.map(|c| &c.query), "query")?,
         database: pick_string(&args.database, checkpoint.map(|c| &c.database), "database")?,
         data: pick_string(&args.data, checkpoint.map(|c| &c.data), "data")?,
-        header: pick_bool(args.header, checkpoint.map(|c| c.header), false),
+        header: pick_bool(merge_no_flag(args.header, args.no_header), checkpoint.map(|c| c.header), false),
         null_values: pick_vec(&args.null_values, checkpoint.map(|c| &c.null_values)),
         max_rows: pick_opt_usize(args.max_rows, checkpoint.map(|c| c.max_rows)),
         batch_rows: pick_usize(args.batch_rows, checkpoint.map(|c| c.batch_rows), 1000),
         parallel_batches: pick_usize(args.parallel_batches, checkpoint.map(|c| c.parallel_batches), 1),
         rejects_file: pick_optional_string(&args.rejects_file, checkpoint.map(|c| &c.rejects_file)),
         rejects_log: pick_optional_string(&args.rejects_log, checkpoint.map(|c| &c.rejects_log)),
-        stop_on_error: pick_bool(args.stop_on_error, checkpoint.map(|c| c.stop_on_error), false),
+        stop_on_error: pick_bool(
+            merge_no_flag(args.stop_on_error, args.no_stop_on_error),
+            checkpoint.map(|c| c.stop_on_error),
+            false,
+        ),
         max_rejects: pick_opt_usize(args.max_rejects, checkpoint.map(|c| c.max_rejects)),
         schema_file: pick_optional_string(&args.schema_file, checkpoint.map(|c| &c.schema_file)),
         create_db: pick_bool(args.create_db, checkpoint.map(|c| c.create_db), false),

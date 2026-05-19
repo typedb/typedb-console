@@ -26,8 +26,13 @@ pub struct Args {
     pub data: Option<String>,
 
     /// Whether the data file contains a header row. Default: false.
-    #[arg(long = "header", num_args = 0..=1, default_missing_value = "true")]
+    /// Pass `--no-header` to explicitly disable when overriding a checkpoint that had it set.
+    #[arg(long = "header", num_args = 0..=1, default_missing_value = "true", conflicts_with = "no_header")]
     pub header: Option<bool>,
+
+    /// Force header row off, overriding any value carried by the checkpoint.
+    #[arg(long = "no-header")]
+    pub no_header: bool,
 
     /// Strings in the data file to treat as null/empty values. May be repeated.
     /// If not provided, only empty strings are treated as null.
@@ -61,8 +66,14 @@ pub struct Args {
 
     /// Abort on the first row or batch error instead of skipping and continuing.
     /// The offending row(s) are still written to the rejects file before exit. Default: false.
-    #[arg(long = "stop-on-error", num_args = 0..=1, default_missing_value = "true")]
+    /// Pass `--no-stop-on-error` to explicitly disable when overriding a checkpoint that had it set.
+    #[arg(long = "stop-on-error", num_args = 0..=1, default_missing_value = "true",
+        conflicts_with = "no_stop_on_error")]
     pub stop_on_error: Option<bool>,
+
+    /// Force stop-on-error off, overriding any value carried by the checkpoint.
+    #[arg(long = "no-stop-on-error")]
+    pub no_stop_on_error: bool,
 
     /// Abort once the total number of rejected rows exceeds this threshold.
     /// Applies independently of --stop-on-error.

@@ -7,7 +7,6 @@
 use std::{
     collections::HashSet,
     fs::read_to_string,
-    io::{self, BufRead, Write},
     path::{Path, PathBuf},
     process::exit,
     sync::{
@@ -34,6 +33,7 @@ use crate::{
     cli::{Args, USERNAME_VALUE_NAME},
     data::{CsvLoader, RowRejection},
     progress::{LoadStats, print_progress, print_summary},
+    prompts::{confirm, resolve_in_flight_skips},
     query::parse_query_inputs,
     rejects::{RejectsWriter, default_rejects_path},
 };
@@ -42,6 +42,7 @@ mod checkpoint;
 mod cli;
 mod data;
 mod progress;
+mod prompts;
 mod query;
 mod rejects;
 
@@ -653,77 +654,3 @@ fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashe
     warnings
 }
 
-enum InFlightMode {
-    ReprocessAll,
-    SkipAll,
-    DecideEach,
-}
-
-/// Returns the batch indices the user chose to skip (treat as already committed). Indices
-/// not returned should be reprocessed.
-fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<usize> {
-    if in_flight.is_empty() {
-        return HashSet::new();
-    }
-    eprintln!("\nThe checkpoint records {} in-flight batch(es) from the previous run.", in_flight.len());
-    eprintln!("These batches were dispatched but never confirmed as committed. Verify them against the database before deciding.");
-    for batch in in_flight {
-        eprintln!("  - batch {} (first row: {})", batch.batch_idx, format_first_row(&batch.first_row));
-    }
-    eprintln!("\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)");
-    let choice = prompt("Choose action").trim().to_ascii_lowercase();
-    let mode = match choice.as_str() {
-        "" | "a" | "all" => InFlightMode::ReprocessAll,
-        "s" | "skip" | "skip all" => InFlightMode::SkipAll,
-        "d" | "each" | "decide" => InFlightMode::DecideEach,
-        other => {
-            eprintln!("Unknown choice '{other}', defaulting to reprocess all.");
-            InFlightMode::ReprocessAll
-        }
-    };
-    match mode {
-        InFlightMode::ReprocessAll => HashSet::new(),
-        InFlightMode::SkipAll => in_flight.iter().map(|b| b.batch_idx).collect(),
-        InFlightMode::DecideEach => in_flight
-            .iter()
-            .filter(|batch| {
-                let q = format!(
-                    "Reprocess batch {} (first row: {})?",
-                    batch.batch_idx,
-                    format_first_row(&batch.first_row)
-                );
-                !confirm(&q)
-            })
-            .map(|batch| batch.batch_idx)
-            .collect(),
-    }
-}
-
-fn format_first_row(row: &[String]) -> String {
-    if row.is_empty() {
-        "<empty>".to_owned()
-    } else {
-        row.join(",")
-    }
-}
-
-fn confirm(question: &str) -> bool {
-    loop {
-        let answer = prompt(&format!("{question} [y/N]")).trim().to_ascii_lowercase();
-        match answer.as_str() {
-            "y" | "yes" => return true,
-            "" | "n" | "no" => return false,
-            other => eprintln!("Please answer 'y' or 'n' (got '{other}')."),
-        }
-    }
-}
-
-fn prompt(message: &str) -> String {
-    eprint!("{message}: ");
-    let _ = io::stderr().flush();
-    let mut line = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    let _ = handle.read_line(&mut line);
-    line
-}

@@ -119,16 +119,16 @@ async fn main() {
     };
     let resuming = resume_checkpoint.is_some();
     if resuming && args.no_checkpoint {
-        fatal("--no-checkpoint cannot be combined with --resume");
+        fatal_with(ExitCode::UserInputError, "--no-checkpoint cannot be combined with --resume");
     }
 
     let resolved = resolve_params(&args, resume_checkpoint.as_ref().map(|c| &c.params))
-        .unwrap_or_else(|err| fatal(err));
+        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     if resolved.batch_rows == 0 {
-        fatal("--batch-rows must be greater than 0");
+        fatal_with(ExitCode::UserInputError, "--batch-rows must be greater than 0");
     }
     if resolved.parallel_batches == 0 {
-        fatal("--parallel-batches must be greater than 0");
+        fatal_with(ExitCode::UserInputError, "--parallel-batches must be greater than 0");
     }
     let password = args
         .password
@@ -166,7 +166,7 @@ async fn main() {
     };
     let driver = TypeDBDriver::new(addresses, Credentials::new(&resolved.username, &password), DriverOptions::new(tls_config))
         .await
-        .unwrap_or_else(|err| fatal(format!("failed to connect to TypeDB: {err}")));
+        .unwrap_or_else(|err| fatal_with(ExitCode::ConnectionError, format!("failed to connect to TypeDB: {err}")));
 
     if !resuming && resolved.create_db {
         let exists = driver
@@ -204,7 +204,7 @@ async fn main() {
                 .unwrap_or_else(|| default_checkpoint_path(&resolved.data))
         };
         if !resuming && path.exists() {
-            fatal(format!(
+            fatal_with(ExitCode::UserInputError, format!(
                 "checkpoint file already exists at '{}': pass --resume to continue from it, --checkpoint-file PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
                 path.display()
             ));
@@ -242,7 +242,7 @@ async fn main() {
                 eprintln!("  - {w}");
             }
             if !confirm("Continue anyway?") {
-                fatal("aborted: resume cancelled by user");
+                fatal_with(ExitCode::UserInputError, "aborted: resume cancelled by user");
             }
         }
         resolve_in_flight_skips(&prior.in_flight)
@@ -506,12 +506,23 @@ async fn commit_batch(
 fn parse_addresses(addresses: &str) -> Addresses {
     let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
     Addresses::try_from_addresses_str(split)
-        .unwrap_or_else(|err| fatal(format!("invalid addresses '{addresses}': {err}")))
+        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, format!("invalid addresses '{addresses}': {err}")))
+}
+
+#[derive(Debug, Copy, Clone)]
+enum ExitCode {
+    GeneralError = 1,
+    UserInputError = 2,
+    ConnectionError = 3,
 }
 
 fn fatal(message: impl AsRef<str>) -> ! {
+    fatal_with(ExitCode::GeneralError, message)
+}
+
+fn fatal_with(code: ExitCode, message: impl AsRef<str>) -> ! {
     eprintln!("error: {}", message.as_ref());
-    exit(1);
+    exit(code as i32);
 }
 
 fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<ResolvedParams, String> {

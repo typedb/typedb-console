@@ -21,7 +21,7 @@ use csv::StringRecord;
 use futures::stream::{FuturesUnordered, StreamExt};
 use tokio::task::JoinHandle;
 use typedb_driver::{
-    Addresses, Credentials, DriverOptions, DriverTlsConfig, TransactionType, TypeDBDriver,
+    TransactionType, TypeDBDriver,
     transaction::{QueryGivenRow, QueryGivenRows},
 };
 
@@ -37,6 +37,7 @@ use crate::{
     prompts::{confirm, resolve_in_flight_skips},
     query::parse_query_inputs,
     rejects::{RejectsWriter, default_rejects_path},
+    setup::{apply_schema, connect, create_database_if_missing},
 };
 
 mod checkpoint;
@@ -47,6 +48,7 @@ mod progress;
 mod prompts;
 mod query;
 mod rejects;
+mod setup;
 
 #[tokio::main]
 async fn main() {
@@ -113,40 +115,13 @@ async fn main() {
 
     let inputs = parse_query_inputs(&query_text).unwrap_or_else(|err| fatal(err));
 
-    let addresses = parse_addresses(&resolved.addresses);
-    let tls_config = if resolved.tls_disabled {
-        DriverTlsConfig::disabled()
-    } else if let Some(ca) = resolved.tls_root_ca.as_deref() {
-        DriverTlsConfig::enabled_with_root_ca(Path::new(ca)).unwrap()
-    } else {
-        DriverTlsConfig::enabled_with_native_root_ca()
-    };
-    let driver = TypeDBDriver::new(addresses, Credentials::new(&resolved.username, &password), DriverOptions::new(tls_config))
-        .await
-        .unwrap_or_else(|err| fatal_with(ExitCode::ConnectionError, format!("failed to connect to TypeDB: {err}")));
+    let driver = connect(&resolved, &password).await;
 
     if !resuming && resolved.create_db {
-        let exists = driver
-            .databases()
-            .contains(resolved.database.clone())
-            .await
-            .unwrap_or_else(|err| fatal(format!("failed to check if database '{}' exists: {err}", resolved.database)));
-        if !exists {
-            driver
-                .databases()
-                .create(resolved.database.clone())
-                .await
-                .unwrap_or_else(|err| fatal(format!("failed to create database '{}': {err}", resolved.database)));
-        }
+        create_database_if_missing(&driver, &resolved.database).await;
     }
-
     if let Some(schema) = schema_to_apply {
-        let schema_tx = driver
-            .transaction(resolved.database.clone(), TransactionType::Schema)
-            .await
-            .unwrap_or_else(|err| fatal(format!("failed to open schema transaction on '{}': {err}", resolved.database)));
-        schema_tx.query(schema).await.unwrap_or_else(|err| fatal(format!("schema query failed: {err}")));
-        schema_tx.commit().await.unwrap_or_else(|err| fatal(format!("failed to commit schema transaction: {err}")));
+        apply_schema(&driver, &resolved.database, schema).await;
     }
 
     let checkpoint_writer = if args.no_checkpoint {
@@ -460,24 +435,18 @@ async fn commit_batch(
     Ok(())
 }
 
-fn parse_addresses(addresses: &str) -> Addresses {
-    let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
-    Addresses::try_from_addresses_str(split)
-        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, format!("invalid addresses '{addresses}': {err}")))
-}
-
 #[derive(Debug, Copy, Clone)]
-enum ExitCode {
+pub(crate) enum ExitCode {
     GeneralError = 1,
     UserInputError = 2,
     ConnectionError = 3,
 }
 
-fn fatal(message: impl AsRef<str>) -> ! {
+pub(crate) fn fatal(message: impl AsRef<str>) -> ! {
     fatal_with(ExitCode::GeneralError, message)
 }
 
-fn fatal_with(code: ExitCode, message: impl AsRef<str>) -> ! {
+pub(crate) fn fatal_with(code: ExitCode, message: impl AsRef<str>) -> ! {
     eprintln!("error: {}", message.as_ref());
     exit(code as i32);
 }

@@ -18,7 +18,7 @@ rust_binary(
     name = "loader-native",
     srcs = glob(["*.rs"]),
     deps = [
-        "//tool/connect:typedb_console_connect",
+        "//tool/connect:typedb_cli_connect",
         "@typedb_driver//rust:typedb_driver",
         "@typeql//rust:typeql",
 
@@ -34,7 +34,7 @@ rust_binary(
         "@crates//:tokio",
     ],
     tags = [
-        "crate-name=typedb-console-loader"
+        "crate-name=typedb-loader"
     ],
     visibility = ["//visibility:public"],
 )
@@ -48,7 +48,7 @@ pkg_tar(
 
 assemble_targz(
     name = "assemble-linux-x86_64-targz",
-    output_filename = "typedb-console-loader-linux-x86_64",
+    output_filename = "typedb-loader-linux-x86_64",
     targets = [":loader-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_x86_64,
@@ -56,7 +56,7 @@ assemble_targz(
 
 assemble_targz(
     name = "assemble-linux-arm64-targz",
-    output_filename = "typedb-console-loader-linux-arm64",
+    output_filename = "typedb-loader-linux-arm64",
     targets = [":loader-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_arm64
@@ -64,7 +64,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
-    output_filename = "typedb-console-loader-mac-x86_64",
+    output_filename = "typedb-loader-mac-x86_64",
     targets = [":loader-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_x86_64
@@ -72,7 +72,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-mac-arm64-zip",
-    output_filename = "typedb-console-loader-mac-arm64",
+    output_filename = "typedb-loader-mac-arm64",
     targets = [":loader-artifact-native", "//binary:assemble-bash-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_arm64
@@ -80,7 +80,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-x86_64-zip",
-    output_filename = "typedb-console-loader-windows-x86_64",
+    output_filename = "typedb-loader-windows-x86_64",
     targets = [":loader-artifact-native", "//binary:assemble-bat-targz"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_win_x86_64
@@ -89,8 +89,8 @@ assemble_zip(
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
-    artifact_group = "typedb-console-loader-linux-x86_64",
-    artifact_name = "typedb-console-loader-linux-x86_64-{version}.tar.gz",
+    artifact_group = "typedb-loader-linux-x86_64",
+    artifact_name = "typedb-loader-linux-x86_64-{version}.tar.gz",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
@@ -99,8 +99,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-linux-arm64-targz",
     target = ":assemble-linux-arm64-targz",
-    artifact_group = "typedb-console-loader-linux-arm64",
-    artifact_name = "typedb-console-loader-linux-arm64-{version}.tar.gz",
+    artifact_group = "typedb-loader-linux-arm64",
+    artifact_name = "typedb-loader-linux-arm64-{version}.tar.gz",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
@@ -109,8 +109,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-mac-x86_64-zip",
     target = ":assemble-mac-x86_64-zip",
-    artifact_group = "typedb-console-loader-mac-x86_64",
-    artifact_name = "typedb-console-loader-mac-x86_64-{version}.zip",
+    artifact_group = "typedb-loader-mac-x86_64",
+    artifact_name = "typedb-loader-mac-x86_64-{version}.zip",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
@@ -119,8 +119,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-mac-arm64-zip",
     target = ":assemble-mac-arm64-zip",
-    artifact_group = "typedb-console-loader-mac-arm64",
-    artifact_name = "typedb-console-loader-mac-arm64-{version}.zip",
+    artifact_group = "typedb-loader-mac-arm64",
+    artifact_name = "typedb-loader-mac-arm64-{version}.zip",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
@@ -129,8 +129,8 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-windows-x86_64-zip",
     target = ":assemble-windows-x86_64-zip",
-    artifact_group = "typedb-console-loader-windows-x86_64",
-    artifact_name = "typedb-console-loader-windows-x86_64-{version}.zip",
+    artifact_group = "typedb-loader-windows-x86_64",
+    artifact_name = "typedb-loader-windows-x86_64-{version}.zip",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],

@@ -58,7 +58,7 @@
 			features = []
 			default-features = false
 
-		[workspace.dependencies.typedb_console_connect]
+		[workspace.dependencies.typedb_cli_connect]
 			path = "tool/connect"
 			features = []
 			default-features = false

@@ -7,14 +7,14 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 rust_library(
-    name = "typedb_console_connect",
+    name = "typedb_cli_connect",
     srcs = glob(["*.rs"]),
     crate_root = "lib.rs",
     deps = [
         "@typedb_driver//rust:typedb_driver",
     ],
     visibility = ["//visibility:public"],
-    tags = ["crate-name=typedb_console_connect"],
+    tags = ["crate-name=typedb_cli_connect"],
 )
 
 checkstyle_test(

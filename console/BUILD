@@ -18,7 +18,7 @@ rust_binary(
     name = "console-native",
     srcs = glob(["**/*.rs"], exclude = ["tests/**"]),
     deps = [
-        "//tool/connect:typedb_console_connect",
+        "//tool/connect:typedb_cli_connect",
         "@typedb_driver//rust:typedb_driver",
         "@typeql//rust:typeql",
 

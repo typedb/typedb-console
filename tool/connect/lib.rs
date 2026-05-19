@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Connection helpers shared between the typedb-console and typedb-console-loader binaries.
+//! Connection helpers shared between the typedb-console and typedb-loader binaries.
 //!
 //! These functions are intentionally infrastructure-only: they parse user-supplied strings and
 //! build driver config objects, but never decide how a caller should report errors or exit.

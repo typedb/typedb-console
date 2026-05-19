@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use typedb_console_connect::{build_tls_config, parse_addresses};
+use typedb_cli_connect::{build_tls_config, parse_addresses};
 use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
 
 use crate::{

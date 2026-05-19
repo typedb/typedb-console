@@ -5,7 +5,7 @@
 features = {}
 
 [package]
-	name = "typedb-console-loader"
+	name = "typedb-loader"
 	edition = "2024"
 	version = "0.0.0"
 
@@ -28,7 +28,7 @@ features = {}
 	[dependencies.typedb-driver]
 		workspace = true
 
-	[dependencies.typedb_console_connect]
+	[dependencies.typedb_cli_connect]
 		workspace = true
 
 	[dependencies.typeql]
@@ -58,4 +58,4 @@ features = {}
 
 [[bin]]
 	path = "main.rs"
-	name = "typedb-console-loader"
+	name = "typedb-loader"

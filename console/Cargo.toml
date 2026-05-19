@@ -49,6 +49,9 @@ features = {}
 	[dependencies.typedb-driver]
 		workspace = true
 
+	[dependencies.typedb_console_connect]
+		workspace = true
+
 	[dependencies.serde_json]
 		workspace = true
 

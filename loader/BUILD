@@ -18,6 +18,7 @@ rust_binary(
     name = "loader-native",
     srcs = glob(["*.rs"]),
     deps = [
+        "//tool/connect:typedb_console_connect",
         "@typedb_driver//rust:typedb_driver",
         "@typeql//rust:typeql",
 

@@ -5,7 +5,6 @@
  */
 
 use std::{
-    collections::HashMap,
     env,
     env::temp_dir,
     error::Error,
@@ -23,8 +22,9 @@ use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
+use typedb_console_connect::{build_tls_config, parse_address_translation, parse_addresses};
 use typedb_driver::{
-    Addresses, Credentials, DriverOptions, DriverTlsConfig, Transaction, TransactionType, TypeDBDriver,
+    Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver,
 };
 
 use crate::{
@@ -131,7 +131,7 @@ fn main() {
         println!("{}", VERSION);
         exit(ExitCode::Success as i32);
     }
-    let addresses = parse_addresses(&args);
+    let addresses = parse_addresses_from_args(&args);
     let username = match args.username {
         Some(username) => username,
         None => {
@@ -150,12 +150,12 @@ fn main() {
     }
     let tls_root_ca_path = args.tls_root_ca.as_ref().map(|value| Path::new(value));
     let runtime = BackgroundRuntime::new();
-    let driver_tls_config = match args.tls_disabled {
-        false => match tls_root_ca_path {
-            Some(tls_root_ca_path) => DriverTlsConfig::enabled_with_root_ca(tls_root_ca_path).unwrap(),
-            None => DriverTlsConfig::enabled_with_native_root_ca(),
-        },
-        true => DriverTlsConfig::disabled(),
+    let driver_tls_config = match build_tls_config(args.tls_disabled, tls_root_ca_path) {
+        Ok(config) => config,
+        Err(err) => {
+            println_error!("{err}");
+            exit(ExitCode::UserInputError as i32);
+        }
     };
     let driver_options = DriverOptions::new(driver_tls_config).request_timeout(DEFAULT_REQUEST_TIMEOUT);
     let driver = match runtime.run(TypeDBDriver::new(
@@ -523,41 +523,23 @@ fn transaction_type_str(transaction_type: TransactionType) -> &'static str {
     }
 }
 
-fn parse_addresses(args: &Args) -> Addresses {
-    if let Some(addresses) = &args.addresses {
-        let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
-        match Addresses::try_from_addresses_str(split) {
-            Ok(addresses) => addresses,
-            Err(err) => {
-                println_error!("invalid addresses '{addresses}': '{err}'");
-                exit(ExitCode::UserInputError as i32);
-            }
-        }
+fn parse_addresses_from_args(args: &Args) -> typedb_driver::Addresses {
+    let result = if let Some(addresses) = &args.addresses {
+        parse_addresses(addresses)
     } else if let Some(translation) = &args.address_translation {
-        let mut map = HashMap::new();
-        for pair in translation.split(',') {
-            let (public_address, private_address) = pair.split_once('=').unwrap_or_else(|| {
-                println_error!(
-                    "invalid address pair '{}', must be of form '{}'.",
-                    format_argument!("{pair}"),
-                    format_argument!("<public=private,...>")
-                );
-                exit(ExitCode::UserInputError as i32);
-            });
-            map.insert(public_address.to_string(), private_address.to_string());
-        }
-        match Addresses::try_from_translation_str(map) {
-            Ok(addresses) => addresses,
-            Err(err) => {
-                println_error!("invalid addresses '{translation}': '{err}'");
-                exit(ExitCode::UserInputError as i32);
-            }
-        }
+        parse_address_translation(translation)
     } else {
         println_error!(
             "missing server address (at least one of --address, --addresses, or --address-translation must be provided)."
         );
         exit(ExitCode::UserInputError as i32);
+    };
+    match result {
+        Ok(addresses) => addresses,
+        Err(err) => {
+            println_error!("{err}");
+            exit(ExitCode::UserInputError as i32);
+        }
     }
 }
 

@@ -3201,6 +3201,7 @@ dependencies = [
  "tokio",
  "typedb-driver",
  "typedb_binary_runner",
+ "typedb_console_connect",
  "typeql",
  "ureq",
 ]
@@ -3220,6 +3221,7 @@ dependencies = [
  "tokio",
  "typedb-driver",
  "typedb_binary_runner",
+ "typedb_console_connect",
  "typeql",
 ]
 
@@ -3264,6 +3266,13 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "tempdir",
+]
+
+[[package]]
+name = "typedb_console_connect"
+version = "0.0.0"
+dependencies = [
+ "typedb-driver",
 ]
 
 [[package]]

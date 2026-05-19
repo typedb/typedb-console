@@ -6,33 +6,21 @@
 
 use std::path::Path;
 
-use typedb_driver::{
-    Addresses, Credentials, DriverOptions, DriverTlsConfig, TransactionType, TypeDBDriver,
-};
+use typedb_console_connect::{build_tls_config, parse_addresses};
+use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
 
 use crate::{
     ExitCode, fatal, fatal_with,
     params::ResolvedParams,
 };
 
-/// Parses the comma-separated address list, exiting with `UserInputError` on a malformed value.
-pub(crate) fn parse_addresses(addresses: &str) -> Addresses {
-    let split = addresses.split(',').map(str::to_string).collect::<Vec<_>>();
-    Addresses::try_from_addresses_str(split)
-        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, format!("invalid addresses '{addresses}': {err}")))
-}
-
 /// Connects to the cluster using the params and password supplied, exiting with
 /// `ConnectionError` on failure. TLS config is derived from `--tls-disabled` / `--tls-root-ca`.
 pub(crate) async fn connect(resolved: &ResolvedParams, password: &str) -> TypeDBDriver {
-    let addresses = parse_addresses(&resolved.addresses);
-    let tls_config = if resolved.tls_disabled {
-        DriverTlsConfig::disabled()
-    } else if let Some(ca) = resolved.tls_root_ca.as_deref() {
-        DriverTlsConfig::enabled_with_root_ca(Path::new(ca)).unwrap()
-    } else {
-        DriverTlsConfig::enabled_with_native_root_ca()
-    };
+    let addresses = parse_addresses(&resolved.addresses)
+        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
+    let tls_config = build_tls_config(resolved.tls_disabled, resolved.tls_root_ca.as_deref().map(Path::new))
+        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     TypeDBDriver::new(addresses, Credentials::new(&resolved.username, password), DriverOptions::new(tls_config))
         .await
         .unwrap_or_else(|err| fatal_with(ExitCode::ConnectionError, format!("failed to connect to TypeDB: {err}")))

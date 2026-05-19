@@ -223,7 +223,7 @@ async fn main() {
         String::new()
     };
     let data_hash = if checkpoint_writer.is_some() {
-        eprintln!("Hashing data file...");
+        eprintln!("Hashing data file (first 64 MB)...");
         hash_file(Path::new(&resolved.data)).unwrap_or_else(|err| fatal(err))
     } else {
         String::new()

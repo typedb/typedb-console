@@ -257,9 +257,20 @@ impl CheckpointState {
     }
 }
 
+/// How many bytes of the data file to hash for the checkpoint integrity check. Hashing the whole
+/// file would dominate startup time on multi-GB inputs; the prefix plus the file's total length
+/// is enough to catch any realistic accidental change (truncation, prepend, header edit, swap).
+pub(crate) const HASH_PREFIX_BYTES: u64 = 64 * 1024 * 1024;
+
+/// Hashes the first `HASH_PREFIX_BYTES` of the file and combines the result with the file's total
+/// length so that two files sharing a prefix but differing in size produce different hashes.
 pub(crate) fn hash_file(path: &Path) -> Result<String, String> {
     let file = File::open(path).map_err(|err| format!("opening '{}' for hashing: {err}", path.display()))?;
-    let mut reader = BufReader::new(file);
+    let total_size = file
+        .metadata()
+        .map_err(|err| format!("reading '{}' metadata: {err}", path.display()))?
+        .len();
+    let mut reader = BufReader::new(file).take(HASH_PREFIX_BYTES);
     let mut hasher = Sha256::new();
     let mut buf = [0u8; 64 * 1024];
     loop {
@@ -269,7 +280,7 @@ pub(crate) fn hash_file(path: &Path) -> Result<String, String> {
         }
         hasher.update(&buf[..n]);
     }
-    Ok(format!("sha256:{:x}", hasher.finalize()))
+    Ok(format!("sha256:{total_size}:{:x}", hasher.finalize()))
 }
 
 pub(crate) fn hash_string(s: &str) -> String {

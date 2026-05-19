@@ -219,7 +219,7 @@ async fn main() {
         String::new()
     };
     let data_hash = if checkpoint_writer.is_some() {
-        eprintln!("Hashing data file (first 64 MB)...");
+        println!("Hashing data file (first 64 MB)...");
         hash_file(Path::new(&resolved.data)).unwrap_or_else(|err| fatal(err))
     } else {
         String::new()
@@ -227,7 +227,7 @@ async fn main() {
 
     // Hash the live schema.
     let schema_hash = if checkpoint_writer.is_some() {
-        eprintln!("Fetching live schema for hashing...");
+        println!("Fetching live schema for hashing...");
         let database = driver
             .databases()
             .get(resolved.database.clone())

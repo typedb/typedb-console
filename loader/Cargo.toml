@@ -16,40 +16,40 @@ features = {}
 
 [dependencies]
 
-	[dependencies.clap]
-		workspace = true
-
 	[dependencies.tokio]
-		workspace = true
-
-	[dependencies.futures]
-		workspace = true
-
-	[dependencies.typedb-driver]
-		workspace = true
-
-	[dependencies.typedb_cli_connect]
-		workspace = true
-
-	[dependencies.typeql]
-		workspace = true
-
-	[dependencies.chrono]
-		workspace = true
-
-	[dependencies.rpassword]
-		workspace = true
-
-	[dependencies.csv]
 		workspace = true
 
 	[dependencies.sha2]
 		workspace = true
 
+	[dependencies.typedb_cli_connect]
+		workspace = true
+
 	[dependencies.serde]
 		workspace = true
 
+	[dependencies.clap]
+		workspace = true
+
+	[dependencies.csv]
+		workspace = true
+
+	[dependencies.typeql]
+		workspace = true
+
+	[dependencies.typedb-driver]
+		workspace = true
+
+	[dependencies.futures]
+		workspace = true
+
+	[dependencies.chrono]
+		workspace = true
+
 	[dependencies.serde_json]
+		workspace = true
+
+	[dependencies.rpassword]
 		workspace = true
 
 [[test]]
@@ -59,3 +59,4 @@ features = {}
 [[bin]]
 	path = "main.rs"
 	name = "typedb-loader"
+

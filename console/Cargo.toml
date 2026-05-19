@@ -19,6 +19,9 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
+	[dependencies.typedb_cli_connect]
+		workspace = true
+
 	[dependencies.glob]
 		workspace = true
 
@@ -47,9 +50,6 @@ features = {}
 		workspace = true
 
 	[dependencies.typedb-driver]
-		workspace = true
-
-	[dependencies.typedb_cli_connect]
 		workspace = true
 
 	[dependencies.serde_json]

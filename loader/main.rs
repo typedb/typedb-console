@@ -235,7 +235,16 @@ async fn main() {
     // Validate against checkpoint and prompt for in-flight handling before initialising state.
     let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
         let hashes = hashes.as_ref().expect("resume requires checkpointing, which always produces hashes");
-        validate_resume(&resolved, prior, hashes);
+        let warnings = resume_warnings(&resolved, prior, hashes);
+        if !warnings.is_empty() {
+            eprintln!("\nResume warnings:");
+            for w in &warnings {
+                eprintln!("  - {w}");
+            }
+            if !confirm("Continue anyway?") {
+                fatal("aborted: resume cancelled by user");
+            }
+        }
         resolve_in_flight_skips(&prior.in_flight)
     } else {
         HashSet::new()
@@ -565,7 +574,9 @@ fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<
     Ok(resolved)
 }
 
-fn validate_resume(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashes) {
+/// Collects all the ways the current run's params or hashes diverge from the checkpoint. The
+/// caller decides how to present them — this function is pure and easily testable.
+fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashes) -> Vec<String> {
     let mut warnings: Vec<String> = Vec::new();
 
     if resolved.header != prior.params.header {
@@ -617,16 +628,7 @@ fn validate_resume(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashe
         ));
     }
 
-    if warnings.is_empty() {
-        return;
-    }
-    eprintln!("\nResume warnings:");
-    for w in &warnings {
-        eprintln!("  - {w}");
-    }
-    if !confirm("Continue anyway?") {
-        fatal("aborted: resume cancelled by user");
-    }
+    warnings
 }
 
 enum InFlightMode {

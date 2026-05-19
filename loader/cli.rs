@@ -25,7 +25,7 @@ pub struct Args {
     #[arg(long, value_name = "path to data file (.csv)")]
     pub data: Option<String>,
 
-    /// Whether the data file contains a header row.
+    /// Whether the data file contains a header row. Default: false.
     #[arg(long = "header", num_args = 0..=1, default_missing_value = "true")]
     pub header: Option<bool>,
 
@@ -39,13 +39,13 @@ pub struct Args {
     pub max_rows: Option<usize>,
 
     /// Number of rows submitted in each `query_with_inputs` invocation. Each batch is committed
-    /// in its own write transaction. Default 1000.
+    /// in its own write transaction. Default: 1000.
     /// On resume, this must match the value stored in the checkpoint.
     #[arg(long = "batch-rows", value_name = "n")]
     pub batch_rows: Option<usize>,
 
-    /// Maximum number of batches submitted concurrently to the server. 1 means strictly
-    /// sequential (default).
+    /// Maximum number of batches submitted concurrently to the server. Default: 1 (strictly
+    /// sequential).
     #[arg(long = "parallel-batches", value_name = "n")]
     pub parallel_batches: Option<usize>,
 
@@ -60,7 +60,7 @@ pub struct Args {
     pub rejects_log: Option<String>,
 
     /// Abort on the first row or batch error instead of skipping and continuing.
-    /// The offending row(s) are still written to the rejects file before exit.
+    /// The offending row(s) are still written to the rejects file before exit. Default: false.
     #[arg(long = "stop-on-error", num_args = 0..=1, default_missing_value = "true")]
     pub stop_on_error: Option<bool>,
 
@@ -75,6 +75,7 @@ pub struct Args {
     pub schema_file: Option<String>,
 
     /// Create the database if it does not already exist. Ignored (with a warning) when resuming.
+    /// Default: false.
     #[arg(long = "create-db", num_args = 0..=1, default_missing_value = "true")]
     pub create_db: Option<bool>,
 
@@ -91,7 +92,8 @@ pub struct Args {
     #[arg(long, value_name = "password")]
     pub password: Option<String>,
 
-    /// Connect to TypeDB with TLS encryption. Disable with caution.
+    /// Disable TLS encryption for the connection to TypeDB. Default: false (TLS enabled).
+    /// Disable with caution: credentials and queries are sent in plaintext.
     #[arg(long = "tls-disabled", num_args = 0..=1, default_missing_value = "true")]
     pub tls_disabled: Option<bool>,
 

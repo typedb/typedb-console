@@ -11607,7 +11607,7 @@
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
         "bzlTransitiveDigest": "9w1F4eanJbOcN3BOSP5+VZjzk5slMlczR4LdEIu45eI=",
-        "usagesDigest": "7xfe7XRDNHpavbnxfcYDLinyVzNyvyf4WnqYS+fyMYw=",
+        "usagesDigest": "sCnMWhIIwgHkqZDijNcTeZ9bNJ9goQr4ji27NTd5hBQ=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -11616,45 +11616,45 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/309fa539c631e3e1e6141a4794a81ac9a40d186a/typedb-all-linux-arm64-309fa539c631e3e1e6141a4794a81ac9a40d186a.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-arm64/versions/3.11.0-rc1/typedb-all-linux-arm64-3.11.0-rc1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-all-linux-arm64-309fa539c631e3e1e6141a4794a81ac9a40d186a.tar.gz"
+              "downloaded_file_path": "typedb-all-linux-arm64-3.11.0-rc1.tar.gz"
             }
           },
           "typedb_artifact_linux-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/309fa539c631e3e1e6141a4794a81ac9a40d186a/typedb-all-linux-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-all-linux-x86_64/versions/3.11.0-rc1/typedb-all-linux-x86_64-3.11.0-rc1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-all-linux-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.tar.gz"
+              "downloaded_file_path": "typedb-all-linux-x86_64-3.11.0-rc1.tar.gz"
             }
           },
           "typedb_artifact_mac-arm64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/309fa539c631e3e1e6141a4794a81ac9a40d186a/typedb-all-mac-arm64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-arm64/versions/3.11.0-rc1/typedb-all-mac-arm64-3.11.0-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-all-mac-arm64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+              "downloaded_file_path": "typedb-all-mac-arm64-3.11.0-rc1.zip"
             }
           },
           "typedb_artifact_mac-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/309fa539c631e3e1e6141a4794a81ac9a40d186a/typedb-all-mac-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-all-mac-x86_64/versions/3.11.0-rc1/typedb-all-mac-x86_64-3.11.0-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-all-mac-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+              "downloaded_file_path": "typedb-all-mac-x86_64-3.11.0-rc1.zip"
             }
           },
           "typedb_artifact_windows-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/309fa539c631e3e1e6141a4794a81ac9a40d186a/typedb-all-windows-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-all-windows-x86_64/versions/3.11.0-rc1/typedb-all-windows-x86_64-3.11.0-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-all-windows-x86_64-309fa539c631e3e1e6141a4794a81ac9a40d186a.zip"
+              "downloaded_file_path": "typedb-all-windows-x86_64-3.11.0-rc1.zip"
             }
           },
           "typedb_cluster_artifact_linux-arm64": {

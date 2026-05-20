@@ -1,0 +1,73 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: Snapshot deploy
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# Snapshots are versioned by commit SHA. Both Console and Loader binaries are deployed for every
+# master push so downstream consumers can pin to whichever build they need.
+jobs:
+  console:
+    name: Console snapshot ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-13, bazel: "//console:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-14, bazel: "//console:deploy-mac-arm64-zip" }
+          - { label: windows-x86_64, runner: windows-2022, bazel: "//console:deploy-windows-x86_64-zip" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+      - name: Deploy snapshot
+        shell: bash
+        env:
+          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(git rev-parse HEAD) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- snapshot
+
+  loader:
+    name: Loader snapshot ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//loader:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//loader:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-13, bazel: "//loader:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-14, bazel: "//loader:deploy-mac-arm64-zip" }
+          - { label: windows-x86_64, runner: windows-2022, bazel: "//loader:deploy-windows-x86_64-zip" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+      - name: Deploy snapshot
+        shell: bash
+        env:
+          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(git rev-parse HEAD) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- snapshot

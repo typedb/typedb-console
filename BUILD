@@ -24,15 +24,12 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        ".circleci/**/*",
-        ".factory/*",
+        ".github/workflows/*",
     ]),
     exclude = [
         ".bazelversion",
         ".bazel-remote-cache.rc",
         ".bazel-cache-credential.json",
-        ".circleci/windows/short_workspace.patch",
-        ".circleci/windows/package_binary_as_exe.patch",
         "LICENSE",
         "VERSION",
         "MODULE.bazel.lock",

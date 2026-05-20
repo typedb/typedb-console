@@ -2,7 +2,7 @@
 
 # TypeDB Console
 
-[![Factory](https://factory.vaticle.com/api/status/typedb/typedb-console/badge.svg)](https://factory.vaticle.com/typedb/typedb-console)
+[![Build & test](https://github.com/typedb/typedb-console/actions/workflows/build.yml/badge.svg)](https://github.com/typedb/typedb-console/actions/workflows/build.yml)
 [![GitHub release](https://img.shields.io/github/release/typedb/typedb-console.svg)](https://github.com/typedb/typedb-console/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
 

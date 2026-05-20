@@ -78,13 +78,13 @@
 		[workspace.dependencies.typeql]
 			features = []
 			git = "https://github.com/typedb/typeql"
-			commit = "44e5d803d292dac1153666641661e009514dddbe"
+			tag = "3.11.0-rc0"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
 			git = "https://github.com/typedb/typedb-driver"
-			commit = "75d89fe52b8e4d1af353712a592192789ff1dbb3"
+			tag = "3.11.0-rc1"
 			default-features = false
 
 		[workspace.dependencies.chrono]

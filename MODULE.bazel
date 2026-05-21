@@ -38,14 +38,14 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/krishnangovindraj/typeql",
-    commit = "44e5d803d292dac1153666641661e009514dddbe",
+    commit = "f9fd49770ceb4315ec95364eb15bc904e1b3f67d",
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/krishnangovindraj/typedb-client-java",
-    commit = "75d89fe52b8e4d1af353712a592192789ff1dbb3",
+    commit = "1a75c33db719ef487e6664a95d86208bc1535a38",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")

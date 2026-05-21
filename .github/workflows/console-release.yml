@@ -50,8 +50,8 @@ jobs:
         target:
           - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
           - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-13, bazel: "//console:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-14, bazel: "//console:deploy-mac-arm64-zip" }
+          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
           - { label: windows-x86_64, runner: windows-2022, bazel: "//console:deploy-windows-x86_64-zip" }
     steps:
       - uses: actions/checkout@v4

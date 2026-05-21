@@ -143,6 +143,7 @@ deploy_artifact(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["**/*.rs", "BUILD"], exclude = ["tests/**"]),
+    exclude = glob(["Cargo.*"]),
     license_type = "mpl-header",
 )
 

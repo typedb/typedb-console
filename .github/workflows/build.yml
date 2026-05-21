@@ -105,7 +105,9 @@ jobs:
         env:
           ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
           ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run @typedb_dependencies//distribution/artifact:create-netrc
       - run: bazel test //console/tests/assembly:test-assembly --test_output=streamed
       - run: bazel test //console/tests/assembly:test-script --test_output=streamed
 
@@ -125,5 +127,7 @@ jobs:
         env:
           ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
           ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run @typedb_dependencies//distribution/artifact:create-netrc
       - run: bazel test //loader/tests/assembly:test-loader --test_output=streamed

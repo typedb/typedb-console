@@ -1,2 +1,2 @@
 given $name: string, $age: integer, $active: boolean;
-insert $p isa person, has name $name, has age $age, has active $active;
+insert $p isa person, has name == $name, has age == $age, has active == $active;

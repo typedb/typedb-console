@@ -34,12 +34,19 @@ pub struct Args {
     #[arg(long = "no-header")]
     pub no_header: bool,
 
-    /// Strings in the data file to treat as null/empty values. May be repeated.
-    /// If not provided, only empty strings are treated as null.
+    /// Strings in the data file to treat as null. May be repeated.
+    ///
+    /// Default behaviour (flag not provided): only empty cells are treated as null.
+    ///
+    /// When provided, this list REPLACES the default — empty cells are no longer treated as
+    /// null unless you include `""` (an empty string) explicitly. Include `""` in the list if
+    /// you want both empty cells and your custom tokens to count as null.
     #[arg(long = "null-values", value_name = "value")]
     pub null_values: Option<Vec<String>>,
 
     /// Process at most this many data rows from the CSV. If not provided, all rows are processed.
+    /// Pass `--max-rows 0` to explicitly clear a cap inherited from a checkpoint (e.g. on resume
+    /// after the original run was bounded by `--max-rows`).
     #[arg(long = "max-rows", value_name = "n")]
     pub max_rows: Option<usize>,
 

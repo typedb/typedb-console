@@ -107,7 +107,13 @@ pub(crate) fn resolve_params(
         data: pick_string(&args.data, checkpoint.map(|c| &c.data), "data")?,
         header: pick_bool(merge_no_flag(args.header, args.no_header), checkpoint.map(|c| c.header), false),
         null_values: pick_vec(&args.null_values, checkpoint.map(|c| &c.null_values)),
-        max_rows: pick_opt_usize(args.max_rows, checkpoint.map(|c| c.max_rows)),
+        // --max-rows 0 explicitly unsets the cap (e.g. when resuming with a different ceiling).
+        // Without this escape hatch the value resumed from the checkpoint would be sticky.
+        max_rows: match args.max_rows {
+            Some(0) => None,
+            Some(n) => Some(n),
+            None => checkpoint.and_then(|c| c.max_rows),
+        },
         batch_rows: pick_usize(args.batch_rows, checkpoint.map(|c| c.batch_rows), 1000),
         parallel_batches: pick_usize(args.parallel_batches, checkpoint.map(|c| c.parallel_batches), 1),
         rejects_file: pick_optional_string(&args.rejects_file, checkpoint.map(|c| &c.rejects_file)),

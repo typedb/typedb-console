@@ -83,7 +83,7 @@
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-			rev = "83b3479b5488899c3bad2d006dc9fdab4d3bed38"
+			rev = "1a75c33db719ef487e6664a95d86208bc1535a38"
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 

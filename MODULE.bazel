@@ -117,13 +117,13 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
-#        "typeql+": "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b",
-        "typedb_driver+": "60009d5319a458ed58c5b4c7a156b4f6d9bc4d77",
-#        "typedb_protocol+": "25ab3fb02715062bd036f8b83908de92b106a202",
+        "typeql+": "44e5d803d292dac1153666641661e009514dddbe",
+        "typedb_protocol+": "0880bfc7f87932d95c6173f7328a119724537d08",
+        "typedb_driver+": "75d89fe52b8e4d1af353712a592192789ff1dbb3",
     },
     workspace_tag_dict = {
-        "typeql+": "3.11.0",
-        "typedb_protocol+": "3.11.0",
+#        "typeql+": "3.11.0",
+#        "typedb_protocol+": "3.11.0",
 #        "typedb_driver+": "3.11.1",
     },
 )

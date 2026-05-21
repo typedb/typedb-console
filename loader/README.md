@@ -65,6 +65,49 @@ typedb-loader --resume data-checkpoint.json --password ...
 The checkpoint stores the original parameters and a hash of the data + live schema; you'll get a
 warning prompt if either has drifted.
 
+## CSV hygiene
+
+Most loader failures come from the CSV, not from TypeDB. A few things to check before a full
+load:
+
+- **Headers must match `given` variables exactly** — case-sensitive, no leading or trailing
+  whitespace, no quoting around the header cell itself. A typo here turns into "missing column"
+  or "unknown variable" on the very first row.
+- **Use a real CSV writer.** `jq`'s `@csv`, Python's `csv.writer`, R's `write.csv`, `mlr` —
+  anything that knows the RFC 4180 quoting rules. Hand-built CSV (`echo` + commas) breaks the
+  moment a field contains a comma, quote, or newline.
+- **Embedded quotes are doubled, not backslash-escaped.** `He said "hi"` becomes
+  `"He said ""hi"""`. A stray `\"` in a quoted field is treated as the closing quote, and
+  every subsequent row will parse against the wrong columns — usually with a confusing
+  "unexpected EOF" or column-count error far below the actual culprit.
+- **Normalise to UTF-8 with no BOM.** A leading BOM (`U+FEFF`) silently glues itself onto the
+  first header name, so the column match fails on row one with no obvious cause.
+- **Trim insignificant whitespace.** `  alice@example.com` won't equal `alice@example.com`
+  inside a `match` clause — that's a silent zero-result query, not a reject. Strip it upstream.
+- **Watch for type-coercion surprises in your export.** Leading zeros on phone numbers and
+  postcodes, ISBNs with hyphens, dates that look like integers — a real CSV writer keeps these
+  as strings; bespoke exports often drop the leading zero or split on the hyphen before you
+  see the file.
+
+## Dry-run first
+
+Before committing to a full load, validate the pipeline against a small slice:
+
+```bash
+typedb-loader \
+  --address localhost:1729 --username admin \
+  --database scratch --create-db --schema-file schema.tql \
+  --query load_x.tql --data full_data.csv --header \
+  --max-rows 100 --stop-on-error
+```
+
+This catches schema mismatches, header typos, quoting issues, and datetime format errors within
+seconds, rather than after a multi-minute load. Run against a throwaway database so you can
+`database delete` it before the real load.
+
+Once the dry run is clean, drop `--max-rows`, drop `--stop-on-error`, and tune `--batch-rows`
+/ `--parallel-batches` for the full run.
+
 ## General advice
 
 - **`given` ↔ CSV headers**: the loader binds CSV columns to query variables by name. Mismatches

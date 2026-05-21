@@ -77,13 +77,13 @@
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "44e5d803d292dac1153666641661e009514dddbe"
+			rev = "f9fd49770ceb4315ec95364eb15bc904e1b3f67d"
 			git = "https://github.com/typedb/typeql"
 			default-features = false
 
 		[workspace.dependencies.typedb-driver]
 			features = []
-			rev = "75d89fe52b8e4d1af353712a592192789ff1dbb3"
+			rev = "83b3479b5488899c3bad2d006dc9fdab4d3bed38"
 			git = "https://github.com/typedb/typedb-driver"
 			default-features = false
 

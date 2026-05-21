@@ -3209,7 +3209,7 @@ dependencies = [
 [[package]]
 name = "typedb-driver"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-driver?rev=75d89fe52b8e4d1af353712a592192789ff1dbb3#75d89fe52b8e4d1af353712a592192789ff1dbb3"
+source = "git+https://github.com/typedb/typedb-driver?rev=83b3479b5488899c3bad2d006dc9fdab4d3bed38#83b3479b5488899c3bad2d006dc9fdab4d3bed38"
 dependencies = [
  "async-std",
  "chrono",
@@ -3253,7 +3253,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=fc67229ec69f5b8908801fcb6f62cc52480c3460#fc67229ec69f5b8908801fcb6f62cc52480c3460"
+source = "git+https://github.com/typedb/typedb-protocol?rev=42ee0b9415728621e09ec3851b8a25a7b9f5fe0d#42ee0b9415728621e09ec3851b8a25a7b9f5fe0d"
 dependencies = [
  "prost",
  "tonic",
@@ -3284,7 +3284,7 @@ checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=44e5d803d292dac1153666641661e009514dddbe#44e5d803d292dac1153666641661e009514dddbe"
+source = "git+https://github.com/typedb/typeql?rev=f9fd49770ceb4315ec95364eb15bc904e1b3f67d#f9fd49770ceb4315ec95364eb15bc904e1b3f67d"
 dependencies = [
  "chrono",
  "itertools",

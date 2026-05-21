@@ -33,7 +33,10 @@ checkstyle_test(
         "LICENSE",
         "VERSION",
         "MODULE.bazel.lock",
-    ],
+    ] + glob([
+        "*.md",
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )
 

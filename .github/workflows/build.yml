@@ -2,8 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-name: Build & test
+name: Build & checkstyle
 
+# Always runs on every PR and push: the workspace-wide build, checkstyle, and rustfmt are
+# universal correctness checks. Per-binary assembly tests live in test-console.yml /
+# test-loader.yml, which use built-in `paths` filters to skip irrelevant runs.
 on:
   pull_request:
   push:
@@ -13,57 +16,9 @@ permissions:
   contents: read
 
 jobs:
-  changes:
-    name: Detect changed paths
-    runs-on: ubuntu-22.04
-    outputs:
-      console: ${{ steps.filter.outputs.console }}
-      loader: ${{ steps.filter.outputs.loader }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          # The shared block of workspace files, common crates, and bazel/distribution plumbing
-          # is repeated in both filters so that changes to either trigger both test suites.
-          filters: |
-            console:
-              - 'console/**'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'MODULE.bazel'
-              - 'MODULE.bazel.lock'
-              - 'WORKSPACE'
-              - 'BUILD'
-              - 'VERSION'
-              - 'deployment.bzl'
-              - 'rustfmt.toml'
-              - '.bazelversion'
-              - 'tool/connect/**'
-              - 'tool/runner/**'
-              - 'binary/**'
-              - '.github/workflows/**'
-            loader:
-              - 'loader/**'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'MODULE.bazel'
-              - 'MODULE.bazel.lock'
-              - 'WORKSPACE'
-              - 'BUILD'
-              - 'VERSION'
-              - 'deployment.bzl'
-              - 'rustfmt.toml'
-              - '.bazelversion'
-              - 'tool/connect/**'
-              - 'tool/runner/**'
-              - 'binary/**'
-              - '.github/workflows/**'
-
   build:
     name: Build & checkstyle
     runs-on: ubuntu-22.04
-    needs: changes
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0
@@ -75,9 +30,7 @@ jobs:
         env:
           ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
           ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run @typedb_dependencies//distribution/artifact:create-netrc
+        run: bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
       - name: Build everything
         run: bazel build //...
       - name: Checkstyle
@@ -86,48 +39,3 @@ jobs:
           bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
       - name: rustfmt
         run: bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config --test_output=errors
-
-  test-console:
-    name: Console assembly tests
-    runs-on: ubuntu-22.04
-    needs: [changes]
-    # PRs: only run when console-relevant files changed.
-    # Pushes to long-lived branches: always run, to guard against regressions slipping through.
-    if: needs.changes.outputs.console == 'true' || github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-      - name: Configure bazel remote cache
-        env:
-          ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
-          ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run @typedb_dependencies//distribution/artifact:create-netrc
-      - run: bazel test //console/tests/assembly:test-assembly --test_output=streamed
-      - run: bazel test //console/tests/assembly:test-script --test_output=streamed
-
-  test-loader:
-    name: Loader assembly tests
-    runs-on: ubuntu-22.04
-    needs: [changes]
-    if: needs.changes.outputs.loader == 'true' || github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-      - name: Configure bazel remote cache
-        env:
-          ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
-          ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run @typedb_dependencies//distribution/artifact:create-netrc
-      - run: bazel test //loader/tests/assembly:test-loader --test_output=streamed

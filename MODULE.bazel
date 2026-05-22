@@ -19,6 +19,11 @@ bazel_dep(name = "rules_pkg", version = "1.0.1")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
+# fixed commits
+typedb_driver_commit = "1a75c33db719ef487e6664a95d86208bc1535a38"
+typeql_commit = "f9fd49770ceb4315ec95364eb15bc904e1b3f67d"
+typedb_protocol_commit = "42ee0b9415728621e09ec3851b8a25a7b9f5fe0d"
+
 # typedb ecosystem dependencies
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
@@ -38,21 +43,21 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/krishnangovindraj/typeql",
-    commit = "f9fd49770ceb4315ec95364eb15bc904e1b3f67d",
+    commit = typeql_commit,
 )
 
 bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/krishnangovindraj/typedb-client-java",
-    commit = "1a75c33db719ef487e6664a95d86208bc1535a38",
+    commit = typedb_driver_commit,
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "42ee0b9415728621e09ec3851b8a25a7b9f5fe0d",
+    commit = typedb_protocol_commit,
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
@@ -117,9 +122,9 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": "f9fd49770ceb4315ec95364eb15bc904e1b3f67d",
-        "typedb_protocol+": "42ee0b9415728621e09ec3851b8a25a7b9f5fe0d",
-        "typedb_driver+": "1a75c33db719ef487e6664a95d86208bc1535a38",
+        "typeql+": typeql_commit,
+        "typedb_protocol+": typedb_protocol_commit,
+        "typedb_driver+": typedb_driver_commit,
     },
     workspace_tag_dict = {
 #        "typeql+": "3.11.0",

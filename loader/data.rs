@@ -83,10 +83,8 @@ impl CsvLoader {
     ) -> Result<Self, String> {
         let file = File::open(path).map_err(|err| format!("opening CSV: {err}"))?;
         let file_size = file.metadata().map_err(|err| format!("reading CSV metadata: {err}"))?.len();
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(has_header)
-            .flexible(true)
-            .from_reader(BufReader::new(file));
+        let mut reader =
+            csv::ReaderBuilder::new().has_headers(has_header).flexible(true).from_reader(BufReader::new(file));
 
         let (headers, column_indices) = if has_header {
             let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?.clone();
@@ -201,10 +199,10 @@ impl CsvLoader {
     fn parse_row(&self, record: &StringRecord) -> Result<QueryGivenRow, String> {
         let mut entries = Vec::with_capacity(self.inputs.len());
         for (input, &col) in self.inputs.iter().zip(&self.column_indices) {
-            let cell = record
-                .get(col)
-                .ok_or_else(|| format!("missing column {} for input '${}'", col, input.name))?;
-            entries.push(parse_cell(cell, input, &self.null_values).map_err(|err| format!("column '${}': {err}", input.name))?);
+            let cell = record.get(col).ok_or_else(|| format!("missing column {} for input '${}'", col, input.name))?;
+            entries.push(
+                parse_cell(cell, input, &self.null_values).map_err(|err| format!("column '${}': {err}", input.name))?,
+            );
         }
         Ok(QueryGivenRow(entries))
     }

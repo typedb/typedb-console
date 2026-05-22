@@ -20,14 +20,7 @@ pub(crate) fn print_progress(stats: &LoadStats, started: Instant, bytes_done: u6
     let eta = estimate_eta(bytes_done, bytes_total, elapsed)
         .map(|d| format!("ETA {}", format_duration(d)))
         .unwrap_or_else(|| "ETA --".to_owned());
-    println!(
-        "[{}] {} rows  {}  bytes {}  {}",
-        format_duration(elapsed),
-        stats.rows_attempted,
-        rate,
-        bytes,
-        eta,
-    );
+    println!("[{}] {} rows  {}  bytes {}  {}", format_duration(elapsed), stats.rows_attempted, rate, bytes, eta,);
 }
 
 pub(crate) fn print_summary(stats: &LoadStats, started: Instant) {

@@ -9,16 +9,13 @@ use std::path::Path;
 use typedb_cli_connect::{build_tls_config, parse_addresses};
 use typedb_driver::{Credentials, DriverOptions, TransactionType, TypeDBDriver};
 
-use crate::{
-    ExitCode, fatal, fatal_with,
-    params::ResolvedParams,
-};
+use crate::{ExitCode, fatal, fatal_with, params::ResolvedParams};
 
 /// Connects to the cluster using the params and password supplied, exiting with
 /// `ConnectionError` on failure. TLS config is derived from `--tls-disabled` / `--tls-root-ca`.
 pub(crate) async fn connect(resolved: &ResolvedParams, password: &str) -> TypeDBDriver {
-    let addresses = parse_addresses(&resolved.addresses)
-        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
+    let addresses =
+        parse_addresses(&resolved.addresses).unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     let tls_config = build_tls_config(resolved.tls_disabled, resolved.tls_root_ca.as_deref().map(Path::new))
         .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     TypeDBDriver::new(addresses, Credentials::new(&resolved.username, password), DriverOptions::new(tls_config))

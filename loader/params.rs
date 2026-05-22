@@ -65,10 +65,7 @@ fn merge_no_flag(flag: Option<bool>, no_flag: bool) -> Option<bool> {
     flag.or(if no_flag { Some(false) } else { None })
 }
 
-pub(crate) fn resolve_params(
-    args: &Args,
-    checkpoint: Option<&CheckpointParams>,
-) -> Result<ResolvedParams, String> {
+pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<ResolvedParams, String> {
     // Hard-error if --batch-rows is provided on resume with a different value.
     if let (Some(cli_batch), Some(prior)) = (args.batch_rows, checkpoint) {
         if cli_batch != prior.batch_rows {
@@ -88,15 +85,12 @@ pub(crate) fn resolve_params(
     let pick_optional_string = |cli: &Option<String>, prior: Option<&Option<String>>| -> Option<String> {
         cli.clone().or_else(|| prior.cloned().flatten())
     };
-    let pick_bool = |cli: Option<bool>, prior: Option<bool>, default: bool| -> bool {
-        cli.or(prior).unwrap_or(default)
-    };
-    let pick_usize = |cli: Option<usize>, prior: Option<usize>, default: usize| -> usize {
-        cli.or(prior).unwrap_or(default)
-    };
-    let pick_opt_usize = |cli: Option<usize>, prior: Option<Option<usize>>| -> Option<usize> {
-        cli.or_else(|| prior.flatten())
-    };
+    let pick_bool =
+        |cli: Option<bool>, prior: Option<bool>, default: bool| -> bool { cli.or(prior).unwrap_or(default) };
+    let pick_usize =
+        |cli: Option<usize>, prior: Option<usize>, default: usize| -> usize { cli.or(prior).unwrap_or(default) };
+    let pick_opt_usize =
+        |cli: Option<usize>, prior: Option<Option<usize>>| -> Option<usize> { cli.or_else(|| prior.flatten()) };
     let pick_vec = |cli: &Option<Vec<String>>, prior: Option<&Vec<String>>| -> Vec<String> {
         cli.clone().or_else(|| prior.cloned()).unwrap_or_default()
     };
@@ -152,10 +146,7 @@ pub(crate) fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, has
         ));
     }
     if resolved.data != prior.params.data {
-        warnings.push(format!(
-            "--data path changed since checkpoint ('{}' -> '{}')",
-            prior.params.data, resolved.data
-        ));
+        warnings.push(format!("--data path changed since checkpoint ('{}' -> '{}')", prior.params.data, resolved.data));
     }
     if hashes.data != prior.hashes.data {
         warnings.push(format!(
@@ -170,10 +161,8 @@ pub(crate) fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, has
         ));
     }
     if resolved.query != prior.params.query {
-        warnings.push(format!(
-            "--query path changed since checkpoint ('{}' -> '{}')",
-            prior.params.query, resolved.query
-        ));
+        warnings
+            .push(format!("--query path changed since checkpoint ('{}' -> '{}')", prior.params.query, resolved.query));
     }
     if hashes.query != prior.hashes.query {
         warnings.push(format!(

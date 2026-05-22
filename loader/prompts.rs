@@ -25,11 +25,15 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
         return HashSet::new();
     }
     eprintln!("\nThe checkpoint records {} in-flight batch(es) from the previous run.", in_flight.len());
-    eprintln!("These batches were dispatched but never confirmed as committed. Verify them against the database before deciding.");
+    eprintln!(
+        "These batches were dispatched but never confirmed as committed. Verify them against the database before deciding."
+    );
     for batch in in_flight {
         eprintln!("  - batch {} (first row: {})", batch.batch_idx, format_first_row(&batch.first_row));
     }
-    eprintln!("\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)");
+    eprintln!(
+        "\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)"
+    );
     let choice = prompt("Choose action").trim().to_ascii_lowercase();
     let mode = match choice.as_str() {
         "" | "a" | "all" => InFlightMode::ReprocessAll,
@@ -46,11 +50,8 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
         InFlightMode::DecideEach => in_flight
             .iter()
             .filter(|batch| {
-                let q = format!(
-                    "Reprocess batch {} (first row: {})?",
-                    batch.batch_idx,
-                    format_first_row(&batch.first_row)
-                );
+                let q =
+                    format!("Reprocess batch {} (first row: {})?", batch.batch_idx, format_first_row(&batch.first_row));
                 !confirm(&q)
             })
             .map(|batch| batch.batch_idx)

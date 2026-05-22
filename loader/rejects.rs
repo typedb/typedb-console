@@ -119,9 +119,7 @@ impl RejectsWriter {
             let mut writer = csv::WriterBuilder::new().flexible(true).from_writer(file);
             if !already_exists {
                 if let Some(headers) = &self.headers {
-                    writer
-                        .write_record(headers)
-                        .map_err(|err| format!("writing rejects CSV header: {err}"))?;
+                    writer.write_record(headers).map_err(|err| format!("writing rejects CSV header: {err}"))?;
                 }
             }
             self.csv_writer = Some(writer);

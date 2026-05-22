@@ -27,8 +27,7 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{
-        Checkpoint, CheckpointWriter, Hashes, InFlightBatch, default_checkpoint_path, hash_file,
-        hash_string,
+        Checkpoint, CheckpointWriter, Hashes, InFlightBatch, default_checkpoint_path, hash_file, hash_string,
     },
     cli::Args,
     data::{CsvLoader, RowRejection},
@@ -103,8 +102,8 @@ async fn main() {
         }
     }
 
-    let query_text =
-        read_to_string(&resolved.query).unwrap_or_else(|err| fatal(format!("failed to read query file '{}': {err}", resolved.query)));
+    let query_text = read_to_string(&resolved.query)
+        .unwrap_or_else(|err| fatal(format!("failed to read query file '{}': {err}", resolved.query)));
     let schema_to_apply: Option<String> = if resuming {
         None
     } else {
@@ -130,16 +129,16 @@ async fn main() {
         let path = if resuming {
             PathBuf::from(args.resume.as_deref().unwrap())
         } else {
-            args.checkpoint_file
-                .clone()
-                .map(PathBuf::from)
-                .unwrap_or_else(|| default_checkpoint_path(&resolved.data))
+            args.checkpoint_file.clone().map(PathBuf::from).unwrap_or_else(|| default_checkpoint_path(&resolved.data))
         };
         if !resuming && path.exists() {
-            fatal_with(ExitCode::UserInputError, format!(
-                "checkpoint file already exists at '{}': pass --resume to continue from it, --checkpoint-file PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
-                path.display()
-            ));
+            fatal_with(
+                ExitCode::UserInputError,
+                format!(
+                    "checkpoint file already exists at '{}': pass --resume to continue from it, --checkpoint-file PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
+                    path.display()
+                ),
+            );
         }
         Some(CheckpointWriter::new(path))
     };
@@ -155,10 +154,8 @@ async fn main() {
             .get(resolved.database.clone())
             .await
             .unwrap_or_else(|err| fatal(format!("failed to look up database '{}': {err}", resolved.database)));
-        let schema_text = database
-            .schema()
-            .await
-            .unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
+        let schema_text =
+            database.schema().await.unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
         Some(Hashes { query: hash_string(&query_text), data, schema: hash_string(&schema_text) })
     } else {
         None
@@ -226,14 +223,8 @@ async fn main() {
         )
         .unwrap_or_else(|err| fatal(format!("failed to resume data file '{}': {err}", resolved.data)))
     } else {
-        CsvLoader::open(
-            &resolved.data,
-            resolved.header,
-            inputs,
-            resolved.null_values.clone(),
-            resolved.max_rows,
-        )
-        .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", resolved.data)))
+        CsvLoader::open(&resolved.data, resolved.header, inputs, resolved.null_values.clone(), resolved.max_rows)
+            .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", resolved.data)))
     };
 
     let mut rejects = if resuming {
@@ -290,9 +281,8 @@ async fn main() {
             let driver = driver.clone();
             let database = database.clone();
             let query_text = query_text.clone();
-            in_flight.push(tokio::spawn(async move {
-                process_batch(driver, database, query_text, batch_idx, batch).await
-            }));
+            in_flight
+                .push(tokio::spawn(async move { process_batch(driver, database, query_text, batch_idx, batch).await }));
         }
 
         let Some(joined) = in_flight.next().await else { break };
@@ -316,7 +306,12 @@ async fn main() {
                 Err(err) => {
                     eprintln!("batch {}: {} rows rejected by commit: {err}", result.batch_idx, result.parsed_count);
                     rejects
-                        .record_batch_failure(&result.parsed_row_numbers, &result.parsed_records, result.batch_idx, &err)
+                        .record_batch_failure(
+                            &result.parsed_row_numbers,
+                            &result.parsed_records,
+                            result.batch_idx,
+                            &err,
+                        )
                         .unwrap_or_else(|err| fatal(err));
                     stats.rows_rejected += result.parsed_count;
                     if resolved.stop_on_error {
@@ -401,11 +396,8 @@ async fn process_batch(
     batch: data::BatchOutcome,
 ) -> BatchResult {
     let parsed_count = batch.rows.len();
-    let commit_result = if parsed_count > 0 {
-        commit_batch(&driver, &database, &query_text, batch.rows).await
-    } else {
-        Ok(())
-    };
+    let commit_result =
+        if parsed_count > 0 { commit_batch(&driver, &database, &query_text, batch.rows).await } else { Ok(()) };
     BatchResult {
         batch_idx,
         rows_attempted: batch.rows_attempted,
@@ -427,10 +419,7 @@ async fn commit_batch(
         .transaction(database.to_owned(), TransactionType::Write)
         .await
         .map_err(|err| format!("opening write transaction on '{database}': {err}"))?;
-    transaction
-        .query_with_inputs(query, QueryGivenRows(rows))
-        .await
-        .map_err(|err| format!("query failed: {err}"))?;
+    transaction.query_with_inputs(query, QueryGivenRows(rows)).await.map_err(|err| format!("query failed: {err}"))?;
     transaction.commit().await.map_err(|err| format!("commit failed: {err}"))?;
     Ok(())
 }
@@ -450,5 +439,3 @@ pub(crate) fn fatal_with(code: ExitCode, message: impl AsRef<str>) -> ! {
     eprintln!("error: {}", message.as_ref());
     exit(code as i32);
 }
-
-

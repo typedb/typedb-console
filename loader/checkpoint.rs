@@ -185,15 +185,13 @@ impl CheckpointWriter {
             std::process::id()
         );
         let temp_path = parent.join(temp_name);
-        let payload = serde_json::to_vec_pretty(checkpoint)
-            .map_err(|err| format!("serialising checkpoint: {err}"))?;
+        let payload = serde_json::to_vec_pretty(checkpoint).map_err(|err| format!("serialising checkpoint: {err}"))?;
         {
             let mut file = File::create(&temp_path)
                 .map_err(|err| format!("creating checkpoint temp file '{}': {err}", temp_path.display()))?;
             file.write_all(&payload)
                 .map_err(|err| format!("writing checkpoint temp file '{}': {err}", temp_path.display()))?;
-            file.sync_all()
-                .map_err(|err| format!("fsync checkpoint temp file '{}': {err}", temp_path.display()))?;
+            file.sync_all().map_err(|err| format!("fsync checkpoint temp file '{}': {err}", temp_path.display()))?;
         }
         fs::rename(&temp_path, &self.path).map_err(|err| {
             let _ = fs::remove_file(&temp_path);
@@ -212,10 +210,7 @@ pub(crate) const HASH_PREFIX_BYTES: u64 = 64 * 1024 * 1024;
 /// length so that two files sharing a prefix but differing in size produce different hashes.
 pub(crate) fn hash_file(path: &Path) -> Result<String, String> {
     let file = File::open(path).map_err(|err| format!("opening '{}' for hashing: {err}", path.display()))?;
-    let total_size = file
-        .metadata()
-        .map_err(|err| format!("reading '{}' metadata: {err}", path.display()))?
-        .len();
+    let total_size = file.metadata().map_err(|err| format!("reading '{}' metadata: {err}", path.display()))?.len();
     let mut reader = BufReader::new(file).take(HASH_PREFIX_BYTES);
     let mut hasher = Sha256::new();
     let mut buf = [0u8; 64 * 1024];

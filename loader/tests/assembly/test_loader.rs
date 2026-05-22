@@ -7,8 +7,7 @@
 use std::{
     env,
     error::Error,
-    fs,
-    io,
+    fs, io,
     path::{Path, PathBuf},
     process::Child,
     thread::sleep,
@@ -54,15 +53,22 @@ fn loader_loads_clean_csv() -> Result<(), Box<dyn Error>> {
     let loader_runner = TypeDBBinaryRunner::new(TYPEDB_LOADER_ARCHIVE_VAR, TYPEDB_LOADER_SUBCOMMAND)
         .expect("Failed to create loader binary runner");
     let args = [
-        "--address", SERVER_ADDRESS,
-        "--database", database,
+        "--address",
+        SERVER_ADDRESS,
+        "--database",
+        database,
         "--create-db",
-        "--schema-file", &schema_path,
-        "--query", &query_path,
-        "--data", &data_path_str,
+        "--schema-file",
+        &schema_path,
+        "--query",
+        &query_path,
+        "--data",
+        &data_path_str,
         "--header",
-        "--username", ADMIN_USERNAME,
-        "--password", ADMIN_PASSWORD,
+        "--username",
+        ADMIN_USERNAME,
+        "--password",
+        ADMIN_PASSWORD,
         "--tls-disabled",
     ];
     let mut loader_process: Child = loader_runner.run(&args).expect("Failed to spawn loader process.");
@@ -100,15 +106,22 @@ fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
     let loader_runner = TypeDBBinaryRunner::new(TYPEDB_LOADER_ARCHIVE_VAR, TYPEDB_LOADER_SUBCOMMAND)
         .expect("Failed to create loader binary runner");
     let args = [
-        "--address", SERVER_ADDRESS,
-        "--database", database,
+        "--address",
+        SERVER_ADDRESS,
+        "--database",
+        database,
         "--create-db",
-        "--schema-file", &schema_path,
-        "--query", &query_path,
-        "--data", &data_path_str,
+        "--schema-file",
+        &schema_path,
+        "--query",
+        &query_path,
+        "--data",
+        &data_path_str,
         "--header",
-        "--username", ADMIN_USERNAME,
-        "--password", ADMIN_PASSWORD,
+        "--username",
+        ADMIN_USERNAME,
+        "--password",
+        ADMIN_PASSWORD,
         "--tls-disabled",
     ];
     let mut loader_process: Child = loader_runner.run(&args).expect("Failed to spawn loader process.");
@@ -146,9 +159,7 @@ fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
 // next to it without polluting the source tree.
 fn stage_data_file(source: &str) -> Result<PathBuf, Box<dyn Error>> {
     let source_path = Path::new(source);
-    let file_name = source_path
-        .file_name()
-        .ok_or_else(|| format!("source data path has no file name: {source}"))?;
+    let file_name = source_path.file_name().ok_or_else(|| format!("source data path has no file name: {source}"))?;
     let staged_dir = env::temp_dir().join(format!("typedb-loader-test-{}", std::process::id()));
     fs::create_dir_all(&staged_dir)?;
     let staged = staged_dir.join(file_name);

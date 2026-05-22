@@ -12,5 +12,5 @@
 mod addresses;
 mod tls;
 
-pub use addresses::{parse_addresses, parse_address_translation};
+pub use addresses::{parse_address_translation, parse_addresses};
 pub use tls::build_tls_config;

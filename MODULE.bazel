@@ -45,7 +45,7 @@ bazel_dep(name = "typedb_driver", version = "0.0.0")
 git_override(
     module_name = "typedb_driver",
     remote = "https://github.com/typedb/typedb-driver",
-    commit = "60009d5319a458ed58c5b4c7a156b4f6d9bc4d77",
+    tag = "3.11.5",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
@@ -118,13 +118,13 @@ workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
 #        "typeql+": "a1fae91ebd68ed2d7b2eb5035c1287c3bc66789b",
-        "typedb_driver+": "60009d5319a458ed58c5b4c7a156b4f6d9bc4d77",
+#        "typedb_driver+": "60009d5319a458ed58c5b4c7a156b4f6d9bc4d77",
 #        "typedb_protocol+": "25ab3fb02715062bd036f8b83908de92b106a202",
     },
     workspace_tag_dict = {
         "typeql+": "3.11.0",
         "typedb_protocol+": "3.11.0",
-#        "typedb_driver+": "3.11.1",
+        "typedb_driver+": "3.11.3",
     },
 )
 

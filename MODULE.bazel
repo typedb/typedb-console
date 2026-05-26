@@ -124,7 +124,7 @@ workspace_refs(
     workspace_tag_dict = {
         "typeql+": "3.11.0",
         "typedb_protocol+": "3.11.0",
-        "typedb_driver+": "3.11.3",
+        "typedb_driver+": "3.11.5",
     },
 )
 

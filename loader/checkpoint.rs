@@ -5,6 +5,7 @@
  */
 
 use std::{
+    collections::HashSet,
     fs::{self, File},
     io::{BufReader, Read, Write},
     path::{Path, PathBuf},
@@ -12,6 +13,13 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use typedb_driver::TypeDBDriver;
+
+use crate::{
+    ExitCode, fatal, fatal_with,
+    params::{ResolvedParams, resume_warnings},
+    prompts::{confirm, resolve_in_flight_skips},
+};
 
 pub(crate) const CHECKPOINT_VERSION: u32 = 1;
 
@@ -228,19 +236,64 @@ pub(crate) fn hash_string(s: &str) -> String {
     format!("sha256:{:x}", hasher.finalize())
 }
 
-pub(crate) const CHECKPOINT_FILENAME: &str = "checkpoint.json";
-pub(crate) const REJECTS_CSV_FILENAME: &str = "rejects.csv";
-pub(crate) const REJECTS_LOG_FILENAME: &str = "rejects.log";
+/// Prepares the checkpoint for the run: either resumes from a prior checkpoint (with
+/// freshened hashes and any user-chosen in-flight skips applied), or builds a fresh checkpoint.
+/// Interactive: shows resume warnings and prompts for confirmation when params have drifted,
+/// and asks per-in-flight whether to skip or retry.
+pub(crate) fn initialize_checkpoint(
+    resolved: &ResolvedParams,
+    resume_checkpoint: Option<Checkpoint>,
+    hashes: Option<Hashes>,
+) -> Checkpoint {
+    let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
+        let hashes = hashes.as_ref().expect("resume requires checkpointing, which always produces hashes");
+        let warnings = resume_warnings(resolved, prior, hashes);
+        if !warnings.is_empty() {
+            eprintln!("\nResume warnings:");
+            for w in &warnings {
+                eprintln!("  - {w}");
+            }
+            if !confirm("Continue anyway?") {
+                fatal_with(ExitCode::UserInputError, "aborted: resume cancelled by user");
+            }
+        }
+        resolve_in_flight_skips(&prior.in_flight)
+    } else {
+        HashSet::new()
+    };
 
-/// Builds the default output directory next to the data file: `loader_<data-stem>_progress`.
-/// Falls back to `loader_data_progress` in the current directory if the data path has no stem
-/// or parent.
-pub(crate) fn default_output_dir(data_path: &str) -> PathBuf {
-    let data = Path::new(data_path);
-    let stem = data.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "data".to_owned());
-    let dirname = format!("loader_{stem}_progress");
-    match data.parent() {
-        Some(parent) if !parent.as_os_str().is_empty() => parent.join(dirname),
-        _ => PathBuf::from(dirname),
+    match resume_checkpoint {
+        Some(mut prior) => {
+            if let Some(hashes) = hashes.as_ref() {
+                prior.set_hashes(hashes.clone());
+            }
+            for &index in &skipped_in_flight {
+                prior.mark_in_flight_as_skipped(index);
+            }
+            prior
+        }
+        None => Checkpoint::new(resolved.to_checkpoint_params(), hashes.unwrap_or_default()),
     }
 }
+
+/// Computes the three integrity hashes for the current run by combining the static data/query
+/// hashes with the live schema fetched from the driver. Exits on any I/O failure.
+pub(crate) async fn compute_hashes(
+    driver: &TypeDBDriver,
+    database: &str,
+    data_path: &str,
+    query_text: &str,
+) -> Hashes {
+    println!("Hashing data file (first 64 MB)...");
+    let data = hash_file(Path::new(data_path)).unwrap_or_else(|err| fatal(err));
+    println!("Fetching live schema for hashing...");
+    let db = driver
+        .databases()
+        .get(database.to_owned())
+        .await
+        .unwrap_or_else(|err| fatal(format!("failed to look up database '{database}': {err}")));
+    let schema_text =
+        db.schema().await.unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
+    Hashes { query: hash_string(query_text), data, schema: hash_string(&schema_text) }
+}
+

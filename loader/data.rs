@@ -17,7 +17,12 @@ use typedb_driver::{
     transaction::{QueryGivenEntry, QueryGivenRow},
 };
 
-use crate::query::{CellType, GivenSpec};
+use crate::{
+    checkpoint::Checkpoint,
+    fatal,
+    params::ResolvedParams,
+    query::{CellType, GivenSpec},
+};
 
 pub(crate) struct CsvLoader {
     reader: Reader<BufReader<File>>,
@@ -50,7 +55,26 @@ pub(crate) struct RowRejection {
 }
 
 impl CsvLoader {
-    pub(crate) fn open(
+    /// Opens (or resumes) the data file based on the checkpoint's byte watermark. Exits on
+    /// failure with a message that distinguishes a fresh open from a resume attempt.
+    pub(crate) fn open_for_load(resolved: &ResolvedParams, inputs: Vec<GivenSpec>, state: &Checkpoint) -> Self {
+        if state.watermark_bytes > 0 {
+            Self::resume_at(
+                &resolved.data,
+                resolved.header,
+                inputs,
+                resolved.null_values.clone(),
+                resolved.max_rows.map(|m| m.saturating_sub(state.watermark * resolved.batch_rows)),
+                state.watermark_bytes,
+            )
+            .unwrap_or_else(|err| fatal(format!("failed to resume data file '{}': {err}", resolved.data)))
+        } else {
+            Self::open(&resolved.data, resolved.header, inputs, resolved.null_values.clone(), resolved.max_rows)
+                .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", resolved.data)))
+        }
+    }
+
+    fn open(
         path: &str,
         has_header: bool,
         inputs: Vec<GivenSpec>,
@@ -63,7 +87,7 @@ impl CsvLoader {
     /// Opens the CSV and seeks to `byte_offset` after consuming the header (if any). The byte
     /// position is taken to be a record boundary in the underlying file (typically a stored
     /// `byte_end` from a previous batch).
-    pub(crate) fn resume_at(
+    fn resume_at(
         path: &str,
         has_header: bool,
         inputs: Vec<GivenSpec>,

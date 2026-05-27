@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fs::read_to_string;
+
 use typeql::{
     Variable,
     query::{
@@ -13,6 +15,8 @@ use typeql::{
     schema::definable::function::Argument,
     type_::{NamedType, NamedTypeAny},
 };
+
+use crate::fatal;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum CellType {
@@ -34,7 +38,16 @@ pub(crate) struct GivenSpec {
     pub(crate) optional: bool,
 }
 
-pub(crate) fn parse_query_inputs(query_text: &str) -> Result<Vec<GivenSpec>, String> {
+/// Reads the query file and extracts its `given` input specs. Exits on file I/O failure or
+/// parse failure — both are user-input errors at this stage.
+pub(crate) fn load_query(query_path: &str) -> (String, Vec<GivenSpec>) {
+    let query_text = read_to_string(query_path)
+        .unwrap_or_else(|err| fatal(format!("failed to read query file '{query_path}': {err}")));
+    let inputs = parse_query_inputs(&query_text).unwrap_or_else(|err| fatal(err));
+    (query_text, inputs)
+}
+
+fn parse_query_inputs(query_text: &str) -> Result<Vec<GivenSpec>, String> {
     let parsed = typeql::parse_query(query_text).map_err(|err| format!("failed to parse query: {err}"))?;
     let pipeline = match parsed.into_structure() {
         QueryStructure::Pipeline(p) => p,

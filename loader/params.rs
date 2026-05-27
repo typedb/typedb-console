@@ -5,8 +5,10 @@
  */
 
 use crate::{
+    ExitCode,
     checkpoint::{Checkpoint, CheckpointParams, Hashes},
     cli::{Args, USERNAME_VALUE_NAME},
+    fatal_with,
 };
 
 /// The settings the loader actually uses, after merging CLI args with values carried by a
@@ -120,6 +122,28 @@ pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>)
         tls_root_ca: pick_optional_string(&args.tls_root_ca, checkpoint.map(|c| &c.tls_root_ca)),
     };
     Ok(resolved)
+}
+
+/// Resolves params from CLI + checkpoint, enforces validity rules, and emits warnings for
+/// args that are silently ignored on resume. Exits on any validation failure.
+pub(crate) fn resolve_and_validate(args: &Args, resume_checkpoint: Option<&Checkpoint>) -> ResolvedParams {
+    let resolved = resolve_params(args, resume_checkpoint.map(|c| &c.params))
+        .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
+    if resolved.batch_rows == 0 {
+        fatal_with(ExitCode::UserInputError, "--batch-rows must be greater than 0");
+    }
+    if resolved.parallel_batches == 0 {
+        fatal_with(ExitCode::UserInputError, "--parallel-batches must be greater than 0");
+    }
+    if resume_checkpoint.is_some() {
+        if args.schema_file.is_some() {
+            eprintln!("warning: --schema-file is ignored when resuming; the original schema query will not be re-run");
+        }
+        if args.create_db.unwrap_or(false) {
+            eprintln!("warning: --create-db is ignored when resuming; the database is assumed to exist");
+        }
+    }
+    resolved
 }
 
 /// Collects all the ways the current run's params or hashes diverge from the checkpoint. Pure;

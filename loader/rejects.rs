@@ -23,13 +23,24 @@ pub(crate) struct RejectsWriter {
 }
 
 impl RejectsWriter {
-    pub(crate) fn new(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
+    /// Builds a writer suitable for the current run: fresh-truncating mode on a new run, or
+    /// append mode on a resume so prior rejects are preserved.
+    pub(crate) fn open_for_load(
+        csv_path: PathBuf,
+        log_path: PathBuf,
+        headers: Option<StringRecord>,
+        resuming: bool,
+    ) -> Self {
+        if resuming { Self::new_append(csv_path, log_path, headers) } else { Self::new(csv_path, log_path, headers) }
+    }
+
+    fn new(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
         Self { csv_path, log_path, headers, append: false, csv_writer: None, log_writer: None, written: 0 }
     }
 
     /// Constructs a writer that opens both files in append mode, preserving prior content from an
     /// earlier run. The CSV header is not re-written when the file already exists.
-    pub(crate) fn new_append(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
+    fn new_append(csv_path: PathBuf, log_path: PathBuf, headers: Option<StringRecord>) -> Self {
         Self { csv_path, log_path, headers, append: true, csv_writer: None, log_writer: None, written: 0 }
     }
 

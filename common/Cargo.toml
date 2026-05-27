@@ -5,7 +5,7 @@
 features = {}
 
 [package]
-	name = "typedb_cli_connect"
+	name = "typedb_cli_common"
 	edition = "2024"
 	version = "0.0.0"
 

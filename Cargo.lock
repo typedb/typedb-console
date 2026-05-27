@@ -3201,7 +3201,7 @@ dependencies = [
  "tokio",
  "typedb-driver",
  "typedb_binary_runner",
- "typedb_cli_connect",
+ "typedb_cli_common",
  "typeql",
  "ureq",
 ]
@@ -3246,7 +3246,7 @@ dependencies = [
  "tokio",
  "typedb-driver",
  "typedb_binary_runner",
- "typedb_cli_connect",
+ "typedb_cli_common",
  "typeql",
 ]
 
@@ -3269,7 +3269,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "typedb_cli_connect"
+name = "typedb_cli_common"
 version = "0.0.0"
 dependencies = [
  "typedb-driver",

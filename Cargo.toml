@@ -1,7 +1,7 @@
 
 [workspace]
 	resolver = "2"
-	members = ["loader", "tool/runner", "tool/connect", "console"]
+	members = ["loader", "tool/runner", "common", "console"]
 
 	[workspace.dependencies]
 
@@ -10,8 +10,8 @@
 			version = "1.52.3"
 			default-features = false
 
-		[workspace.dependencies.typedb_cli_connect]
-			path = "tool/connect"
+		[workspace.dependencies.typedb_cli_common]
+			path = "common"
 			features = []
 			default-features = false
 

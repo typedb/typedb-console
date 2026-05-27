@@ -19,7 +19,7 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
-	[dependencies.typedb_cli_connect]
+	[dependencies.typedb_cli_common]
 		workspace = true
 
 	[dependencies.glob]

@@ -22,7 +22,7 @@ use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use sentry::ClientOptions;
-use typedb_cli_connect::{build_tls_config, parse_address_translation, parse_addresses};
+use typedb_cli_common::{build_tls_config, parse_address_translation, parse_addresses};
 use typedb_driver::{Credentials, DriverOptions, Transaction, TransactionType, TypeDBDriver};
 
 use crate::{

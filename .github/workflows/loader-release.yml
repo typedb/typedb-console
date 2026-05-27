@@ -89,7 +89,3 @@ jobs:
             --target "${{ github.sha }}" \
             --title "TypeDB Loader ${{ steps.version.outputs.version }}" \
             --notes-file ./RELEASE_NOTES_LATEST.md
-
-  # No sync-dependencies job: the Loader binary is not consumed by other TypeDB repos as a
-  # workspace dependency, so there's no downstream to notify. Re-add a job mirroring
-  # console-release.yml if that changes.

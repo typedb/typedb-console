@@ -144,6 +144,17 @@ impl Checkpoint {
         }
     }
 
+    /// Applies the user's resume-time decisions about in-flight batches: those in `skipped` are
+    /// treated as already committed (watermark advances), and any remaining in-flight entries
+    /// are dropped so the upcoming re-dispatch doesn't leave the prior records as ghosts that
+    /// would later be mistaken for the new dispatches (same batch_index, stale byte_end).
+    pub(crate) fn apply_in_flight_decisions(&mut self, skipped: &HashSet<usize>) {
+        for &index in skipped {
+            self.mark_in_flight_as_skipped(index);
+        }
+        self.in_flight.clear();
+    }
+
     fn absorb_finished_batch(&mut self, batch_index: usize, byte_end: u64) {
         if batch_index == self.watermark + 1 {
             self.watermark = batch_index;
@@ -267,9 +278,7 @@ pub(crate) fn initialize_checkpoint(
             if let Some(hashes) = hashes.as_ref() {
                 prior.set_hashes(hashes.clone());
             }
-            for &index in &skipped_in_flight {
-                prior.mark_in_flight_as_skipped(index);
-            }
+            prior.apply_in_flight_decisions(&skipped_in_flight);
             prior
         }
         None => Checkpoint::new(params.to_checkpoint_params(), hashes.unwrap_or_default()),
@@ -296,4 +305,122 @@ pub(crate) async fn compute_hashes(
         db.schema().await.unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
     Hashes { query: hash_string(query_text), data, schema: hash_string(&schema_text) }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stub_params() -> CheckpointParams {
+        CheckpointParams {
+            query: String::new(),
+            database: String::new(),
+            data: String::new(),
+            header: false,
+            null_values: Vec::new(),
+            max_rows: None,
+            batch_rows: 0,
+            parallel_batches: 0,
+            stop_on_error: false,
+            max_rejects: None,
+            schema_file: None,
+            create_db: false,
+            addresses: String::new(),
+            username: String::new(),
+            tls_disabled: false,
+            tls_root_ca: None,
+        }
+    }
+
+    fn in_flight(batch_index: usize, byte_end: u64) -> InFlightBatch {
+        InFlightBatch { batch_index, byte_end, first_row: Vec::new() }
+    }
+
+    /// Builds a checkpoint that looks like the previous run dispatched some batches past the
+    /// current watermark and crashed before any of them finished.
+    fn checkpoint_with_in_flight(
+        in_flights: Vec<InFlightBatch>,
+        watermark: usize,
+        watermark_bytes: u64,
+    ) -> Checkpoint {
+        let mut checkpoint = Checkpoint::new(stub_params(), Hashes::default());
+        checkpoint.watermark = watermark;
+        checkpoint.watermark_bytes = watermark_bytes;
+        checkpoint.in_flight = in_flights;
+        checkpoint
+    }
+
+    #[test]
+    fn reprocess_all_clears_in_flight_without_touching_watermark() {
+        // Reprocess-all => skipped set is empty; every in-flight entry must be dropped so the
+        // re-dispatch doesn't create duplicate entries with the same batch_index.
+        let mut checkpoint = checkpoint_with_in_flight(vec![in_flight(5, 100), in_flight(6, 200)], 4, 80);
+        checkpoint.apply_in_flight_decisions(&HashSet::new());
+        assert!(checkpoint.in_flight.is_empty(), "stale dispatch records must be cleared");
+        assert_eq!(checkpoint.watermark, 4, "watermark must not advance when nothing is skipped");
+        assert_eq!(checkpoint.watermark_bytes, 80);
+        assert!(checkpoint.completed_above_watermark.is_empty());
+    }
+
+    #[test]
+    fn skip_all_advances_watermark_through_contiguous_batches() {
+        // Skip-all over a contiguous range starting at watermark+1: watermark slides through
+        // each one, watermark_bytes ends at the final batch's byte_end.
+        let mut checkpoint = checkpoint_with_in_flight(vec![in_flight(5, 100), in_flight(6, 200)], 4, 80);
+        let skipped: HashSet<usize> = [5, 6].into_iter().collect();
+        checkpoint.apply_in_flight_decisions(&skipped);
+        assert!(checkpoint.in_flight.is_empty());
+        assert_eq!(checkpoint.watermark, 6);
+        assert_eq!(checkpoint.watermark_bytes, 200);
+        assert!(checkpoint.completed_above_watermark.is_empty());
+    }
+
+    #[test]
+    fn decide_each_advances_skipped_and_drops_the_rest() {
+        // Decide-each where only batch 5 (the next-after-watermark) is skipped: watermark
+        // advances to 5; batches 6 and 7 were chosen for reprocess, so their stale records
+        // must be dropped — they'll re-appear in `in_flight` once the re-dispatch reaches them.
+        let mut checkpoint = checkpoint_with_in_flight(
+            vec![in_flight(5, 100), in_flight(6, 200), in_flight(7, 300)],
+            4, 80
+        );
+        let skipped: HashSet<usize> = [5].into_iter().collect();
+        checkpoint.apply_in_flight_decisions(&skipped);
+        assert!(checkpoint.in_flight.is_empty(), "reprocess-chosen batches must not remain as ghosts");
+        assert_eq!(checkpoint.watermark, 5);
+        assert_eq!(checkpoint.watermark_bytes, 100);
+        assert!(checkpoint.completed_above_watermark.is_empty());
+    }
+
+    #[test]
+    fn decide_each_skipping_non_contiguous_batch_parks_in_completed_above_watermark() {
+        // Skip batch 6 but reprocess batch 5: the watermark can't advance past 4 yet (since 5
+        // isn't done), so 6 lands in completed_above_watermark to be absorbed when 5 finishes.
+        let mut checkpoint = checkpoint_with_in_flight(vec![in_flight(5, 100), in_flight(6, 200)], 4, 80);
+        let skipped: HashSet<usize> = [6].into_iter().collect();
+        checkpoint.apply_in_flight_decisions(&skipped);
+        assert!(checkpoint.in_flight.is_empty());
+        assert_eq!(checkpoint.watermark, 4, "5 still pending => watermark stays at 4");
+        assert_eq!(checkpoint.watermark_bytes, 80);
+        assert_eq!(checkpoint.completed_above_watermark.len(), 1);
+        assert_eq!(checkpoint.completed_above_watermark[0].batch_index, 6);
+        assert_eq!(checkpoint.completed_above_watermark[0].byte_end, 200);
+    }
+
+    #[test]
+    fn record_dispatch_after_reprocess_decision_does_not_collide_with_prior_entry() {
+        // End-to-end shape of the bug: simulate the bug scenario as it would unfold in
+        // run_load. The prior run left batch 5 in-flight; user picks reprocess-all; the new
+        // run dispatches batch 5 again and then records its finish. Without the fix, finish
+        // would pop the STALE entry and advance watermark using the wrong byte_end.
+        let mut checkpoint = checkpoint_with_in_flight(vec![in_flight(5, 100)], 4, 80);
+        checkpoint.apply_in_flight_decisions(&HashSet::new());
+        // Re-dispatch with the new byte_end.
+        checkpoint.record_dispatch(in_flight(5, 999));
+        checkpoint.record_finish(5);
+        assert_eq!(checkpoint.watermark, 5);
+        assert_eq!(checkpoint.watermark_bytes, 999, "finish must use the NEW dispatch's byte_end, not the stale one");
+        assert!(checkpoint.in_flight.is_empty());
+    }
+}
+
 

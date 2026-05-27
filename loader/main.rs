@@ -198,8 +198,8 @@ async fn main() {
                 prior.set_hashes(hashes.clone());
             }
             // Apply user skip decisions before any batches are read.
-            for &idx in &skipped_in_flight {
-                prior.mark_in_flight_as_skipped(idx);
+            for &index in &skipped_in_flight {
+                prior.mark_in_flight_as_skipped(index);
             }
             prior
         }

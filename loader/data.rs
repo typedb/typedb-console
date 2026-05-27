@@ -89,7 +89,7 @@ impl CsvLoader {
         let (headers, column_indices) = if has_header {
             let headers = reader.headers().map_err(|err| format!("reading CSV headers: {err}"))?.clone();
             let header_index: HashMap<&str, usize> =
-                headers.iter().enumerate().map(|(idx, name)| (name, idx)).collect();
+                headers.iter().enumerate().map(|(index, name)| (name, index)).collect();
             let indices = inputs
                 .iter()
                 .map(|input| {

@@ -74,8 +74,8 @@ fn loader_loads_clean_csv() -> Result<(), Box<dyn Error>> {
     let mut loader_process: Child = loader_runner.run(&args).expect("Failed to spawn loader process.");
     let status = loader_process.wait().expect("Error waiting for loader to finish").code().unwrap_or(-1);
 
-    let rejects_csv = rejects_sibling(&data_path, "csv");
-    let rejects_log = rejects_sibling(&data_path, "log");
+    let rejects_csv = output_file(&data_path, "rejects.csv");
+    let rejects_log = output_file(&data_path, "rejects.log");
 
     let kill = server_process.kill();
     if status != 0 {
@@ -127,8 +127,8 @@ fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
     let mut loader_process: Child = loader_runner.run(&args).expect("Failed to spawn loader process.");
     let status = loader_process.wait().expect("Error waiting for loader to finish").code().unwrap_or(-1);
 
-    let rejects_csv = rejects_sibling(&data_path, "csv");
-    let rejects_log = rejects_sibling(&data_path, "log");
+    let rejects_csv = output_file(&data_path, "rejects.csv");
+    let rejects_log = output_file(&data_path, "rejects.log");
     let csv_contents = fs::read_to_string(&rejects_csv).ok();
     let log_contents = fs::read_to_string(&rejects_log).ok();
 
@@ -167,11 +167,11 @@ fn stage_data_file(source: &str) -> Result<PathBuf, Box<dyn Error>> {
     Ok(staged)
 }
 
-fn rejects_sibling(data_path: &Path, suffix: &str) -> PathBuf {
+fn output_file(data_path: &Path, filename: &str) -> PathBuf {
     let stem = data_path.file_stem().and_then(|s| s.to_str()).unwrap_or("data");
-    let filename = format!("{stem}-rejects.{suffix}");
+    let dirname = format!("loader_{stem}_progress");
     match data_path.parent() {
-        Some(parent) if !parent.as_os_str().is_empty() => parent.join(filename),
-        _ => PathBuf::from(filename),
+        Some(parent) if !parent.as_os_str().is_empty() => parent.join(dirname).join(filename),
+        _ => PathBuf::from(dirname).join(filename),
     }
 }

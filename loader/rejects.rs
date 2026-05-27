@@ -12,8 +12,6 @@ use std::{
 
 use csv::StringRecord;
 
-use crate::checkpoint::sibling_path;
-
 pub(crate) struct RejectsWriter {
     csv_path: PathBuf,
     log_path: PathBuf,
@@ -141,6 +139,3 @@ impl RejectsWriter {
     }
 }
 
-pub(crate) fn default_rejects_path(data_path: &str, suffix: &str) -> PathBuf {
-    sibling_path(data_path, &format!("rejects.{suffix}"))
-}

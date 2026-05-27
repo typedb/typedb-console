@@ -40,8 +40,6 @@ pub(crate) struct CheckpointParams {
     pub max_rows: Option<usize>,
     pub batch_rows: usize,
     pub parallel_batches: usize,
-    pub rejects_file: Option<String>,
-    pub rejects_log: Option<String>,
     pub stop_on_error: bool,
     pub max_rejects: Option<usize>,
     pub schema_file: Option<String>,
@@ -230,18 +228,19 @@ pub(crate) fn hash_string(s: &str) -> String {
     format!("sha256:{:x}", hasher.finalize())
 }
 
-pub(crate) fn default_checkpoint_path(data_path: &str) -> PathBuf {
-    sibling_path(data_path, "checkpoint.json")
-}
+pub(crate) const CHECKPOINT_FILENAME: &str = "checkpoint.json";
+pub(crate) const REJECTS_CSV_FILENAME: &str = "rejects.csv";
+pub(crate) const REJECTS_LOG_FILENAME: &str = "rejects.log";
 
-/// Builds a path next to `data_path` whose filename is `<data-stem>-<suffix>`. Falls back to
-/// a bare `data-<suffix>` if the data path has no stem or parent.
-pub(crate) fn sibling_path(data_path: &str, suffix: &str) -> PathBuf {
+/// Builds the default output directory next to the data file: `loader_<data-stem>_progress`.
+/// Falls back to `loader_data_progress` in the current directory if the data path has no stem
+/// or parent.
+pub(crate) fn default_output_dir(data_path: &str) -> PathBuf {
     let data = Path::new(data_path);
     let stem = data.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "data".to_owned());
-    let filename = format!("{stem}-{suffix}");
+    let dirname = format!("loader_{stem}_progress");
     match data.parent() {
-        Some(parent) if !parent.as_os_str().is_empty() => parent.join(filename),
-        _ => PathBuf::from(filename),
+        Some(parent) if !parent.as_os_str().is_empty() => parent.join(dirname),
+        _ => PathBuf::from(dirname),
     }
 }

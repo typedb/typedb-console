@@ -60,7 +60,11 @@ The typically-used arguments are:
   (strictly sequential).
 - `--schema-file=<path>` : Apply this TypeQL schema in a schema transaction before loading.
 - `--create-db[=true|false]` : Create the database if it does not exist. Default: `false`.
-- `--resume=<checkpoint>` : Resume a previous run from the given checkpoint file.
+- `--output-dir=<path>` : Directory to write `rejects.csv`, `rejects.log`, and
+  `checkpoint.json` into. Created if it does not exist. Defaults to
+  `loader_<data-stem>_progress` next to the data file.
+- `--resume=<output-dir>` : Resume a previous run from the given output directory (which
+  must contain a `checkpoint.json` from that run).
 - `-h, --help` : Show the full help message.
 
 The loader will by default prompt you for your password in a safe way. If you must, you are
@@ -152,13 +156,19 @@ loaded; `--create-db` creates the database first if it doesn't already exist. Bo
 are ignored (with a warning) when `--resume` is used, since the prior run is assumed to
 have already done this work.
 
+## Output directory
+
+All of the loader's output — `rejects.csv`, `rejects.log`, and `checkpoint.json` — is written
+to a single output directory, which is created if it does not already exist. By default the
+directory is `loader_<data-stem>_progress`, alongside the data file. Override the location
+with `--output-dir=<path>`.
+
 ## Errors and rejects
 
 When a row fails to parse, or a batch's commit fails, the loader writes:
-- the offending CSV rows to `<data-stem>-rejects.csv` (with the original header if any), and
-- a per-rejection message to `<data-stem>-rejects.log`.
-
-Override the destinations with `--rejects-file=<path>` and `--rejects-log=<path>`.
+- the offending CSV rows to `rejects.csv` in the output directory (with the original header
+  if any), and
+- a per-rejection message to `rejects.log` in the output directory.
 
 By default the loader skips the rejected rows and continues. Use:
 - `--stop-on-error` to abort on the first parse error or batch commit failure (offending
@@ -171,14 +181,14 @@ finish so they are fully recorded.
 
 ## Checkpointing and resume
 
-A checkpoint file at `<data-stem>-checkpoint.json` is written after each batch finishes,
+A `checkpoint.json` file inside the output directory is written after each batch finishes,
 recording the resolved parameters, content hashes of the data / query / live schema, and
-the batches that have been dispatched and finished. The current run's path can be
-overridden with `--checkpoint-file=<path>`, or disabled with `--no-checkpoint`.
+the batches that have been dispatched and finished. Checkpointing can be disabled with
+`--no-checkpoint`.
 
-To resume an interrupted run:
+To resume an interrupted run, point `--resume` at the previous run's output directory:
 ```bash
-./typedb loader --resume=<path-to-checkpoint.json>
+./typedb loader --resume=<path-to-output-dir>
 ```
 Resume re-uses every parameter from the checkpoint (except the password, which is prompted
 again); anything you pass on the command line overrides the checkpointed value, except
@@ -240,5 +250,5 @@ Create the database, apply the schema, and load:
 
 If the run is interrupted, resume it with:
 ```bash
-./typedb loader --resume=data-checkpoint.json --username=admin --tls-disabled
+./typedb loader --resume=loader_data_progress --username=admin --tls-disabled
 ```

@@ -6,7 +6,7 @@
 
 use std::{
     collections::HashSet,
-    fs::read_to_string,
+    fs::{self, read_to_string},
     path::{Path, PathBuf},
     process::exit,
     sync::{
@@ -27,7 +27,8 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{
-        Checkpoint, CheckpointWriter, Hashes, InFlightBatch, default_checkpoint_path, hash_file, hash_string,
+        CHECKPOINT_FILENAME, Checkpoint, CheckpointWriter, Hashes, InFlightBatch, REJECTS_CSV_FILENAME,
+        REJECTS_LOG_FILENAME, default_output_dir, hash_file, hash_string,
     },
     cli::Args,
     data::{CsvLoader, RowRejection},
@@ -35,7 +36,7 @@ use crate::{
     progress::{LoadStats, print_progress, print_summary},
     prompts::{confirm, resolve_in_flight_skips},
     query::parse_query_inputs,
-    rejects::{RejectsWriter, default_rejects_path},
+    rejects::RejectsWriter,
     setup::{apply_schema, connect, create_database_if_missing},
 };
 
@@ -71,8 +72,17 @@ async fn main() {
         std::process::exit(130);
     });
 
+    if args.resume.is_some() && args.output_dir.is_some() {
+        fatal_with(
+            ExitCode::UserInputError,
+            "--output-dir cannot be combined with --resume; the resume directory is the output directory",
+        );
+    }
     let resume_checkpoint: Option<Checkpoint> = match args.resume.as_deref() {
-        Some(path) => Some(Checkpoint::load(Path::new(path)).unwrap_or_else(|err| fatal(err))),
+        Some(dir) => {
+            let path = Path::new(dir).join(CHECKPOINT_FILENAME);
+            Some(Checkpoint::load(&path).unwrap_or_else(|err| fatal(err)))
+        }
         None => None,
     };
     let resuming = resume_checkpoint.is_some();
@@ -123,24 +133,35 @@ async fn main() {
         apply_schema(&driver, &resolved.database, schema).await;
     }
 
+    let output_dir: PathBuf = if let Some(dir) = args.resume.as_deref() {
+        PathBuf::from(dir)
+    } else if let Some(dir) = args.output_dir.as_deref() {
+        PathBuf::from(dir)
+    } else {
+        default_output_dir(&resolved.data)
+    };
+    fs::create_dir_all(&output_dir).unwrap_or_else(|err| {
+        fatal(format!("failed to create output directory '{}': {err}", output_dir.display()))
+    });
+
+    let checkpoint_path = output_dir.join(CHECKPOINT_FILENAME);
+    let rejects_csv_path = output_dir.join(REJECTS_CSV_FILENAME);
+    let rejects_log_path = output_dir.join(REJECTS_LOG_FILENAME);
+
     let checkpoint_writer = if args.no_checkpoint {
         None
     } else {
-        let path = if resuming {
-            PathBuf::from(args.resume.as_deref().unwrap())
-        } else {
-            args.checkpoint_file.clone().map(PathBuf::from).unwrap_or_else(|| default_checkpoint_path(&resolved.data))
-        };
-        if !resuming && path.exists() {
+        if !resuming && checkpoint_path.exists() {
             fatal_with(
                 ExitCode::UserInputError,
                 format!(
-                    "checkpoint file already exists at '{}': pass --resume to continue from it, --checkpoint-file PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
-                    path.display()
+                    "checkpoint already exists at '{}': pass --resume '{}' to continue from it, --output-dir PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
+                    checkpoint_path.display(),
+                    output_dir.display()
                 ),
             );
         }
-        Some(CheckpointWriter::new(path))
+        Some(CheckpointWriter::new(checkpoint_path))
     };
 
     // Hashes are computed iff checkpointing is enabled; resume implies checkpointing, so any
@@ -178,17 +199,6 @@ async fn main() {
     } else {
         HashSet::new()
     };
-
-    let rejects_csv_path = resolved
-        .rejects_file
-        .as_deref()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| default_rejects_path(&resolved.data, "csv"));
-    let rejects_log_path = resolved
-        .rejects_log
-        .as_deref()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| default_rejects_path(&resolved.data, "log"));
 
     let mut state = match resume_checkpoint {
         Some(mut prior) => {

@@ -61,16 +61,6 @@ pub struct Args {
     #[arg(long = "parallel-batches", value_name = "n")]
     pub parallel_batches: Option<usize>,
 
-    /// Path to write rejected rows to in CSV form.
-    /// Defaults to `<data-file-stem>-rejects.csv` next to the data file.
-    #[arg(long = "rejects-file", value_name = "path to rejects file (.csv)")]
-    pub rejects_file: Option<String>,
-
-    /// Path to write the per-rejection error log to.
-    /// Defaults to `<data-file-stem>-rejects.log` next to the data file.
-    #[arg(long = "rejects-log", value_name = "path to rejects log file")]
-    pub rejects_log: Option<String>,
-
     /// Abort on the first row or batch error instead of skipping and continuing.
     /// The offending row(s) are still written to the rejects file before exit. Default: false.
     /// Pass `--no-stop-on-error` to explicitly disable when overriding a checkpoint that had it set.
@@ -119,17 +109,19 @@ pub struct Args {
     #[arg(long = "tls-root-ca", value_name = "path")]
     pub tls_root_ca: Option<String>,
 
-    /// Path to the checkpoint file. Defaults to `<data-file-stem>-checkpoint.json`
-    /// next to the data file.
-    #[arg(long = "checkpoint-file", value_name = "path")]
-    pub checkpoint_file: Option<String>,
+    /// Directory to write the loader's output into: `rejects.csv`, `rejects.log`, and
+    /// `checkpoint.json`. Created if it does not already exist.
+    /// Defaults to `loader_<data-file-stem>_progress` next to the data file.
+    #[arg(long = "output-dir", value_name = "path to output directory")]
+    pub output_dir: Option<String>,
 
     /// Disable checkpointing entirely. The loader will not write or maintain a checkpoint file.
     #[arg(long = "no-checkpoint", default_value = "false")]
     pub no_checkpoint: bool,
 
-    /// Resume a previous run from the given checkpoint file. Parameters from the checkpoint are
-    /// used unless overridden on the command line.
-    #[arg(long = "resume", value_name = "path to checkpoint file")]
+    /// Resume a previous run from the given output directory. The directory must contain a
+    /// `checkpoint.json` from a prior run. Parameters from the checkpoint are used unless
+    /// overridden on the command line.
+    #[arg(long = "resume", value_name = "path to previous output directory")]
     pub resume: Option<String>,
 }

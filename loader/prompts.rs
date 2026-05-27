@@ -26,7 +26,7 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
     }
     eprintln!("\nThe checkpoint records {} in-flight batch(es) from the previous run.", in_flight.len());
     eprintln!(
-        "These batches were dispatched but never confirmed as committed. Verify them against the database before deciding."
+        "These batches were dispatched but never confirmed as committed. Verify them manually against the database before deciding."
     );
     for batch in in_flight {
         eprintln!("  - batch {} (first row: {})", batch.batch_idx, format_first_row(&batch.first_row));

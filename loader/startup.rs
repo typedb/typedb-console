@@ -40,14 +40,6 @@ pub(crate) fn install_shutdown_handler() -> Arc<AtomicBool> {
     shutdown
 }
 
-/// Returns the password supplied via --password, falling back to an interactive prompt that
-/// echoes the username so the user knows which credential is being requested.
-pub(crate) fn prompt_password_if_missing(args: &Args, username: &str) -> String {
-    args.password
-        .clone()
-        .unwrap_or_else(|| rpassword::prompt_password(format!("password for '{username}': ")).unwrap())
-}
-
 /// Loads the prior checkpoint from --resume. Exits on conflict with --output-dir
 /// (the resume directory IS the output directory) or on unreadable checkpoint.
 pub(crate) fn load_resume_checkpoint(args: &Args) -> Option<Checkpoint> {
@@ -61,4 +53,12 @@ pub(crate) fn load_resume_checkpoint(args: &Args) -> Option<Checkpoint> {
         let path = Path::new(dir).join(CHECKPOINT_FILENAME);
         Checkpoint::load(&path).unwrap_or_else(|err| fatal(err))
     })
+}
+
+/// Returns the password supplied via --password, falling back to an interactive prompt that
+/// echoes the username so the user knows which credential is being requested.
+pub(crate) fn prompt_password_if_missing(args: &Args, username: &str) -> String {
+    args.password
+        .clone()
+        .unwrap_or_else(|| rpassword::prompt_password(format!("password for '{username}': ")).unwrap())
 }

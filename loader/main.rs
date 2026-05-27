@@ -13,7 +13,7 @@ use crate::{
     cli::Args,
     load::run_load,
     output::prepare_output,
-    params::resolve_and_validate,
+    params::resolve_and_validate_params,
     query::load_query,
     setup::connect_and_initialize,
     startup::{install_shutdown_handler, load_resume_checkpoint, prompt_password_if_missing},
@@ -43,7 +43,7 @@ async fn main() {
         fatal_with(ExitCode::UserInputError, "--no-checkpoint cannot be combined with --resume");
     }
 
-    let params = resolve_and_validate(&args, resume_checkpoint.as_ref());
+    let params = resolve_and_validate_params(&args, resume_checkpoint.as_ref());
     let password = prompt_password_if_missing(&args, &params.username);
     let (query_text, inputs) = load_query(&params.query);
 

@@ -94,8 +94,9 @@ pub(crate) async fn run_load(
             let driver = driver.clone();
             let database = database.clone();
             let query_text = query_text.clone();
-            in_flight
-                .push(tokio::spawn(async move { process_batch(driver, database, query_text, batch_index, batch).await }));
+            in_flight.push(tokio::spawn(async move {
+                process_batch(driver, database, query_text, batch_index, batch).await
+            }));
         }
 
         let Some(joined) = in_flight.next().await else { break };

@@ -126,7 +126,7 @@ pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>)
 
 /// Resolves params from CLI + checkpoint, enforces validity rules, and emits warnings for
 /// args that are silently ignored on resume. Exits on any validation failure.
-pub(crate) fn resolve_and_validate(args: &Args, resume_checkpoint: Option<&Checkpoint>) -> Params {
+pub(crate) fn resolve_and_validate_params(args: &Args, resume_checkpoint: Option<&Checkpoint>) -> Params {
     let params = resolve_params(args, resume_checkpoint.map(|c| &c.params))
         .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     if params.batch_rows == 0 {

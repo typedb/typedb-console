@@ -26,6 +26,9 @@ const SCHEMA_PATH_VAR: &str = "SCHEMA_PATH";
 const QUERY_PATH_VAR: &str = "QUERY_PATH";
 const DATA_PATH_VAR: &str = "DATA_PATH";
 const DATA_WITH_REJECTS_PATH_VAR: &str = "DATA_WITH_REJECTS_PATH";
+const SCHEMA_WITH_FRIENDSHIPS_PATH_VAR: &str = "SCHEMA_WITH_FRIENDSHIPS_PATH";
+const QUERY_FRIENDSHIP_PATH_VAR: &str = "QUERY_FRIENDSHIP_PATH";
+const DATA_FRIENDSHIPS_PATH_VAR: &str = "DATA_FRIENDSHIPS_PATH";
 
 const SERVER_ADDRESS: &str = "localhost:1729";
 const ADMIN_USERNAME: &str = "admin";
@@ -142,6 +145,88 @@ fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
     assert!(csv.contains("dan"), "rejects CSV missing 'dan' row: {csv}");
     assert!(log.contains("row 2"), "rejects log missing 'row 2' entry: {log}");
     assert!(log.contains("row 4"), "rejects log missing 'row 4' entry: {log}");
+    kill?;
+    Ok(())
+}
+
+#[test]
+fn loader_loads_relation_match_insert() -> Result<(), Box<dyn Error>> {
+    let (_server_runner, mut server_process) = run_typedb_server();
+    sleep(Duration::from_secs(2));
+
+    let database = "loader-test-relations-db";
+    let schema_path = env::var(SCHEMA_WITH_FRIENDSHIPS_PATH_VAR)?;
+    let people_query_path = env::var(QUERY_PATH_VAR)?;
+    let friendship_query_path = env::var(QUERY_FRIENDSHIP_PATH_VAR)?;
+    let people_data = stage_data_file(&env::var(DATA_PATH_VAR)?)?;
+    let people_data_str = people_data.to_string_lossy().into_owned();
+    let friendships_data = stage_data_file(&env::var(DATA_FRIENDSHIPS_PATH_VAR)?)?;
+    let friendships_data_str = friendships_data.to_string_lossy().into_owned();
+
+    let loader_runner = TypeDBBinaryRunner::new(TYPEDB_LOADER_ARCHIVE_VAR, TYPEDB_LOADER_SUBCOMMAND)
+        .expect("Failed to create loader binary runner");
+
+    // First pass: create the database, apply the schema, and load people as entities.
+    let people_args = [
+        "--address",
+        SERVER_ADDRESS,
+        "--database",
+        database,
+        "--create-db",
+        "--schema-file",
+        &schema_path,
+        "--query",
+        &people_query_path,
+        "--data",
+        &people_data_str,
+        "--header",
+        "--username",
+        ADMIN_USERNAME,
+        "--password",
+        ADMIN_PASSWORD,
+        "--tls-disabled",
+    ];
+    let mut people_process: Child = loader_runner.run(&people_args).expect("Failed to spawn loader (people pass).");
+    let people_status = people_process.wait().expect("Error waiting for loader (people pass)").code().unwrap_or(-1);
+
+    // Second pass: insert friendships using a match-insert query against the now-loaded persons.
+    let friendship_args = [
+        "--address",
+        SERVER_ADDRESS,
+        "--database",
+        database,
+        "--query",
+        &friendship_query_path,
+        "--data",
+        &friendships_data_str,
+        "--header",
+        "--username",
+        ADMIN_USERNAME,
+        "--password",
+        ADMIN_PASSWORD,
+        "--tls-disabled",
+    ];
+    let mut friendship_process: Child =
+        loader_runner.run(&friendship_args).expect("Failed to spawn loader (friendship pass).");
+    let friendship_status =
+        friendship_process.wait().expect("Error waiting for loader (friendship pass)").code().unwrap_or(-1);
+
+    let friendship_rejects_csv = output_file(&friendships_data, "rejects.csv");
+    let friendship_rejects_log = output_file(&friendships_data, "rejects.log");
+
+    let kill = server_process.kill();
+    if people_status != 0 {
+        panic!("Loader (people pass) returned non-zero exit status: {}", people_status);
+    }
+    if friendship_status != 0 {
+        panic!("Loader (friendship pass) returned non-zero exit status: {}", friendship_status);
+    }
+    if friendship_rejects_csv.exists() {
+        panic!("Unexpected rejects CSV on friendship pass: {}", friendship_rejects_csv.display());
+    }
+    if friendship_rejects_log.exists() {
+        panic!("Unexpected rejects log on friendship pass: {}", friendship_rejects_log.display());
+    }
     kill?;
     Ok(())
 }

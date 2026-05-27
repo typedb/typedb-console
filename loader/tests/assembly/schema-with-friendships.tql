@@ -1,0 +1,6 @@
+define
+attribute name, value string;
+attribute age, value integer;
+attribute active, value boolean;
+relation friendship, relates friend;
+entity person, owns name, owns age, owns active, plays friendship:friend;

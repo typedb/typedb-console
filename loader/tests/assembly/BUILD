@@ -23,6 +23,9 @@ rust_test(
             "QUERY_PATH": "$(rootpath insert.tql)",
             "DATA_PATH": "$(rootpath data.csv)",
             "DATA_WITH_REJECTS_PATH": "$(rootpath data-with-rejects.csv)",
+            "SCHEMA_WITH_FRIENDSHIPS_PATH": "$(rootpath schema-with-friendships.tql)",
+            "QUERY_FRIENDSHIP_PATH": "$(rootpath insert-friendship.tql)",
+            "DATA_FRIENDSHIPS_PATH": "$(rootpath friendships.csv)",
          },
         "@typedb_bazel_distribution//platform:is_linux_arm64" : {
             "TYPEDB_LOADER_ARCHIVE": "$(rootpath //loader:assemble-linux-arm64-targz)",
@@ -31,6 +34,9 @@ rust_test(
             "QUERY_PATH": "$(rootpath insert.tql)",
             "DATA_PATH": "$(rootpath data.csv)",
             "DATA_WITH_REJECTS_PATH": "$(rootpath data-with-rejects.csv)",
+            "SCHEMA_WITH_FRIENDSHIPS_PATH": "$(rootpath schema-with-friendships.tql)",
+            "QUERY_FRIENDSHIP_PATH": "$(rootpath insert-friendship.tql)",
+            "DATA_FRIENDSHIPS_PATH": "$(rootpath friendships.csv)",
         },
         "@typedb_bazel_distribution//platform:is_mac_x86_64" : {
             "TYPEDB_LOADER_ARCHIVE": "$(rootpath //loader:assemble-mac-x86_64-zip)",
@@ -39,6 +45,9 @@ rust_test(
             "QUERY_PATH": "$(rootpath insert.tql)",
             "DATA_PATH": "$(rootpath data.csv)",
             "DATA_WITH_REJECTS_PATH": "$(rootpath data-with-rejects.csv)",
+            "SCHEMA_WITH_FRIENDSHIPS_PATH": "$(rootpath schema-with-friendships.tql)",
+            "QUERY_FRIENDSHIP_PATH": "$(rootpath insert-friendship.tql)",
+            "DATA_FRIENDSHIPS_PATH": "$(rootpath friendships.csv)",
         },
         "@typedb_bazel_distribution//platform:is_mac_arm64" : {
             "TYPEDB_LOADER_ARCHIVE": "$(rootpath //loader:assemble-mac-arm64-zip)",
@@ -47,6 +56,9 @@ rust_test(
             "QUERY_PATH": "$(rootpath insert.tql)",
             "DATA_PATH": "$(rootpath data.csv)",
             "DATA_WITH_REJECTS_PATH": "$(rootpath data-with-rejects.csv)",
+            "SCHEMA_WITH_FRIENDSHIPS_PATH": "$(rootpath schema-with-friendships.tql)",
+            "QUERY_FRIENDSHIP_PATH": "$(rootpath insert-friendship.tql)",
+            "DATA_FRIENDSHIPS_PATH": "$(rootpath friendships.csv)",
         },
         "@typedb_bazel_distribution//platform:is_windows_x86_64" : {
             "TYPEDB_LOADER_ARCHIVE": "$(rootpath //loader:assemble-windows-x86_64-zip)",
@@ -55,9 +67,20 @@ rust_test(
             "QUERY_PATH": "$(rootpath insert.tql)",
             "DATA_PATH": "$(rootpath data.csv)",
             "DATA_WITH_REJECTS_PATH": "$(rootpath data-with-rejects.csv)",
+            "SCHEMA_WITH_FRIENDSHIPS_PATH": "$(rootpath schema-with-friendships.tql)",
+            "QUERY_FRIENDSHIP_PATH": "$(rootpath insert-friendship.tql)",
+            "DATA_FRIENDSHIPS_PATH": "$(rootpath friendships.csv)",
         },
     }),
-    data = ["schema.tql", "insert.tql", "data.csv", "data-with-rejects.csv"]
+    data = [
+        "schema.tql",
+        "insert.tql",
+        "data.csv",
+        "data-with-rejects.csv",
+        "schema-with-friendships.tql",
+        "insert-friendship.tql",
+        "friendships.csv",
+    ]
     + select({
         "@typedb_bazel_distribution//platform:is_linux_x86_64": [
             "//loader:assemble-linux-x86_64-targz",
@@ -86,6 +109,14 @@ rust_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["**/*.rs", "BUILD"]),
-    exclude = ["schema.tql", "insert.tql", "data.csv", "data-with-rejects.csv"],
+    exclude = [
+        "schema.tql",
+        "insert.tql",
+        "data.csv",
+        "data-with-rejects.csv",
+        "schema-with-friendships.tql",
+        "insert-friendship.tql",
+        "friendships.csv",
+    ],
     license_type = "mpl-header",
 )

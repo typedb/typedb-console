@@ -14,7 +14,7 @@ use crate::{
     checkpoint::CheckpointWriter,
     cli::Args,
     fatal, fatal_with,
-    params::ResolvedParams,
+    params::Params,
 };
 
 pub(crate) const CHECKPOINT_FILENAME: &str = "checkpoint.json";
@@ -33,13 +33,13 @@ pub(crate) struct LoaderOutput {
 /// Resolves the output directory, creates it, and prepares the checkpoint writer. Exits if
 /// `--no-checkpoint` is absent and a checkpoint already exists in the chosen directory (the
 /// user must then choose to `--resume`, `--output-dir`, or `--no-checkpoint`).
-pub(crate) fn prepare_output(args: &Args, resolved: &ResolvedParams, resuming: bool) -> LoaderOutput {
+pub(crate) fn prepare_output(args: &Args, params: &Params, resuming: bool) -> LoaderOutput {
     let output_dir: PathBuf = if let Some(dir) = args.resume.as_deref() {
         PathBuf::from(dir)
     } else if let Some(dir) = args.output_dir.as_deref() {
         PathBuf::from(dir)
     } else {
-        default_output_dir(&resolved.data)
+        default_output_dir(&params.data)
     };
     fs::create_dir_all(&output_dir).unwrap_or_else(|err| {
         fatal(format!("failed to create output directory '{}': {err}", output_dir.display()))

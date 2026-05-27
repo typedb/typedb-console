@@ -20,7 +20,7 @@ use typedb_driver::{
 use crate::{
     checkpoint::Checkpoint,
     fatal,
-    params::ResolvedParams,
+    params::Params,
     query::{CellType, GivenSpec},
 };
 
@@ -57,20 +57,20 @@ pub(crate) struct RowRejection {
 impl CsvLoader {
     /// Opens (or resumes) the data file based on the checkpoint's byte watermark. Exits on
     /// failure with a message that distinguishes a fresh open from a resume attempt.
-    pub(crate) fn open_for_load(resolved: &ResolvedParams, inputs: Vec<GivenSpec>, state: &Checkpoint) -> Self {
+    pub(crate) fn open_for_load(params: &Params, inputs: Vec<GivenSpec>, state: &Checkpoint) -> Self {
         if state.watermark_bytes > 0 {
             Self::resume_at(
-                &resolved.data,
-                resolved.header,
+                &params.data,
+                params.header,
                 inputs,
-                resolved.null_values.clone(),
-                resolved.max_rows.map(|m| m.saturating_sub(state.watermark * resolved.batch_rows)),
+                params.null_values.clone(),
+                params.max_rows.map(|m| m.saturating_sub(state.watermark * params.batch_rows)),
                 state.watermark_bytes,
             )
-            .unwrap_or_else(|err| fatal(format!("failed to resume data file '{}': {err}", resolved.data)))
+            .unwrap_or_else(|err| fatal(format!("failed to resume data file '{}': {err}", params.data)))
         } else {
-            Self::open(&resolved.data, resolved.header, inputs, resolved.null_values.clone(), resolved.max_rows)
-                .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", resolved.data)))
+            Self::open(&params.data, params.header, inputs, params.null_values.clone(), params.max_rows)
+                .unwrap_or_else(|err| fatal(format!("failed to open data file '{}': {err}", params.data)))
         }
     }
 

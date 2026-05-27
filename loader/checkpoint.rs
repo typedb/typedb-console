@@ -17,7 +17,7 @@ use typedb_driver::TypeDBDriver;
 
 use crate::{
     ExitCode, fatal, fatal_with,
-    params::{ResolvedParams, resume_warnings},
+    params::{Params, resume_warnings},
     prompts::{confirm, resolve_in_flight_skips},
 };
 
@@ -241,13 +241,13 @@ pub(crate) fn hash_string(s: &str) -> String {
 /// Interactive: shows resume warnings and prompts for confirmation when params have drifted,
 /// and asks per-in-flight whether to skip or retry.
 pub(crate) fn initialize_checkpoint(
-    resolved: &ResolvedParams,
+    params: &Params,
     resume_checkpoint: Option<Checkpoint>,
     hashes: Option<Hashes>,
 ) -> Checkpoint {
     let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
         let hashes = hashes.as_ref().expect("resume requires checkpointing, which always produces hashes");
-        let warnings = resume_warnings(resolved, prior, hashes);
+        let warnings = resume_warnings(params, prior, hashes);
         if !warnings.is_empty() {
             eprintln!("\nResume warnings:");
             for w in &warnings {
@@ -272,7 +272,7 @@ pub(crate) fn initialize_checkpoint(
             }
             prior
         }
-        None => Checkpoint::new(resolved.to_checkpoint_params(), hashes.unwrap_or_default()),
+        None => Checkpoint::new(params.to_checkpoint_params(), hashes.unwrap_or_default()),
     }
 }
 

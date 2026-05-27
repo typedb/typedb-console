@@ -26,7 +26,7 @@ use crate::{
     data::{BatchOutcome, CsvLoader, RowRejection},
     fatal,
     output::LoaderOutput,
-    params::ResolvedParams,
+    params::Params,
     progress::{LoadStats, print_progress, print_summary},
     query::GivenSpec,
     rejects::RejectsWriter,
@@ -36,7 +36,7 @@ use crate::{
 /// batches, and prints a final summary. Returns `Err(reason)` iff a stop condition was tripped
 /// (Ctrl+C, --stop-on-error, --max-rejects); `Ok(())` is a clean finish.
 pub(crate) async fn run_load(
-    resolved: ResolvedParams,
+    params: Params,
     inputs: Vec<GivenSpec>,
     query_text: String,
     driver: TypeDBDriver,
@@ -52,12 +52,12 @@ pub(crate) async fn run_load(
     let completed_above_watermark: HashSet<usize> =
         checkpoint.completed_above_watermark.iter().map(|c| c.batch_index).collect();
 
-    let mut loader = CsvLoader::open_for_load(&resolved, inputs, &checkpoint);
+    let mut loader = CsvLoader::open_for_load(&params, inputs, &checkpoint);
     let rejects = RejectsWriter::open_for_load(rejects_csv, rejects_log, loader.headers().cloned(), resuming);
     let total_bytes = loader.file_size();
 
     let driver = Arc::new(driver);
-    let database: Arc<str> = Arc::from(resolved.database.as_str());
+    let database: Arc<str> = Arc::from(params.database.as_str());
     let query_text: Arc<str> = Arc::from(query_text);
 
     let mut state = LoadState::new(checkpoint, rejects, checkpoint_writer);
@@ -71,8 +71,8 @@ pub(crate) async fn run_load(
 
     loop {
         state.check_shutdown(&shutdown);
-        while producing && !state.stop_requested() && in_flight.len() < resolved.parallel_batches {
-            let batch = match loader.next_batch(resolved.batch_rows) {
+        while producing && !state.stop_requested() && in_flight.len() < params.parallel_batches {
+            let batch = match loader.next_batch(params.batch_rows) {
                 Some(b) => b,
                 None => {
                     producing = false;
@@ -100,7 +100,7 @@ pub(crate) async fn run_load(
 
         let Some(joined) = in_flight.next().await else { break };
         let result = joined.unwrap_or_else(|err| fatal(format!("batch task panicked: {err}")));
-        state.apply_batch_result(&resolved, result);
+        state.apply_batch_result(&params, result);
 
         print_progress(state.stats(), started, loader.bytes_position(), total_bytes);
     }
@@ -146,7 +146,7 @@ impl LoadState {
     /// Folds one completed batch into the accumulating state: logs and records rejections,
     /// updates stats, records a commit failure, advances the checkpoint, and trips stop
     /// conditions (--stop-on-error, --max-rejects).
-    fn apply_batch_result(&mut self, resolved: &ResolvedParams, result: BatchResult) {
+    fn apply_batch_result(&mut self, params: &Params, result: BatchResult) {
         self.stats.rows_attempted += result.rows_attempted;
         for rejection in &result.parse_rejected {
             eprintln!("row {}: {}", rejection.row_number, rejection.message);
@@ -155,7 +155,7 @@ impl LoadState {
                 .unwrap_or_else(|err| fatal(err));
         }
         self.stats.rows_rejected += result.parse_rejected.len();
-        if resolved.stop_on_error && !result.parse_rejected.is_empty() {
+        if params.stop_on_error && !result.parse_rejected.is_empty() {
             self.stop.request("aborted due to --stop-on-error");
         }
 
@@ -173,7 +173,7 @@ impl LoadState {
                         )
                         .unwrap_or_else(|err| fatal(err));
                     self.stats.rows_rejected += result.parsed_count;
-                    if resolved.stop_on_error {
+                    if params.stop_on_error {
                         self.stop.request("aborted due to --stop-on-error");
                     }
                 }
@@ -185,7 +185,7 @@ impl LoadState {
         self.checkpoint.record_finish(result.batch_index);
         self.persist();
 
-        if let Some(limit) = resolved.max_rejects {
+        if let Some(limit) = params.max_rejects {
             if self.stats.rows_rejected > limit {
                 self.stop.request(&format!(
                     "aborted: rejected rows ({}) exceeded --max-rejects {}",

@@ -43,24 +43,24 @@ async fn main() {
         fatal_with(ExitCode::UserInputError, "--no-checkpoint cannot be combined with --resume");
     }
 
-    let resolved = resolve_and_validate(&args, resume_checkpoint.as_ref());
-    let password = prompt_password_if_missing(&args, &resolved.username);
-    let (query_text, inputs) = load_query(&resolved.query);
+    let params = resolve_and_validate(&args, resume_checkpoint.as_ref());
+    let password = prompt_password_if_missing(&args, &params.username);
+    let (query_text, inputs) = load_query(&params.query);
 
-    let driver = connect_and_initialize(&resolved, &password, resuming).await;
-    let output = prepare_output(&args, &resolved, resuming);
+    let driver = connect_and_initialize(&params, &password, resuming).await;
+    let output = prepare_output(&args, &params, resuming);
 
     // Hashes are computed iff checkpointing is enabled; resume implies checkpointing, so any
     // resume path can rely on these being present.
     let hashes = if output.checkpoint_writer.is_some() {
-        Some(compute_hashes(&driver, &resolved.database, &resolved.data, &query_text).await)
+        Some(compute_hashes(&driver, &params.database, &params.data, &query_text).await)
     } else {
         None
     };
 
-    let checkpoint = initialize_checkpoint(&resolved, resume_checkpoint, hashes);
+    let checkpoint = initialize_checkpoint(&params, resume_checkpoint, hashes);
 
-    if let Err(reason) = run_load(resolved, inputs, query_text, driver, checkpoint, output, resuming, shutdown).await {
+    if let Err(reason) = run_load(params, inputs, query_text, driver, checkpoint, output, resuming, shutdown).await {
         eprintln!("error: {reason}");
         exit(1);
     }

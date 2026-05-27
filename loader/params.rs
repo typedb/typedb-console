@@ -14,7 +14,7 @@ use crate::{
 /// The settings the loader actually uses, after merging CLI args with values carried by a
 /// checkpoint on resume. Fields here are always concrete (no `Option` for defaults) — the
 /// merging happens in [`resolve_params`].
-pub(crate) struct ResolvedParams {
+pub(crate) struct Params {
     pub query: String,
     pub database: String,
     pub data: String,
@@ -33,7 +33,7 @@ pub(crate) struct ResolvedParams {
     pub tls_root_ca: Option<String>,
 }
 
-impl ResolvedParams {
+impl Params {
     pub(crate) fn to_checkpoint_params(&self) -> CheckpointParams {
         CheckpointParams {
             query: self.query.clone(),
@@ -63,7 +63,7 @@ fn merge_no_flag(flag: Option<bool>, no_flag: bool) -> Option<bool> {
     flag.or(if no_flag { Some(false) } else { None })
 }
 
-pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<ResolvedParams, String> {
+pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>) -> Result<Params, String> {
     // Hard-error if --batch-rows is provided on resume with a different value.
     if let (Some(cli_batch), Some(prior)) = (args.batch_rows, checkpoint) {
         if cli_batch != prior.batch_rows {
@@ -93,7 +93,7 @@ pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>)
         cli.clone().or_else(|| prior.cloned()).unwrap_or_default()
     };
 
-    let resolved = ResolvedParams {
+    let params = Params {
         query: pick_string(&args.query, checkpoint.map(|c| &c.query), "query")?,
         database: pick_string(&args.database, checkpoint.map(|c| &c.database), "database")?,
         data: pick_string(&args.data, checkpoint.map(|c| &c.data), "data")?,
@@ -121,18 +121,18 @@ pub(crate) fn resolve_params(args: &Args, checkpoint: Option<&CheckpointParams>)
         tls_disabled: pick_bool(args.tls_disabled, checkpoint.map(|c| c.tls_disabled), false),
         tls_root_ca: pick_optional_string(&args.tls_root_ca, checkpoint.map(|c| &c.tls_root_ca)),
     };
-    Ok(resolved)
+    Ok(params)
 }
 
 /// Resolves params from CLI + checkpoint, enforces validity rules, and emits warnings for
 /// args that are silently ignored on resume. Exits on any validation failure.
-pub(crate) fn resolve_and_validate(args: &Args, resume_checkpoint: Option<&Checkpoint>) -> ResolvedParams {
-    let resolved = resolve_params(args, resume_checkpoint.map(|c| &c.params))
+pub(crate) fn resolve_and_validate(args: &Args, resume_checkpoint: Option<&Checkpoint>) -> Params {
+    let params = resolve_params(args, resume_checkpoint.map(|c| &c.params))
         .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
-    if resolved.batch_rows == 0 {
+    if params.batch_rows == 0 {
         fatal_with(ExitCode::UserInputError, "--batch-rows must be greater than 0");
     }
-    if resolved.parallel_batches == 0 {
+    if params.parallel_batches == 0 {
         fatal_with(ExitCode::UserInputError, "--parallel-batches must be greater than 0");
     }
     if resume_checkpoint.is_some() {
@@ -143,28 +143,28 @@ pub(crate) fn resolve_and_validate(args: &Args, resume_checkpoint: Option<&Check
             eprintln!("warning: --create-db is ignored when resuming; the database is assumed to exist");
         }
     }
-    resolved
+    params
 }
 
 /// Collects all the ways the current run's params or hashes diverge from the checkpoint. Pure;
 /// the caller decides how to present them.
-pub(crate) fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, hashes: &Hashes) -> Vec<String> {
+pub(crate) fn resume_warnings(params: &Params, prior: &Checkpoint, hashes: &Hashes) -> Vec<String> {
     let mut warnings: Vec<String> = Vec::new();
 
-    if resolved.header != prior.params.header {
+    if params.header != prior.params.header {
         warnings.push(format!(
             "--header changed since checkpoint ({} -> {}); CSV column interpretation may differ",
-            prior.params.header, resolved.header
+            prior.params.header, params.header
         ));
     }
-    if resolved.null_values != prior.params.null_values {
+    if params.null_values != prior.params.null_values {
         warnings.push(format!(
             "--null-values changed since checkpoint ({:?} -> {:?}); cell interpretation may differ",
-            prior.params.null_values, resolved.null_values
+            prior.params.null_values, params.null_values
         ));
     }
-    if resolved.data != prior.params.data {
-        warnings.push(format!("--data path changed since checkpoint ('{}' -> '{}')", prior.params.data, resolved.data));
+    if params.data != prior.params.data {
+        warnings.push(format!("--data path changed since checkpoint ('{}' -> '{}')", prior.params.data, params.data));
     }
     if hashes.data != prior.hashes.data {
         warnings.push(format!(
@@ -178,9 +178,9 @@ pub(crate) fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, has
             prior.hashes.schema, hashes.schema
         ));
     }
-    if resolved.query != prior.params.query {
+    if params.query != prior.params.query {
         warnings
-            .push(format!("--query path changed since checkpoint ('{}' -> '{}')", prior.params.query, resolved.query));
+            .push(format!("--query path changed since checkpoint ('{}' -> '{}')", prior.params.query, params.query));
     }
     if hashes.query != prior.hashes.query {
         warnings.push(format!(
@@ -188,10 +188,10 @@ pub(crate) fn resume_warnings(resolved: &ResolvedParams, prior: &Checkpoint, has
             prior.hashes.query, hashes.query
         ));
     }
-    if resolved.database != prior.params.database {
+    if params.database != prior.params.database {
         warnings.push(format!(
             "--database changed since checkpoint ('{}' -> '{}')",
-            prior.params.database, resolved.database
+            prior.params.database, params.database
         ));
     }
 

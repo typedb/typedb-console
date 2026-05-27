@@ -54,14 +54,14 @@ pub(crate) struct CheckpointParams {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InFlightBatch {
-    pub batch_idx: usize,
+    pub batch_index: usize,
     pub byte_end: u64,
     pub first_row: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CompletedBatch {
-    pub batch_idx: usize,
+    pub batch_index: usize,
     pub byte_end: u64,
 }
 
@@ -122,43 +122,43 @@ impl Checkpoint {
     /// Records that a batch has finished (either committed or rejected). The `byte_end` is taken
     /// from the prior dispatch record. If the finished batch is contiguous with the watermark,
     /// the watermark slides forward, also absorbing any previously-parked completions.
-    pub(crate) fn record_finish(&mut self, batch_idx: usize) {
-        let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_idx) else {
+    pub(crate) fn record_finish(&mut self, batch_index: usize) {
+        let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_index) else {
             return;
         };
-        self.absorb_finished_batch(batch_idx, byte_end);
+        self.absorb_finished_batch(batch_index, byte_end);
     }
 
     /// Drops an in-flight entry without dispatching it. Used on resume when the user chooses to
     /// treat an in-flight batch as already committed. Advances the watermark just like a
     /// normal completion would.
-    pub(crate) fn mark_in_flight_as_skipped(&mut self, batch_idx: usize) {
-        if let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_idx) {
-            self.absorb_finished_batch(batch_idx, byte_end);
+    pub(crate) fn mark_in_flight_as_skipped(&mut self, batch_index: usize) {
+        if let Some(byte_end) = take_in_flight(&mut self.in_flight, batch_index) {
+            self.absorb_finished_batch(batch_index, byte_end);
         }
     }
 
-    fn absorb_finished_batch(&mut self, batch_idx: usize, byte_end: u64) {
-        if batch_idx == self.watermark + 1 {
-            self.watermark = batch_idx;
+    fn absorb_finished_batch(&mut self, batch_index: usize, byte_end: u64) {
+        if batch_index == self.watermark + 1 {
+            self.watermark = batch_index;
             self.watermark_bytes = byte_end;
             while let Some(byte_end) = take_completed(&mut self.completed_above_watermark, self.watermark + 1) {
                 self.watermark += 1;
                 self.watermark_bytes = byte_end;
             }
         } else {
-            self.completed_above_watermark.push(CompletedBatch { batch_idx, byte_end });
+            self.completed_above_watermark.push(CompletedBatch { batch_index, byte_end });
         }
     }
 }
 
-fn take_in_flight(in_flight: &mut Vec<InFlightBatch>, batch_idx: usize) -> Option<u64> {
-    let pos = in_flight.iter().position(|b| b.batch_idx == batch_idx)?;
+fn take_in_flight(in_flight: &mut Vec<InFlightBatch>, batch_index: usize) -> Option<u64> {
+    let pos = in_flight.iter().position(|b| b.batch_index == batch_index)?;
     Some(in_flight.swap_remove(pos).byte_end)
 }
 
-fn take_completed(completed: &mut Vec<CompletedBatch>, batch_idx: usize) -> Option<u64> {
-    let pos = completed.iter().position(|c| c.batch_idx == batch_idx)?;
+fn take_completed(completed: &mut Vec<CompletedBatch>, batch_index: usize) -> Option<u64> {
+    let pos = completed.iter().position(|c| c.batch_index == batch_index)?;
     Some(completed.swap_remove(pos).byte_end)
 }
 

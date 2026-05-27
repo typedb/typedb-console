@@ -207,10 +207,10 @@ async fn main() {
     };
 
     let seek_byte_offset = state.watermark_bytes;
-    let mut next_batch_idx = state.watermark + 1;
+    let mut next_batch_index = state.watermark + 1;
     // Batches the prior run already completed (out-of-order) -- read past them but don't dispatch.
     let completed_above_watermark: HashSet<usize> =
-        state.completed_above_watermark.iter().map(|c| c.batch_idx).collect();
+        state.completed_above_watermark.iter().map(|c| c.batch_index).collect();
 
     let mut loader = if seek_byte_offset > 0 {
         CsvLoader::resume_at(
@@ -263,17 +263,17 @@ async fn main() {
                     break;
                 }
             };
-            let batch_idx = next_batch_idx;
-            next_batch_idx += 1;
+            let batch_index = next_batch_index;
+            next_batch_index += 1;
             // Already-completed batches from a prior run: read past them to keep the cursor aligned.
             // (User-skipped in-flight batches were merged into completed_above_watermark above.)
-            if completed_above_watermark.contains(&batch_idx) {
+            if completed_above_watermark.contains(&batch_index) {
                 continue;
             }
 
             let first_row = batch.first_row.clone().unwrap_or_default();
             let byte_end = batch.byte_end;
-            state.record_dispatch(InFlightBatch { batch_idx, byte_end, first_row });
+            state.record_dispatch(InFlightBatch { batch_index, byte_end, first_row });
             if let Some(writer) = &checkpoint_writer {
                 writer.write(&state).unwrap_or_else(|err| fatal(err));
             }
@@ -282,7 +282,7 @@ async fn main() {
             let database = database.clone();
             let query_text = query_text.clone();
             in_flight
-                .push(tokio::spawn(async move { process_batch(driver, database, query_text, batch_idx, batch).await }));
+                .push(tokio::spawn(async move { process_batch(driver, database, query_text, batch_index, batch).await }));
         }
 
         let Some(joined) = in_flight.next().await else { break };
@@ -304,12 +304,12 @@ async fn main() {
             match result.commit_result {
                 Ok(()) => stats.rows_committed += result.parsed_count,
                 Err(err) => {
-                    eprintln!("batch {}: {} rows rejected by commit: {err}", result.batch_idx, result.parsed_count);
+                    eprintln!("batch {}: {} rows rejected by commit: {err}", result.batch_index, result.parsed_count);
                     rejects
                         .record_batch_failure(
                             &result.parsed_row_numbers,
                             &result.parsed_records,
-                            result.batch_idx,
+                            result.batch_index,
                             &err,
                         )
                         .unwrap_or_else(|err| fatal(err));
@@ -323,7 +323,7 @@ async fn main() {
 
         // Record the finish in the checkpoint state regardless of success/failure -- the row data
         // has been recorded one way or another (committed, or written to the rejects file).
-        state.record_finish(result.batch_idx);
+        state.record_finish(result.batch_index);
         if let Some(writer) = &checkpoint_writer {
             writer.write(&state).unwrap_or_else(|err| fatal(err));
         }
@@ -379,7 +379,7 @@ impl Stop {
 }
 
 struct BatchResult {
-    batch_idx: usize,
+    batch_index: usize,
     rows_attempted: usize,
     parse_rejected: Vec<RowRejection>,
     parsed_row_numbers: Vec<usize>,
@@ -392,14 +392,14 @@ async fn process_batch(
     driver: Arc<TypeDBDriver>,
     database: Arc<str>,
     query_text: Arc<str>,
-    batch_idx: usize,
+    batch_index: usize,
     batch: data::BatchOutcome,
 ) -> BatchResult {
     let parsed_count = batch.rows.len();
     let commit_result =
         if parsed_count > 0 { commit_batch(&driver, &database, &query_text, batch.rows).await } else { Ok(()) };
     BatchResult {
-        batch_idx,
+        batch_index,
         rows_attempted: batch.rows_attempted,
         parse_rejected: batch.rejected,
         parsed_row_numbers: batch.row_numbers,

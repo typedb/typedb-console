@@ -29,7 +29,7 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
         "These batches were dispatched but never confirmed as committed. Verify them manually against the database before deciding."
     );
     for batch in in_flight {
-        eprintln!("  - batch {} (first row: {})", batch.batch_idx, format_first_row(&batch.first_row));
+        eprintln!("  - batch {} (first row: {})", batch.batch_index, format_first_row(&batch.first_row));
     }
     eprintln!(
         "\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)"
@@ -46,15 +46,15 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
     };
     match mode {
         InFlightMode::ReprocessAll => HashSet::new(),
-        InFlightMode::SkipAll => in_flight.iter().map(|b| b.batch_idx).collect(),
+        InFlightMode::SkipAll => in_flight.iter().map(|b| b.batch_index).collect(),
         InFlightMode::DecideEach => in_flight
             .iter()
             .filter(|batch| {
                 let q =
-                    format!("Reprocess batch {} (first row: {})?", batch.batch_idx, format_first_row(&batch.first_row));
+                    format!("Reprocess batch {} (first row: {})?", batch.batch_index, format_first_row(&batch.first_row));
                 !confirm(&q)
             })
-            .map(|batch| batch.batch_idx)
+            .map(|batch| batch.batch_index)
             .collect(),
     }
 }

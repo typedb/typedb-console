@@ -59,7 +59,7 @@ impl RejectsWriter {
         &mut self,
         row_numbers: &[usize],
         records: &[StringRecord],
-        batch_idx: usize,
+        batch_index: usize,
         message: &str,
     ) -> Result<(), String> {
         if records.is_empty() {
@@ -75,7 +75,7 @@ impl RejectsWriter {
         let first = *row_numbers.first().unwrap();
         let last = *row_numbers.last().unwrap();
         let label = if first == last { format!("row {first}") } else { format!("rows {first}-{last}") };
-        writeln!(self.log_writer.as_mut().unwrap(), "{label}, batch {batch_idx}: {message}")
+        writeln!(self.log_writer.as_mut().unwrap(), "{label}, batch {batch_index}: {message}")
             .map_err(|err| format!("writing rejection log to '{}': {err}", self.log_path.display()))?;
         self.written += records.len();
         self.flush()

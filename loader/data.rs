@@ -17,14 +17,14 @@ use typedb_driver::{
     transaction::{QueryGivenEntry, QueryGivenRow},
 };
 
-use crate::query::{CellType, GivenInput};
+use crate::query::{CellType, GivenSpec};
 
 pub(crate) struct CsvLoader {
     reader: Reader<BufReader<File>>,
     headers: Option<StringRecord>,
     column_indices: Vec<usize>,
     expected_columns: usize,
-    inputs: Vec<GivenInput>,
+    inputs: Vec<GivenSpec>,
     null_values: Vec<String>,
     rows_read: usize,
     row_limit: usize,
@@ -53,7 +53,7 @@ impl CsvLoader {
     pub(crate) fn open(
         path: &str,
         has_header: bool,
-        inputs: Vec<GivenInput>,
+        inputs: Vec<GivenSpec>,
         null_values: Vec<String>,
         max_rows: Option<usize>,
     ) -> Result<Self, String> {
@@ -66,7 +66,7 @@ impl CsvLoader {
     pub(crate) fn resume_at(
         path: &str,
         has_header: bool,
-        inputs: Vec<GivenInput>,
+        inputs: Vec<GivenSpec>,
         null_values: Vec<String>,
         max_rows: Option<usize>,
         byte_offset: u64,
@@ -77,7 +77,7 @@ impl CsvLoader {
     fn new(
         path: &str,
         has_header: bool,
-        inputs: Vec<GivenInput>,
+        inputs: Vec<GivenSpec>,
         null_values: Vec<String>,
         max_rows: Option<usize>,
         seek_to: Option<u64>,
@@ -209,7 +209,7 @@ impl CsvLoader {
     }
 }
 
-fn parse_cell(cell: &str, input: &GivenInput, null_values: &[String]) -> Result<QueryGivenEntry, String> {
+fn parse_cell(cell: &str, input: &GivenSpec, null_values: &[String]) -> Result<QueryGivenEntry, String> {
     let is_null = if null_values.is_empty() { cell.is_empty() } else { null_values.iter().any(|v| v == cell) };
     if is_null {
         return if input.optional {

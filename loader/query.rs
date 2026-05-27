@@ -28,13 +28,13 @@ pub(crate) enum CellType {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GivenInput {
+pub(crate) struct GivenSpec {
     pub(crate) name: String,
     pub(crate) cell_type: CellType,
     pub(crate) optional: bool,
 }
 
-pub(crate) fn parse_query_inputs(query_text: &str) -> Result<Vec<GivenInput>, String> {
+pub(crate) fn parse_query_inputs(query_text: &str) -> Result<Vec<GivenSpec>, String> {
     let parsed = typeql::parse_query(query_text).map_err(|err| format!("failed to parse query: {err}"))?;
     let pipeline = match parsed.into_structure() {
         QueryStructure::Pipeline(p) => p,
@@ -52,7 +52,7 @@ pub(crate) fn parse_query_inputs(query_text: &str) -> Result<Vec<GivenInput>, St
     variables.into_iter().map(into_given_input).collect()
 }
 
-fn into_given_input(arg: Argument) -> Result<GivenInput, String> {
+fn into_given_input(arg: Argument) -> Result<GivenSpec, String> {
     let Argument { var, type_, .. } = arg;
     let name = match var {
         Variable::Named { ident, .. } => ident.as_str_unchecked().to_owned(),
@@ -84,5 +84,5 @@ fn into_given_input(arg: Argument) -> Result<GivenInput, String> {
         typeql::token::ValueType::DateTimeTZ => CellType::DatetimeTz,
         typeql::token::ValueType::Duration => CellType::Duration,
     };
-    Ok(GivenInput { name, cell_type, optional })
+    Ok(GivenSpec { name, cell_type, optional })
 }

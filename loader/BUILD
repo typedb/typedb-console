@@ -24,6 +24,7 @@ rust_binary(
 
         # External dependencies
         "@crates//:chrono",
+        "@crates//:chrono-tz",
         "@crates//:clap",
         "@crates//:csv",
         "@crates//:futures",

@@ -96,13 +96,20 @@ insert
 
 Supported value types in `given` declarations are TypeDB's built-in types:
 `boolean`, `integer`, `double`, `decimal`, `string`, `date`, `datetime`, `datetime-tz`,
-and `duration`. (`datetime-tz` is declared but not yet accepted by the loader.) Append
-`?` to mark an input as optional; optional inputs accept null cells and pass an empty
-binding into the pipeline, which works naturally with `try { ... };`.
+and `duration`. Append `?` to mark an input as optional; optional inputs accept null
+cells and pass an empty binding into the pipeline, which works naturally with
+`try { ... };`.
 
 Date / datetime parsing:
 - `date`: `YYYY-MM-DD`.
 - `datetime`: `YYYY-MM-DDTHH:MM:SS[.fff]` or `YYYY-MM-DD HH:MM:SS`.
+- `datetime-tz`: a datetime followed by a time zone, per the
+  [TypeQL reference](https://typedb.com/docs/typeql-reference/values/datetimetz/).
+  The zone is either an ISO-8601 UTC offset (`Z`, `±HH`, `±HH:MM`, or `±HHMM`)
+  attached directly to the datetime, or an IANA TZ identifier
+  (`Europe/London`, `Asia/Kolkata`, ...) separated from the datetime by a single
+  space. Examples: `2024-03-30T12:00:00Z`, `1920-04-26T16:30-09:30`,
+  `1987-12-22T17:29 Asia/Kolkata`.
 - `duration`: ISO-8601 duration (e.g. `P1Y2M3DT4H5M6S`).
 
 ## CSV data file

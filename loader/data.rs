@@ -6,12 +6,13 @@
 
 use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone as ChronoTimeZone};
+use chrono_tz::Tz;
 use csv::{Reader, StringRecord};
 use typedb_driver::{
     concept::{
         Value,
-        value::{Decimal, Duration},
+        value::{Decimal, Duration, TimeZone},
     },
     transaction::{QueryGivenEntry, QueryGivenRow},
 };
@@ -227,9 +228,7 @@ fn parse_cell(cell: &str, input: &GivenInput, null_values: &[String]) -> Result<
             NaiveDate::parse_from_str(cell, "%Y-%m-%d").map_err(|err| format!("invalid date (YYYY-MM-DD): {err}"))?,
         ),
         CellType::Datetime => Value::Datetime(parse_naive_datetime(cell)?),
-        CellType::DatetimeTz => {
-            return Err(format!("datetime-tz inputs (e.g. '${}') are not yet supported by the loader", input.name));
-        }
+        CellType::DatetimeTz => Value::DatetimeTZ(parse_datetime_tz(cell)?),
         CellType::Duration => {
             Value::Duration(Duration::from_str(cell).map_err(|_| format!("invalid ISO-8601 duration: '{cell}'"))?)
         }
@@ -283,4 +282,79 @@ fn parse_naive_datetime(cell: &str) -> Result<NaiveDateTime, String> {
         .or_else(|_| NaiveDateTime::parse_from_str(cell, "%Y-%m-%dT%H:%M:%S"))
         .or_else(|_| NaiveDateTime::parse_from_str(cell, "%Y-%m-%d %H:%M:%S"))
         .map_err(|err| format!("invalid datetime (expected ISO-8601): {err}"))
+}
+
+/// Parses a datetime-tz literal: the datetime portion follows
+/// ISO-8601 with optional fractional seconds, and the zone is either an ISO-8601 UTC offset
+/// (`Z`, `±HH`, `±HH:MM`, or `±HHMM`, attached without a space) or an IANA TZ identifier
+/// (`Europe/London`, `Asia/Kolkata`, ...) separated from the datetime by a single space.
+fn parse_datetime_tz(cell: &str) -> Result<DateTime<TimeZone>, String> {
+    if let Some((dt_str, suffix)) = cell.rsplit_once(' ') {
+        if let Ok(tz) = suffix.parse::<Tz>() {
+            let naive = parse_datetime_tz_naive(dt_str)?;
+            return TimeZone::IANA(tz)
+                .from_local_datetime(&naive)
+                .earliest()
+                .ok_or_else(|| format!("local time '{naive}' does not exist in IANA zone '{suffix}'"));
+        }
+    }
+    let (dt_str, offset) = split_trailing_offset(cell)?;
+    let naive = parse_datetime_tz_naive(dt_str)?;
+    TimeZone::Fixed(offset)
+        .from_local_datetime(&naive)
+        .earliest()
+        .ok_or_else(|| format!("invalid local time '{naive}' with offset {offset}"))
+}
+
+fn parse_datetime_tz_naive(s: &str) -> Result<NaiveDateTime, String> {
+    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f")
+        .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S"))
+        .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M"))
+        .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S%.f"))
+        .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S"))
+        .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M"))
+        .map_err(|err| format!("invalid datetime (expected ISO-8601): {err}"))
+}
+
+/// Splits a datetime-tz cell into the datetime portion and a fixed offset. Searches for the offset
+/// marker (`Z` or a `+`/`-` after the date) so that the `-` separators inside the date portion are
+/// not mistaken for a sign.
+fn split_trailing_offset(cell: &str) -> Result<(&str, FixedOffset), String> {
+    if let Some(dt_str) = cell.strip_suffix('Z') {
+        return Ok((dt_str, FixedOffset::east_opt(0).unwrap()));
+    }
+    if cell.len() <= 10 {
+        return Err(format!("datetime-tz too short: '{cell}'"));
+    }
+    let after_date = &cell[10..];
+    let sign_in_after = after_date
+        .rfind(|c: char| c == '+' || c == '-')
+        .ok_or_else(|| format!("datetime-tz missing zone (expected Z, ±HH[:MM], ±HHMM, or ' <IANA>'): '{cell}'"))?;
+    let split = 10 + sign_in_after;
+    Ok((&cell[..split], parse_fixed_offset(&cell[split..])?))
+}
+
+fn parse_fixed_offset(s: &str) -> Result<FixedOffset, String> {
+    let bytes = s.as_bytes();
+    if bytes.len() < 3 {
+        return Err(format!("invalid offset '{s}' (expected ±HH, ±HH:MM, or ±HHMM)"));
+    }
+    let sign: i32 = match bytes[0] {
+        b'+' => 1,
+        b'-' => -1,
+        _ => return Err(format!("invalid offset '{s}' (must start with + or -)")),
+    };
+    let body = &s[1..];
+    let (hh, mm) = match body.len() {
+        2 => (body, "00"),
+        4 => (&body[..2], &body[2..]),
+        5 if body.as_bytes()[2] == b':' => (&body[..2], &body[3..]),
+        _ => return Err(format!("invalid offset '{s}' (expected ±HH, ±HH:MM, or ±HHMM)")),
+    };
+    let h: i32 = hh.parse().map_err(|_| format!("invalid offset hours in '{s}'"))?;
+    let m: i32 = mm.parse().map_err(|_| format!("invalid offset minutes in '{s}'"))?;
+    if !(0..=23).contains(&h) || !(0..=59).contains(&m) {
+        return Err(format!("offset out of range: '{s}'"));
+    }
+    FixedOffset::east_opt(sign * (h * 3600 + m * 60)).ok_or_else(|| format!("offset out of range: '{s}'"))
 }

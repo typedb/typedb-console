@@ -46,6 +46,9 @@ features = {}
 	[dependencies.chrono]
 		workspace = true
 
+	[dependencies.chrono-tz]
+		workspace = true
+
 	[dependencies.serde_json]
 		workspace = true
 

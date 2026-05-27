@@ -12,7 +12,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test", "rustfmt_test")
 
 rust_binary(
     name = "loader-native",
@@ -38,6 +38,11 @@ rust_binary(
         "crate-name=typedb-loader"
     ],
     visibility = ["//visibility:public"],
+)
+
+rust_test(
+    name = "loader-unit-tests",
+    crate = ":loader-native",
 )
 
 pkg_tar(

@@ -29,7 +29,26 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  unit-tests:
+    name: Loader unit tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+      - name: Configure bazel remote cache
+        env:
+          ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run @typedb_dependencies//distribution/artifact:create-netrc
+      - run: bazel test //loader:loader-unit-tests --test_output=streamed
+
+  assembly-tests:
     name: Loader assembly tests
     runs-on: ubuntu-22.04
     steps:

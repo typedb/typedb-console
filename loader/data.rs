@@ -382,3 +382,310 @@ fn parse_fixed_offset(s: &str) -> Result<FixedOffset, String> {
     }
     FixedOffset::east_opt(sign * (h * 3600 + m * 60)).ok_or_else(|| format!("offset out of range: '{s}'"))
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+
+    use super::*;
+
+    fn spec(cell_type: CellType, optional: bool) -> GivenSpec {
+        GivenSpec { name: "x".to_owned(), cell_type, optional }
+    }
+
+    fn entry_value(entry: QueryGivenEntry) -> Value {
+        match entry {
+            QueryGivenEntry::Value(v) => v,
+            other => panic!("expected Value, got {other:?}"),
+        }
+    }
+
+    // ---------- parse_bool ----------
+
+    #[test]
+    fn parse_bool_accepts_canonical_forms() {
+        assert_eq!(parse_bool("true").unwrap(), true);
+        assert_eq!(parse_bool("false").unwrap(), false);
+    }
+
+    #[test]
+    fn parse_bool_is_case_insensitive() {
+        assert_eq!(parse_bool("TRUE").unwrap(), true);
+        assert_eq!(parse_bool("False").unwrap(), false);
+        assert_eq!(parse_bool("TrUe").unwrap(), true);
+    }
+
+    #[test]
+    fn parse_bool_rejects_other_values() {
+        assert!(parse_bool("").is_err());
+        assert!(parse_bool("yes").is_err());
+        assert!(parse_bool("1").is_err());
+        assert!(parse_bool(" true").is_err()); // whitespace not stripped
+    }
+
+    // ---------- parse_decimal ----------
+
+    #[test]
+    fn parse_decimal_zero() {
+        let d = parse_decimal("0").unwrap();
+        assert_eq!(d, parse_decimal("0.0").unwrap());
+        assert_eq!(d, parse_decimal("-0").unwrap());
+    }
+
+    #[test]
+    fn parse_decimal_signs_round_trip() {
+        // Different ways to spell the same value should be equal.
+        assert_eq!(parse_decimal("1.5").unwrap(), parse_decimal("+1.5").unwrap());
+        assert_ne!(parse_decimal("1.5").unwrap(), parse_decimal("-1.5").unwrap());
+        assert_eq!(parse_decimal("1.5").unwrap(), parse_decimal("1.50").unwrap());
+        assert_eq!(parse_decimal("1.5").unwrap(), parse_decimal("01.5").unwrap());
+    }
+
+    #[test]
+    fn parse_decimal_allows_missing_integer_or_fractional_part() {
+        assert_eq!(parse_decimal(".5").unwrap(), parse_decimal("0.5").unwrap());
+        assert_eq!(parse_decimal("5.").unwrap(), parse_decimal("5").unwrap());
+    }
+
+    #[test]
+    fn parse_decimal_rejects_garbage() {
+        assert!(parse_decimal("").is_err());
+        assert!(parse_decimal(".").is_err()); // empty integer AND empty fractional
+        assert!(parse_decimal("-").is_err());
+        assert!(parse_decimal("abc").is_err());
+        assert!(parse_decimal("1.2.3").is_err()); // split_once eats first '.', rest "2.3" fails to parse
+    }
+
+    #[test]
+    fn parse_decimal_rejects_excess_fractional_digits() {
+        // Max representable fractional precision is FRACTIONAL_PART_DENOMINATOR.ilog10() digits.
+        let limit = Decimal::FRACTIONAL_PART_DENOMINATOR.ilog10() as usize;
+        let too_many = format!("0.{}", "1".repeat(limit + 1));
+        assert!(parse_decimal(&too_many).is_err());
+        // At-limit must succeed.
+        let at_limit = format!("0.{}", "1".repeat(limit));
+        assert!(parse_decimal(&at_limit).is_ok());
+    }
+
+    // ---------- parse_naive_datetime ----------
+
+    #[test]
+    fn parse_naive_datetime_accepts_all_supported_formats() {
+        let expected = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap().and_hms_opt(12, 30, 45).unwrap();
+        assert_eq!(parse_naive_datetime("2024-01-15T12:30:45").unwrap(), expected);
+        assert_eq!(parse_naive_datetime("2024-01-15 12:30:45").unwrap(), expected);
+        // Fractional seconds preserved.
+        let with_frac = parse_naive_datetime("2024-01-15T12:30:45.123").unwrap();
+        assert_eq!(with_frac.date(), expected.date());
+    }
+
+    #[test]
+    fn parse_naive_datetime_rejects_malformed() {
+        assert!(parse_naive_datetime("").is_err());
+        assert!(parse_naive_datetime("2024-01-15").is_err()); // missing time
+        assert!(parse_naive_datetime("not a date").is_err());
+        assert!(parse_naive_datetime("2024-13-01T00:00:00").is_err()); // bad month
+    }
+
+    // ---------- parse_fixed_offset ----------
+
+    #[test]
+    fn parse_fixed_offset_two_digit_form() {
+        assert_eq!(parse_fixed_offset("+00").unwrap(), FixedOffset::east_opt(0).unwrap());
+        assert_eq!(parse_fixed_offset("+05").unwrap(), FixedOffset::east_opt(5 * 3600).unwrap());
+        assert_eq!(parse_fixed_offset("-05").unwrap(), FixedOffset::east_opt(-5 * 3600).unwrap());
+    }
+
+    #[test]
+    fn parse_fixed_offset_colon_and_compact_forms_agree() {
+        assert_eq!(parse_fixed_offset("+02:30").unwrap(), parse_fixed_offset("+0230").unwrap());
+        assert_eq!(parse_fixed_offset("-05:00").unwrap(), parse_fixed_offset("-0500").unwrap());
+        assert_eq!(parse_fixed_offset("+05:00").unwrap(), parse_fixed_offset("+05").unwrap());
+    }
+
+    #[test]
+    fn parse_fixed_offset_rejects_out_of_range() {
+        assert!(parse_fixed_offset("+24:00").is_err()); // hours
+        assert!(parse_fixed_offset("+02:60").is_err()); // minutes
+    }
+
+    #[test]
+    fn parse_fixed_offset_rejects_bad_syntax() {
+        assert!(parse_fixed_offset("").is_err());
+        assert!(parse_fixed_offset("02:00").is_err()); // missing sign
+        assert!(parse_fixed_offset("+2:00").is_err()); // one-digit hour
+        assert!(parse_fixed_offset("+02-30").is_err()); // wrong separator
+        assert!(parse_fixed_offset("garbage").is_err());
+    }
+
+    // ---------- split_trailing_offset ----------
+
+    #[test]
+    fn split_trailing_offset_handles_z() {
+        let (dt, offset) = split_trailing_offset("2024-01-15T12:30:45Z").unwrap();
+        assert_eq!(dt, "2024-01-15T12:30:45");
+        assert_eq!(offset, FixedOffset::east_opt(0).unwrap());
+    }
+
+    #[test]
+    fn split_trailing_offset_finds_offset_after_date_hyphens() {
+        // The date portion contains hyphens, which must not be mistaken for the offset sign.
+        let (dt, offset) = split_trailing_offset("2024-01-15T12:30:45-05:00").unwrap();
+        assert_eq!(dt, "2024-01-15T12:30:45");
+        assert_eq!(offset, FixedOffset::east_opt(-5 * 3600).unwrap());
+
+        let (dt, offset) = split_trailing_offset("2024-01-15T12:30:45+02:30").unwrap();
+        assert_eq!(dt, "2024-01-15T12:30:45");
+        assert_eq!(offset, FixedOffset::east_opt(2 * 3600 + 30 * 60).unwrap());
+    }
+
+    #[test]
+    fn split_trailing_offset_rejects_when_short_or_zoneless() {
+        assert!(split_trailing_offset("").is_err());
+        assert!(split_trailing_offset("2024-01-15").is_err()); // exactly 10 chars
+        assert!(split_trailing_offset("2024-01-15T12:30:45").is_err()); // no Z, no ±
+    }
+
+    // ---------- parse_datetime_tz_naive ----------
+
+    #[test]
+    fn parse_datetime_tz_naive_accepts_t_and_space_with_seconds_or_fractions() {
+        let expected = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap().and_hms_opt(12, 30, 45).unwrap();
+        assert_eq!(parse_datetime_tz_naive("2024-01-15T12:30:45").unwrap(), expected);
+        assert_eq!(parse_datetime_tz_naive("2024-01-15 12:30:45").unwrap(), expected);
+        assert!(parse_datetime_tz_naive("2024-01-15T12:30:45.123").is_ok());
+        assert!(parse_datetime_tz_naive("2024-01-15 12:30:45.123").is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_tz_naive_accepts_minute_precision() {
+        let expected = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap().and_hms_opt(12, 30, 0).unwrap();
+        assert_eq!(parse_datetime_tz_naive("2024-01-15T12:30").unwrap(), expected);
+        assert_eq!(parse_datetime_tz_naive("2024-01-15 12:30").unwrap(), expected);
+    }
+
+    // ---------- parse_datetime_tz ----------
+
+    fn ymd_hms(y: i32, m: u32, d: u32, h: u32, mi: u32, s: u32) -> NaiveDateTime {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, mi, s).unwrap()
+    }
+
+    #[test]
+    fn parse_datetime_tz_z_yields_utc() {
+        let dt = parse_datetime_tz("2024-01-15T12:30:45Z").unwrap();
+        // No offset adjustment: local == UTC.
+        assert_eq!(dt.naive_utc(), ymd_hms(2024, 1, 15, 12, 30, 45));
+    }
+
+    #[test]
+    fn parse_datetime_tz_fixed_offsets_convert_to_utc() {
+        // +02:00: 12:30:45 local is 10:30:45 UTC.
+        let plus_two = parse_datetime_tz("2024-01-15T12:30:45+02:00").unwrap();
+        assert_eq!(plus_two.naive_utc(), ymd_hms(2024, 1, 15, 10, 30, 45));
+
+        // -05:00: 12:30:45 local is 17:30:45 UTC.
+        let minus_five = parse_datetime_tz("2024-01-15T12:30:45-05:00").unwrap();
+        assert_eq!(minus_five.naive_utc(), ymd_hms(2024, 1, 15, 17, 30, 45));
+
+        // Compact form (+0200) must produce the same instant as colon form (+02:00).
+        let compact = parse_datetime_tz("2024-01-15T12:30:45+0200").unwrap();
+        assert_eq!(compact.naive_utc(), plus_two.naive_utc());
+    }
+
+    #[test]
+    fn parse_datetime_tz_iana_zone_converts_to_utc_using_zone_rules() {
+        // London in winter is GMT (UTC+0): local == UTC.
+        let winter = parse_datetime_tz("2024-01-15T12:30:45 Europe/London").unwrap();
+        assert_eq!(winter.naive_utc(), ymd_hms(2024, 1, 15, 12, 30, 45));
+
+        // London in summer is BST (UTC+1): 12:30:45 BST is 11:30:45 UTC. This catches any
+        // accidental treatment of the zone as a static offset.
+        let summer = parse_datetime_tz("2024-07-15T12:30:45 Europe/London").unwrap();
+        assert_eq!(summer.naive_utc(), ymd_hms(2024, 7, 15, 11, 30, 45));
+
+        // Kolkata is IST (UTC+5:30) year-round: 12:30:45 IST is 07:00:45 UTC. This in particular
+        // exercises a non-hour-aligned offset that can't be confused with any fixed-offset spelling.
+        let kolkata = parse_datetime_tz("2024-01-15T12:30:45 Asia/Kolkata").unwrap();
+        assert_eq!(kolkata.naive_utc(), ymd_hms(2024, 1, 15, 7, 0, 45));
+    }
+
+    #[test]
+    fn parse_datetime_tz_iana_and_equivalent_fixed_offset_agree() {
+        // Same local time, equivalent zone vs fixed offset: same UTC instant.
+        let iana = parse_datetime_tz("2024-01-15T12:30:45 Europe/London").unwrap();
+        let fixed = parse_datetime_tz("2024-01-15T12:30:45+00:00").unwrap();
+        assert_eq!(iana.naive_utc(), fixed.naive_utc());
+    }
+
+    #[test]
+    fn parse_datetime_tz_rejects_missing_zone() {
+        assert!(parse_datetime_tz("2024-01-15T12:30:45").is_err());
+    }
+
+    #[test]
+    fn parse_datetime_tz_rejects_unknown_iana_zone() {
+        // " Asia/London" — suffix isn't a known IANA tz, falls through to fixed-offset
+        // parsing on the full string, which then fails to find a + or -.
+        assert!(parse_datetime_tz("2024-01-15T12:30:45 Asia/London").is_err());
+    }
+
+    // ---------- parse_cell: null handling ----------
+
+    #[test]
+    fn parse_cell_default_null_is_empty_string() {
+        // With no explicit --null-values, the empty string is the null sentinel.
+        let s = spec(CellType::Integer, true);
+        assert!(matches!(parse_cell("", &s, &[]).unwrap(), QueryGivenEntry::Empty));
+        // Non-empty string is NOT null even when null_values is empty.
+        assert!(matches!(parse_cell("42", &s, &[]).unwrap(), QueryGivenEntry::Value(_)));
+    }
+
+    #[test]
+    fn parse_cell_explicit_null_values_replaces_default() {
+        // Once --null-values is provided, the empty string is no longer special.
+        let s = spec(CellType::Integer, true);
+        let nulls = vec!["NA".to_owned(), "NULL".to_owned()];
+        assert!(matches!(parse_cell("NA", &s, &nulls).unwrap(), QueryGivenEntry::Empty));
+        assert!(matches!(parse_cell("NULL", &s, &nulls).unwrap(), QueryGivenEntry::Empty));
+        // Empty string is now treated as a value attempt, which fails to parse as integer.
+        assert!(parse_cell("", &s, &nulls).is_err());
+    }
+
+    #[test]
+    fn parse_cell_null_in_non_optional_column_is_error() {
+        let s = spec(CellType::String, false);
+        let err = parse_cell("", &s, &[]).unwrap_err();
+        assert!(err.contains("null"), "expected null-related error, got: {err}");
+    }
+
+    #[test]
+    fn parse_cell_dispatches_to_typed_parsers() {
+        // Smoke test: each type at least parses something non-null successfully.
+        assert!(parse_cell("true", &spec(CellType::Boolean, false), &[]).is_ok());
+        assert!(parse_cell("42", &spec(CellType::Integer, false), &[]).is_ok());
+        assert!(parse_cell("3.14", &spec(CellType::Double, false), &[]).is_ok());
+        assert!(parse_cell("1.5", &spec(CellType::Decimal, false), &[]).is_ok());
+        assert!(parse_cell("hello", &spec(CellType::String, false), &[]).is_ok());
+        assert!(parse_cell("2024-01-15", &spec(CellType::Date, false), &[]).is_ok());
+        assert!(parse_cell("2024-01-15T12:30:45", &spec(CellType::Datetime, false), &[]).is_ok());
+        assert!(parse_cell("2024-01-15T12:30:45Z", &spec(CellType::DatetimeTz, false), &[]).is_ok());
+        assert!(parse_cell("P1Y", &spec(CellType::Duration, false), &[]).is_ok());
+    }
+
+    #[test]
+    fn parse_cell_string_passes_through_verbatim() {
+        // The string cell type must NOT trim or interpret quotes.
+        let s = spec(CellType::String, false);
+        let value = entry_value(parse_cell("  hello  ", &s, &[]).unwrap());
+        assert!(matches!(value, Value::String(ref s) if s == "  hello  "), "unexpected value: {value:?}");
+    }
+
+    #[test]
+    fn parse_cell_propagates_typed_parse_errors_with_column_context() {
+        // The wrapping with "column '$x': ..." happens in parse_row, not parse_cell — so the
+        // raw error from parse_cell should NOT mention the column name itself.
+        let err = parse_cell("not_a_number", &spec(CellType::Integer, false), &[]).unwrap_err();
+        assert!(err.contains("invalid integer"), "got: {err}");
+    }
+}
+

@@ -36,7 +36,7 @@ pub(crate) struct CsvLoader {
     file_size: u64,
 }
 
-pub(crate) struct BatchOutcome {
+pub(crate) struct Batch {
     pub(crate) rows: Vec<QueryGivenRow>,
     pub(crate) records: Vec<StringRecord>,
     pub(crate) row_numbers: Vec<usize>,
@@ -163,7 +163,7 @@ impl CsvLoader {
         self.headers.as_ref()
     }
 
-    pub(crate) fn next_batch(&mut self, batch_size: usize) -> Option<BatchOutcome> {
+    pub(crate) fn next_batch(&mut self, batch_size: usize) -> Option<Batch> {
         if self.rows_read >= self.row_limit {
             return None;
         }
@@ -217,7 +217,7 @@ impl CsvLoader {
             None
         } else {
             let byte_end = self.bytes_position();
-            Some(BatchOutcome { rows, records, row_numbers, rows_attempted: attempted, rejected, first_row, byte_end })
+            Some(Batch { rows, records, row_numbers, rows_attempted: attempted, rejected, first_row, byte_end })
         }
     }
 

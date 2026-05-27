@@ -23,7 +23,7 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{Checkpoint, CheckpointWriter, InFlightBatch},
-    data::{BatchOutcome, CsvLoader, RowRejection},
+    data::{Batch, CsvLoader, RowRejection},
     fatal,
     output::LoaderOutput,
     params::Params,
@@ -259,7 +259,7 @@ async fn process_batch(
     database: Arc<str>,
     query_text: Arc<str>,
     batch_index: usize,
-    batch: BatchOutcome,
+    batch: Batch,
 ) -> BatchResult {
     let parsed_count = batch.rows.len();
     let commit_result =

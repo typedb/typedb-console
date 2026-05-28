@@ -28,7 +28,7 @@ jobs:
           repository-cache: true
           google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
           bazelrc: |
-            build --remote-cache=${{ secrets.BAZEL_CACHE_URL }}
+            build --remote-cache=${{ vars.BAZEL_CACHE_URL }}
       - name: Build everything
         run: bazel build //...
       - name: Checkstyle

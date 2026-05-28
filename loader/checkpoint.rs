@@ -192,6 +192,24 @@ impl CheckpointWriter {
         &self.path
     }
 
+    pub(crate) fn open_for_load(
+        resuming: bool, checkpoint_path: Option<PathBuf>,
+    ) -> Option<Self> {
+        checkpoint_path.map(|checkpoint_path| {
+            if !resuming && checkpoint_path.exists() {
+                fatal_with(
+                    ExitCode::UserInputError,
+                    format!(
+                        "checkpoint already exists at '{}': pass --resume '{}' to continue from it, --output-dir PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
+                        checkpoint_path.display(),
+                        checkpoint_path.parent().unwrap().display()
+                    ),
+                );
+            }
+            CheckpointWriter::new(checkpoint_path)
+        })
+    }
+
     /// Writes the checkpoint atomically: serialise to a sibling temp file, fsync, rename over the
     /// target. A crash mid-write leaves the previous good checkpoint in place.
     pub(crate) fn write(&self, checkpoint: &Checkpoint) -> Result<(), String> {

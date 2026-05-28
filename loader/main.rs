@@ -48,11 +48,11 @@ async fn main() {
     let (query_text, inputs) = load_query(&params.query);
 
     let driver = connect_and_initialize(&params, &password, resuming).await;
-    let output = prepare_output(&args, &params, resuming);
+    let output_configuration = prepare_output(&args, &params);
 
     // Hashes are computed iff checkpointing is enabled; resume implies checkpointing, so any
     // resume path can rely on these being present.
-    let hashes = if output.checkpoint_writer.is_some() {
+    let hashes = if output_configuration.checkpoint_path.is_some() {
         Some(compute_hashes(&driver, &params.database, &params.data, &query_text).await)
     } else {
         None
@@ -60,7 +60,7 @@ async fn main() {
 
     let checkpoint = initialize_checkpoint(&params, resume_checkpoint, hashes);
 
-    if let Err(reason) = run_load(params, inputs, query_text, driver, checkpoint, output, resuming, shutdown).await {
+    if let Err(reason) = run_load(params, inputs, query_text, driver, checkpoint, output_configuration, resuming, shutdown).await {
         eprintln!("error: {reason}");
         exit(1);
     }

@@ -24,7 +24,7 @@ use crate::{
     query::{CellType, GivenSpec},
 };
 
-pub(crate) struct CsvLoader {
+pub(crate) struct CsvReader {
     reader: Reader<BufReader<File>>,
     headers: Option<StringRecord>,
     column_indices: Vec<usize>,
@@ -54,7 +54,7 @@ pub(crate) struct RowRejection {
     pub(crate) message: String,
 }
 
-impl CsvLoader {
+impl CsvReader {
     /// Opens (or resumes) the data file based on the checkpoint's byte watermark. Exits on
     /// failure with a message that distinguishes a fresh open from a resume attempt.
     pub(crate) fn open_for_load(params: &Params, inputs: Vec<GivenSpec>, state: &Checkpoint) -> Self {

@@ -18,16 +18,16 @@ pub(crate) const REJECTS_LOG_FILENAME: &str = "rejects.log";
 /// The paths and writers the loader writes to during a run. The checkpoint writer is `None`
 /// when `--no-checkpoint` was passed; the rejects paths are always populated and only get
 /// touched if rows actually get rejected.
-pub(crate) struct LoaderOutput {
+pub(crate) struct OutputConfiguration {
     pub rejects_csv: PathBuf,
     pub rejects_log: PathBuf,
-    pub checkpoint_writer: Option<CheckpointWriter>,
+    pub checkpoint_path: Option<PathBuf>,
 }
 
 /// Resolves the output directory, creates it, and prepares the checkpoint writer. Exits if
 /// `--no-checkpoint` is absent and a checkpoint already exists in the chosen directory (the
 /// user must then choose to `--resume`, `--output-dir`, or `--no-checkpoint`).
-pub(crate) fn prepare_output(args: &Args, params: &Params, resuming: bool) -> LoaderOutput {
+pub(crate) fn prepare_output(args: &Args, params: &Params) -> OutputConfiguration {
     let output_dir: PathBuf = if let Some(dir) = args.resume.as_deref() {
         PathBuf::from(dir)
     } else if let Some(dir) = args.output_dir.as_deref() {
@@ -38,27 +38,10 @@ pub(crate) fn prepare_output(args: &Args, params: &Params, resuming: bool) -> Lo
     fs::create_dir_all(&output_dir)
         .unwrap_or_else(|err| fatal(format!("failed to create output directory '{}': {err}", output_dir.display())));
 
-    let checkpoint_path = output_dir.join(CHECKPOINT_FILENAME);
-    let checkpoint_writer = if args.no_checkpoint {
-        None
-    } else {
-        if !resuming && checkpoint_path.exists() {
-            fatal_with(
-                ExitCode::UserInputError,
-                format!(
-                    "checkpoint already exists at '{}': pass --resume '{}' to continue from it, --output-dir PATH to write elsewhere, or --no-checkpoint to disable checkpointing",
-                    checkpoint_path.display(),
-                    output_dir.display()
-                ),
-            );
-        }
-        Some(CheckpointWriter::new(checkpoint_path))
-    };
-
-    LoaderOutput {
+    OutputConfiguration {
         rejects_csv: output_dir.join(REJECTS_CSV_FILENAME),
         rejects_log: output_dir.join(REJECTS_LOG_FILENAME),
-        checkpoint_writer,
+        checkpoint_path: if args.no_checkpoint { None } else { Some(output_dir.join(CHECKPOINT_FILENAME)) },
     }
 }
 

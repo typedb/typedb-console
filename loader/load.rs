@@ -23,9 +23,9 @@ use typedb_driver::{
 
 use crate::{
     checkpoint::{Checkpoint, CheckpointWriter, InFlightBatch},
-    data::{Batch, CsvLoader, RowRejection},
+    data::{Batch, CsvReader, RowRejection},
     fatal,
-    output::LoaderOutput,
+    output::OutputConfiguration,
     params::Params,
     progress::{LoadStats, print_progress, print_summary},
     query::GivenSpec,
@@ -41,26 +41,27 @@ pub(crate) async fn run_load(
     query_text: String,
     driver: TypeDBDriver,
     checkpoint: Checkpoint,
-    output: LoaderOutput,
+    output_configuration: OutputConfiguration,
     resuming: bool,
     shutdown: Arc<AtomicBool>,
 ) -> Result<(), String> {
-    let LoaderOutput { rejects_csv, rejects_log, checkpoint_writer } = output;
+    let OutputConfiguration { rejects_csv, rejects_log, checkpoint_path } = output_configuration;
 
     let mut next_batch_index = checkpoint.watermark + 1;
     // Batches the prior run already completed (out-of-order) -- read past them but don't dispatch.
     let completed_above_watermark: HashSet<usize> =
         checkpoint.completed_above_watermark.iter().map(|c| c.batch_index).collect();
 
-    let mut loader = CsvLoader::open_for_load(&params, inputs, &checkpoint);
-    let rejects = RejectsWriter::open_for_load(rejects_csv, rejects_log, loader.headers().cloned(), resuming);
-    let total_bytes = loader.file_size();
+    let mut csv_reader = CsvReader::open_for_load(&params, inputs, &checkpoint);
+    let checkpoint_writer = CheckpointWriter::open_for_load(resuming, checkpoint_path);
+    let rejects_writer = RejectsWriter::open_for_load(rejects_csv, rejects_log, csv_reader.headers().cloned(), resuming);
+    let total_bytes = csv_reader.file_size();
 
     let driver = Arc::new(driver);
     let database: Arc<str> = Arc::from(params.database.as_str());
     let query_text: Arc<str> = Arc::from(query_text);
 
-    let mut state = LoadState::new(checkpoint, rejects, checkpoint_writer);
+    let mut state = LoadState::new(checkpoint, rejects_writer, checkpoint_writer);
     // Persist the initial state so a fresh run leaves a checkpoint file even before the first
     // batch finishes.
     state.persist();
@@ -72,7 +73,7 @@ pub(crate) async fn run_load(
     loop {
         state.check_shutdown(&shutdown);
         while producing && !state.stop_requested() && in_flight.len() < params.parallel_batches {
-            let batch = match loader.next_batch(params.batch_rows) {
+            let batch = match csv_reader.next_batch(params.batch_rows) {
                 Some(b) => b,
                 None => {
                     producing = false;
@@ -103,7 +104,7 @@ pub(crate) async fn run_load(
         let result = joined.unwrap_or_else(|err| fatal(format!("batch task panicked: {err}")));
         state.apply_batch_result(&params, result);
 
-        print_progress(state.stats(), started, loader.bytes_position(), total_bytes);
+        print_progress(state.stats(), started, csv_reader.bytes_position(), total_bytes);
     }
 
     state.finalize(started)

@@ -54,7 +54,8 @@ pub(crate) async fn run_load(
 
     let mut csv_reader = CsvReader::open_for_load(&params, inputs, &checkpoint);
     let checkpoint_writer = CheckpointWriter::open_for_load(resuming, checkpoint_path);
-    let rejects_writer = RejectsWriter::open_for_load(rejects_csv, rejects_log, csv_reader.headers().cloned(), resuming);
+    let rejects_writer =
+        RejectsWriter::open_for_load(rejects_csv, rejects_log, csv_reader.headers().cloned(), resuming);
     let total_bytes = csv_reader.file_size();
 
     let driver = Arc::new(driver);

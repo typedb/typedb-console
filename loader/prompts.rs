@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use crate::checkpoint::InFlightBatch;
 use std::{
     collections::HashSet,
     io::{self, BufRead, Write},
 };
-use crate::checkpoint::InFlightBatch;
 
 enum InFlightMode {
     ReprocessAll,

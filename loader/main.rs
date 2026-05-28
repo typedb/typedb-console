@@ -60,7 +60,9 @@ async fn main() {
 
     let checkpoint = initialize_checkpoint(&params, resume_checkpoint, hashes);
 
-    if let Err(reason) = run_load(params, inputs, query_text, driver, checkpoint, output_configuration, resuming, shutdown).await {
+    if let Err(reason) =
+        run_load(params, inputs, query_text, driver, checkpoint, output_configuration, resuming, shutdown).await
+    {
         eprintln!("error: {reason}");
         exit(1);
     }

@@ -192,9 +192,7 @@ impl CheckpointWriter {
         &self.path
     }
 
-    pub(crate) fn open_for_load(
-        resuming: bool, checkpoint_path: Option<PathBuf>,
-    ) -> Option<Self> {
+    pub(crate) fn open_for_load(resuming: bool, checkpoint_path: Option<PathBuf>) -> Option<Self> {
         checkpoint_path.map(|checkpoint_path| {
             if !resuming && checkpoint_path.exists() {
                 fatal_with(

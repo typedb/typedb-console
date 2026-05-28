@@ -7,9 +7,10 @@
 use std::{
     env,
     error::Error,
-    fs, io,
+    fs,
     path::{Path, PathBuf},
     process::Child,
+    sync::OnceLock,
     thread::sleep,
     time::Duration,
 };
@@ -42,9 +43,7 @@ fn loader_loads_clean_csv() -> Result<(), Box<dyn Error>> {
           and remove it from here.
     */
 
-    // can't drop server_runner, or it will delete the temp dir
-    let (_server_runner, mut server_process) = run_typedb_server();
-    sleep(Duration::from_secs(2));
+    ensure_typedb_server();
 
     let database = "loader-test-clean-db";
     let schema_path = env::var(SCHEMA_PATH_VAR)?;
@@ -80,7 +79,6 @@ fn loader_loads_clean_csv() -> Result<(), Box<dyn Error>> {
     let rejects_csv = output_file(&data_path, "rejects.csv");
     let rejects_log = output_file(&data_path, "rejects.log");
 
-    let kill = server_process.kill();
     if status != 0 {
         panic!("Loader returned non-zero exit status: {}", status);
     }
@@ -90,14 +88,12 @@ fn loader_loads_clean_csv() -> Result<(), Box<dyn Error>> {
     if rejects_log.exists() {
         panic!("Unexpected rejects log created on clean run: {}", rejects_log.display());
     }
-    kill?;
     Ok(())
 }
 
 #[test]
 fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
-    let (_server_runner, mut server_process) = run_typedb_server();
-    sleep(Duration::from_secs(2));
+    ensure_typedb_server();
 
     let database = "loader-test-rejects-db";
     let schema_path = env::var(SCHEMA_PATH_VAR)?;
@@ -135,7 +131,6 @@ fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
     let csv_contents = fs::read_to_string(&rejects_csv).ok();
     let log_contents = fs::read_to_string(&rejects_log).ok();
 
-    let kill = server_process.kill();
     if status != 0 {
         panic!("Loader returned non-zero exit status on tolerant run: {}", status);
     }
@@ -145,14 +140,12 @@ fn loader_writes_rejects_for_bad_rows() -> Result<(), Box<dyn Error>> {
     assert!(csv.contains("dan"), "rejects CSV missing 'dan' row: {csv}");
     assert!(log.contains("row 2"), "rejects log missing 'row 2' entry: {log}");
     assert!(log.contains("row 4"), "rejects log missing 'row 4' entry: {log}");
-    kill?;
     Ok(())
 }
 
 #[test]
 fn loader_loads_relation_match_insert() -> Result<(), Box<dyn Error>> {
-    let (_server_runner, mut server_process) = run_typedb_server();
-    sleep(Duration::from_secs(2));
+    ensure_typedb_server();
 
     let database = "loader-test-relations-db";
     let schema_path = env::var(SCHEMA_WITH_FRIENDSHIPS_PATH_VAR)?;
@@ -214,7 +207,6 @@ fn loader_loads_relation_match_insert() -> Result<(), Box<dyn Error>> {
     let friendship_rejects_csv = output_file(&friendships_data, "rejects.csv");
     let friendship_rejects_log = output_file(&friendships_data, "rejects.log");
 
-    let kill = server_process.kill();
     if people_status != 0 {
         panic!("Loader (people pass) returned non-zero exit status: {}", people_status);
     }
@@ -227,17 +219,25 @@ fn loader_loads_relation_match_insert() -> Result<(), Box<dyn Error>> {
     if friendship_rejects_log.exists() {
         panic!("Unexpected rejects log on friendship pass: {}", friendship_rejects_log.display());
     }
-    kill?;
     Ok(())
 }
 
-fn run_typedb_server() -> (TypeDBBinaryRunner, Child) {
-    let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
-        .expect("Failed to create server binary runner");
-    // note: run in development mode to avoid polluting analytics data when using tagged releases
-    let args = ["--server.address", "0.0.0.0:1729", "--development-mode.enabled", "true"];
-    let child: io::Result<Child> = runner.run(&args);
-    (runner, child.expect("Failed to spawn child server process."))
+// A single TypeDB server is shared across every test in this binary: each test uses a distinct
+// database name, and starting one server per test would race on the hardcoded port 1729.
+// The runner (which owns the unpacked distribution's temp dir) and the child are leaked so they
+// outlive every test; the OS reaps the server process when the test binary exits.
+static SERVER_READY: OnceLock<()> = OnceLock::new();
+
+fn ensure_typedb_server() {
+    SERVER_READY.get_or_init(|| {
+        let runner = TypeDBBinaryRunner::new(TYPEDB_SERVER_ARCHIVE_VAR, TYPEDB_SERVER_SUBCOMMAND)
+            .expect("Failed to create server binary runner");
+        // note: run in development mode to avoid polluting analytics data when using tagged releases
+        let args = ["--server.address", "0.0.0.0:1729", "--development-mode.enabled", "true"];
+        let child: Child = runner.run(&args).expect("Failed to spawn child server process.");
+        sleep(Duration::from_secs(5));
+        Box::leak(Box::new((runner, child)));
+    });
 }
 
 // Copies the read-only Bazel runfile to a temp dir so the rejects sibling files can be written

@@ -20,7 +20,7 @@ use typedb_driver::{
     TransactionType, TypeDBDriver,
     transaction::{QueryGivenRow, QueryGivenRows},
 };
-
+use typedb_driver::answer::QueryAnswer;
 use crate::{
     checkpoint::{Checkpoint, CheckpointWriter, InFlightBatch},
     data::{Batch, CsvReader, RowRejection},
@@ -264,8 +264,11 @@ async fn process_batch(
     batch: Batch,
 ) -> BatchResult {
     let parsed_count = batch.rows.len();
-    let commit_result =
-        if parsed_count > 0 { commit_batch(&driver, &database, &query_text, batch.rows).await } else { Ok(()) };
+    let commit_result = if parsed_count > 0 {
+        commit_batch(&driver, &database, &query_text, batch_index, batch.rows).await
+    } else {
+        Ok(())
+    };
     BatchResult {
         batch_index,
         rows_attempted: batch.rows_attempted,
@@ -281,13 +284,25 @@ async fn commit_batch(
     driver: &TypeDBDriver,
     database: &str,
     query: &str,
+    batch_index: usize,
     rows: Vec<QueryGivenRow>,
 ) -> Result<(), String> {
     let transaction = driver
         .transaction(database.to_owned(), TransactionType::Write)
         .await
         .map_err(|err| format!("opening write transaction on '{database}': {err}"))?;
-    transaction.query_with_inputs(query, QueryGivenRows(rows)).await.map_err(|err| format!("query failed: {err}"))?;
+    let answer = transaction
+        .query_with_inputs(query, QueryGivenRows(rows))
+        .await
+        .map_err(|err| format!("query failed: {err}"))?;
+    let has_any = match answer {
+        QueryAnswer::Ok(_) => false,
+        QueryAnswer::ConceptRowStream(_, mut stream) => stream.next().await.is_some(),
+        QueryAnswer::ConceptDocumentStream(_, mut stream) => stream.next().await.is_some(),
+    };
+    if !has_any {
+        println!("WARNING: batch {batch_index} inserted zero rows");
+    }
     transaction.commit().await.map_err(|err| format!("commit failed: {err}"))?;
     Ok(())
 }

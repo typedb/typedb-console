@@ -9,7 +9,7 @@ name: Console tests
 # integration regardless of what the patch touched.
 on:
   push:
-    branches: [development, master]
+    branches: [development, master, typedb-loader]
   pull_request:
     paths:
       - 'console/**'

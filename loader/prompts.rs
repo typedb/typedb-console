@@ -50,8 +50,11 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
         InFlightMode::DecideEach => in_flight
             .iter()
             .filter(|batch| {
-                let q =
-                    format!("Reprocess batch {} (first row: {})?", batch.batch_index, format_first_row(&batch.first_row));
+                let q = format!(
+                    "Reprocess batch {} (first row: {})?",
+                    batch.batch_index,
+                    format_first_row(&batch.first_row)
+                );
                 !confirm(&q)
             })
             .map(|batch| batch.batch_index)

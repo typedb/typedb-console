@@ -149,4 +149,3 @@ impl RejectsWriter {
         Ok(())
     }
 }
-

@@ -287,12 +287,7 @@ pub(crate) fn initialize_checkpoint(
 
 /// Computes the three integrity hashes for the current run by combining the static data/query
 /// hashes with the live schema fetched from the driver. Exits on any I/O failure.
-pub(crate) async fn compute_hashes(
-    driver: &TypeDBDriver,
-    database: &str,
-    data_path: &str,
-    query_text: &str,
-) -> Hashes {
+pub(crate) async fn compute_hashes(driver: &TypeDBDriver, database: &str, data_path: &str, query_text: &str) -> Hashes {
     println!("Hashing data file (first 64 MB)...");
     let data = hash_file(Path::new(data_path)).unwrap_or_else(|err| fatal(err));
     println!("Fetching live schema for hashing...");
@@ -301,8 +296,7 @@ pub(crate) async fn compute_hashes(
         .get(database.to_owned())
         .await
         .unwrap_or_else(|err| fatal(format!("failed to look up database '{database}': {err}")));
-    let schema_text =
-        db.schema().await.unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
+    let schema_text = db.schema().await.unwrap_or_else(|err| fatal(format!("failed to fetch live schema: {err}")));
     Hashes { query: hash_string(query_text), data, schema: hash_string(&schema_text) }
 }
 
@@ -337,11 +331,7 @@ mod tests {
 
     /// Builds a checkpoint that looks like the previous run dispatched some batches past the
     /// current watermark and crashed before any of them finished.
-    fn checkpoint_with_in_flight(
-        in_flights: Vec<InFlightBatch>,
-        watermark: usize,
-        watermark_bytes: u64,
-    ) -> Checkpoint {
+    fn checkpoint_with_in_flight(in_flights: Vec<InFlightBatch>, watermark: usize, watermark_bytes: u64) -> Checkpoint {
         let mut checkpoint = Checkpoint::new(stub_params(), Hashes::default());
         checkpoint.watermark = watermark;
         checkpoint.watermark_bytes = watermark_bytes;
@@ -379,10 +369,8 @@ mod tests {
         // Decide-each where only batch 5 (the next-after-watermark) is skipped: watermark
         // advances to 5; batches 6 and 7 were chosen for reprocess, so their stale records
         // must be dropped — they'll re-appear in `in_flight` once the re-dispatch reaches them.
-        let mut checkpoint = checkpoint_with_in_flight(
-            vec![in_flight(5, 100), in_flight(6, 200), in_flight(7, 300)],
-            4, 80
-        );
+        let mut checkpoint =
+            checkpoint_with_in_flight(vec![in_flight(5, 100), in_flight(6, 200), in_flight(7, 300)], 4, 80);
         let skipped: HashSet<usize> = [5].into_iter().collect();
         checkpoint.apply_in_flight_decisions(&skipped);
         assert!(checkpoint.in_flight.is_empty(), "reprocess-chosen batches must not remain as ghosts");
@@ -422,5 +410,3 @@ mod tests {
         assert!(checkpoint.in_flight.is_empty());
     }
 }
-
-

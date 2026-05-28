@@ -9,13 +9,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{
-    ExitCode,
-    checkpoint::CheckpointWriter,
-    cli::Args,
-    fatal, fatal_with,
-    params::Params,
-};
+use crate::{ExitCode, checkpoint::CheckpointWriter, cli::Args, fatal, fatal_with, params::Params};
 
 pub(crate) const CHECKPOINT_FILENAME: &str = "checkpoint.json";
 pub(crate) const REJECTS_CSV_FILENAME: &str = "rejects.csv";
@@ -41,9 +35,8 @@ pub(crate) fn prepare_output(args: &Args, params: &Params, resuming: bool) -> Lo
     } else {
         default_output_dir(&params.data)
     };
-    fs::create_dir_all(&output_dir).unwrap_or_else(|err| {
-        fatal(format!("failed to create output directory '{}': {err}", output_dir.display()))
-    });
+    fs::create_dir_all(&output_dir)
+        .unwrap_or_else(|err| fatal(format!("failed to create output directory '{}': {err}", output_dir.display())));
 
     let checkpoint_path = output_dir.join(CHECKPOINT_FILENAME);
     let checkpoint_writer = if args.no_checkpoint {

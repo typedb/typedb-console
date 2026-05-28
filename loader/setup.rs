@@ -14,19 +14,15 @@ use crate::{ExitCode, fatal, fatal_with, params::Params};
 /// Establishes the database connection ready for the load: connects, optionally creates the
 /// target database, and optionally applies the schema file. The create/apply steps are skipped
 /// on resume — the database already exists and the original schema is assumed in place.
-pub(crate) async fn connect_and_initialize(
-    params: &Params,
-    password: &str,
-    resuming: bool,
-) -> TypeDBDriver {
+pub(crate) async fn connect_and_initialize(params: &Params, password: &str, resuming: bool) -> TypeDBDriver {
     let driver = connect(params, password).await;
     if !resuming && params.create_db {
         create_database_if_missing(&driver, &params.database).await;
     }
     if !resuming {
         if let Some(path) = params.schema_file.as_deref() {
-            let schema = read_to_string(path)
-                .unwrap_or_else(|err| fatal(format!("failed to read schema file '{path}': {err}")));
+            let schema =
+                read_to_string(path).unwrap_or_else(|err| fatal(format!("failed to read schema file '{path}': {err}")));
             apply_schema(&driver, &params.database, schema).await;
         }
     }
@@ -36,8 +32,7 @@ pub(crate) async fn connect_and_initialize(
 /// Connects to the cluster using the params and password supplied, exiting with
 /// `ConnectionError` on failure. TLS config is derived from `--tls-disabled` / `--tls-root-ca`.
 async fn connect(params: &Params, password: &str) -> TypeDBDriver {
-    let addresses =
-        parse_addresses(&params.addresses).unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
+    let addresses = parse_addresses(&params.addresses).unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     let tls_config = build_tls_config(params.tls_disabled, params.tls_root_ca.as_deref().map(Path::new))
         .unwrap_or_else(|err| fatal_with(ExitCode::UserInputError, err));
     TypeDBDriver::new(addresses, Credentials::new(&params.username, password), DriverOptions::new(tls_config))

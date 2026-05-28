@@ -12,13 +12,7 @@ use std::{
     },
 };
 
-use crate::{
-    ExitCode,
-    checkpoint::Checkpoint,
-    cli::Args,
-    fatal, fatal_with,
-    output::CHECKPOINT_FILENAME,
-};
+use crate::{ExitCode, checkpoint::Checkpoint, cli::Args, fatal, fatal_with, output::CHECKPOINT_FILENAME};
 
 /// Installs a Ctrl+C handler. First interrupt flips the returned flag so the main loop can
 /// drain in-flight batches and write a final checkpoint; second interrupt force-exits with 130.
@@ -58,7 +52,5 @@ pub(crate) fn load_resume_checkpoint(args: &Args) -> Option<Checkpoint> {
 /// Returns the password supplied via --password, falling back to an interactive prompt that
 /// echoes the username so the user knows which credential is being requested.
 pub(crate) fn prompt_password_if_missing(args: &Args, username: &str) -> String {
-    args.password
-        .clone()
-        .unwrap_or_else(|| rpassword::prompt_password(format!("password for '{username}': ")).unwrap())
+    args.password.clone().unwrap_or_else(|| rpassword::prompt_password(format!("password for '{username}': ")).unwrap())
 }

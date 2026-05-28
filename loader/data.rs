@@ -688,4 +688,3 @@ mod tests {
         assert!(err.contains("invalid integer"), "got: {err}");
     }
 }
-

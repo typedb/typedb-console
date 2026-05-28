@@ -178,6 +178,7 @@ fn loader_loads_relation_match_insert() -> Result<(), Box<dyn Error>> {
         "--password",
         ADMIN_PASSWORD,
         "--tls-disabled",
+        "--no-checkpoint"
     ];
     let mut people_process: Child = loader_runner.run(&people_args).expect("Failed to spawn loader (people pass).");
     let people_status = people_process.wait().expect("Error waiting for loader (people pass)").code().unwrap_or(-1);

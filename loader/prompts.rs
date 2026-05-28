@@ -8,7 +8,6 @@ use std::{
     collections::HashSet,
     io::{self, BufRead, Write},
 };
-
 use crate::checkpoint::InFlightBatch;
 
 enum InFlightMode {
@@ -34,14 +33,13 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
     eprintln!(
         "\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)"
     );
-    let choice = prompt("Choose action").trim().to_ascii_lowercase();
-    let mode = match choice.as_str() {
-        "" | "a" | "all" => InFlightMode::ReprocessAll,
-        "s" | "skip" | "skip all" => InFlightMode::SkipAll,
-        "d" | "each" | "decide" => InFlightMode::DecideEach,
-        other => {
-            eprintln!("Unknown choice '{other}', defaulting to reprocess all.");
-            InFlightMode::ReprocessAll
+    let mode = loop {
+        let choice = prompt("Choose action").trim().to_ascii_lowercase();
+        match choice.as_str() {
+            "" | "a" | "all" => break InFlightMode::ReprocessAll,
+            "s" | "skip" | "skip all" => break InFlightMode::SkipAll,
+            "d" | "each" | "decide" => break InFlightMode::DecideEach,
+            other => eprintln!("Unknown choice '{other}'. Please enter 'a', 's', or 'd'."),
         }
     };
     match mode {

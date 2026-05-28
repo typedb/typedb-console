@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{ExitCode, checkpoint::CheckpointWriter, cli::Args, fatal, fatal_with, params::Params};
+use crate::{cli::Args, fatal, params::Params};
 
 pub(crate) const CHECKPOINT_FILENAME: &str = "checkpoint.json";
 pub(crate) const REJECTS_CSV_FILENAME: &str = "rejects.csv";

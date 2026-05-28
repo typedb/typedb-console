@@ -9,7 +9,7 @@ name: Loader tests
 # integration regardless of what the patch touched.
 on:
   push:
-    branches: [development, master, typedb-loader]
+    branches: [development, master]
   pull_request:
     paths:
       - 'loader/**'

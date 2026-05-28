@@ -10,7 +10,7 @@ name: Build & checkstyle
 on:
   pull_request:
   push:
-    branches: [development, master, typedb-loader]
+    branches: [development, master]
 
 permissions:
   contents: read

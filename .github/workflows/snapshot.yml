@@ -33,6 +33,9 @@ jobs:
           bazelisk-cache: true
           disk-cache: true
           repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
       - name: Deploy snapshot
         shell: bash
         env:
@@ -62,6 +65,9 @@ jobs:
           bazelisk-cache: true
           disk-cache: true
           repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
       - name: Deploy snapshot
         shell: bash
         env:

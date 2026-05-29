@@ -44,8 +44,9 @@ impl OutputConfiguration {
     }
 
     pub(crate) fn prepare_output_dir(&self) {
-        fs::create_dir_all(&self.output_dir)
-            .unwrap_or_else(|err| fatal(format!("failed to create output directory '{}': {err}", self.output_dir.display())));
+        fs::create_dir_all(&self.output_dir).unwrap_or_else(|err| {
+            fatal(format!("failed to create output directory '{}': {err}", self.output_dir.display()))
+        });
     }
 }
 

@@ -8,6 +8,7 @@ use std::process::exit;
 
 use clap::Parser;
 
+use crate::output::OutputConfiguration;
 use crate::{
     checkpoint::{compute_hashes, initialize_checkpoint},
     cli::Args,
@@ -17,7 +18,6 @@ use crate::{
     setup::connect_and_initialize,
     startup::{install_shutdown_handler, load_resume_checkpoint, prompt_password_if_missing},
 };
-use crate::output::OutputConfiguration;
 
 mod checkpoint;
 mod cli;

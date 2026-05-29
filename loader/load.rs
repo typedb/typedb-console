@@ -45,7 +45,7 @@ pub(crate) async fn run_load(
     resuming: bool,
     shutdown: Arc<AtomicBool>,
 ) -> Result<(), String> {
-    let OutputConfiguration { rejects_csv, rejects_log, checkpoint_path } = output_configuration;
+    let OutputConfiguration { rejects_csv, rejects_log, checkpoint_path, .. } = output_configuration;
 
     let mut next_batch_index = checkpoint.watermark + 1;
     // Batches the prior run already completed (out-of-order) -- read past them but don't dispatch.

@@ -12,12 +12,12 @@ use crate::{
     checkpoint::{compute_hashes, initialize_checkpoint},
     cli::Args,
     load::run_load,
-    output::prepare_output,
     params::resolve_and_validate_params,
     query::load_query,
     setup::connect_and_initialize,
     startup::{install_shutdown_handler, load_resume_checkpoint, prompt_password_if_missing},
 };
+use crate::output::OutputConfiguration;
 
 mod checkpoint;
 mod cli;
@@ -48,7 +48,8 @@ async fn main() {
     let (query_text, inputs) = load_query(&params.query);
 
     let driver = connect_and_initialize(&params, &password, resuming).await;
-    let output_configuration = prepare_output(&args, &params);
+    let output_configuration = OutputConfiguration::create_for_load(&args, &params);
+    output_configuration.prepare_output_dir();
 
     // Hashes are computed iff checkpointing is enabled; resume implies checkpointing, so any
     // resume path can rely on these being present.

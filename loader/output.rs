@@ -22,26 +22,30 @@ pub(crate) struct OutputConfiguration {
     pub rejects_csv: PathBuf,
     pub rejects_log: PathBuf,
     pub checkpoint_path: Option<PathBuf>,
+    output_dir: PathBuf,
 }
 
-/// Resolves the output directory, creates it, and prepares the checkpoint writer. Exits if
-/// `--no-checkpoint` is absent and a checkpoint already exists in the chosen directory (the
-/// user must then choose to `--resume`, `--output-dir`, or `--no-checkpoint`).
-pub(crate) fn prepare_output(args: &Args, params: &Params) -> OutputConfiguration {
-    let output_dir: PathBuf = if let Some(dir) = args.resume.as_deref() {
-        PathBuf::from(dir)
-    } else if let Some(dir) = args.output_dir.as_deref() {
-        PathBuf::from(dir)
-    } else {
-        default_output_dir(&params.data)
-    };
-    fs::create_dir_all(&output_dir)
-        .unwrap_or_else(|err| fatal(format!("failed to create output directory '{}': {err}", output_dir.display())));
+impl OutputConfiguration {
+    pub(crate) fn create_for_load(args: &Args, params: &Params) -> Self {
+        let output_dir: PathBuf = if let Some(dir) = args.resume.as_deref() {
+            PathBuf::from(dir)
+        } else if let Some(dir) = args.output_dir.as_deref() {
+            PathBuf::from(dir)
+        } else {
+            default_output_dir(&params.data)
+        };
 
-    OutputConfiguration {
-        rejects_csv: output_dir.join(REJECTS_CSV_FILENAME),
-        rejects_log: output_dir.join(REJECTS_LOG_FILENAME),
-        checkpoint_path: if args.no_checkpoint { None } else { Some(output_dir.join(CHECKPOINT_FILENAME)) },
+        Self {
+            rejects_csv: output_dir.join(REJECTS_CSV_FILENAME),
+            rejects_log: output_dir.join(REJECTS_LOG_FILENAME),
+            checkpoint_path: if args.no_checkpoint { None } else { Some(output_dir.join(CHECKPOINT_FILENAME)) },
+            output_dir,
+        }
+    }
+
+    pub(crate) fn prepare_output_dir(&self) {
+        fs::create_dir_all(&self.output_dir)
+            .unwrap_or_else(|err| fatal(format!("failed to create output directory '{}': {err}", self.output_dir.display())));
     }
 }
 

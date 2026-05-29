@@ -1,2 +1,14 @@
-given $name: string, $age: integer, $active: boolean;
-insert $p isa person, has name == $name, has age == $age, has active == $active;
+given $name: string, $age: integer, $active: boolean,
+      $height: double, $balance: decimal,
+      $birthday: date, $last-login: datetime, $joined-at: datetime-tz,
+      $session-length: duration;
+insert $p isa person,
+    has name == $name,
+    has age == $age,
+    has active == $active,
+    has height == $height,
+    has balance == $balance,
+    has birthday == $birthday,
+    has last-login == $last-login,
+    has joined-at == $joined-at,
+    has session-length == $session-length;

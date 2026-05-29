@@ -2,5 +2,16 @@ define
 attribute name, value string;
 attribute age, value integer;
 attribute active, value boolean;
+attribute height, value double;
+attribute balance, value decimal;
+attribute birthday, value date;
+attribute last-login, value datetime;
+attribute joined-at, value datetime-tz;
+attribute session-length, value duration;
 relation friendship, relates friend @card(2);
-entity person, owns name, owns age, owns active, plays friendship:friend;
+entity person,
+    owns name, owns age, owns active,
+    owns height, owns balance,
+    owns birthday, owns last-login, owns joined-at,
+    owns session-length,
+    plays friendship:friend;

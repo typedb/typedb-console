@@ -15,14 +15,25 @@ enum InFlightMode {
     ReprocessAll,
     SkipAll,
     DecideEach,
+    Restart,
+    Abort,
+}
+
+/// The user's choice when resuming a run that has in-flight batches recorded.
+pub(crate) enum InFlightDecision {
+    /// Resume the prior checkpoint, treating the listed batch indices as already committed.
+    Resume(HashSet<usize>),
+    /// Discard the prior checkpoint and start over from the beginning.
+    Restart,
+    /// Exit the loader without running.
+    Abort,
 }
 
 /// Asks the user how to handle batches the previous run dispatched but never confirmed as
-/// committed. Returns the batch indices the user chose to skip (treat as already committed);
-/// any index not in the set should be reprocessed.
-pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<usize> {
+/// committed.
+pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> InFlightDecision {
     if in_flight.is_empty() {
-        return HashSet::new();
+        return InFlightDecision::Resume(HashSet::new());
     }
     eprintln!("\nThe checkpoint records {} in-flight batch(es) from the previous run.", in_flight.len());
     eprintln!(
@@ -32,7 +43,7 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
         eprintln!("  - batch {} (first row: {})", batch.batch_index, format_first_row(&batch.first_row));
     }
     eprintln!(
-        "\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each (default: all)"
+        "\nOptions: [a]ll = reprocess all, [s]kip all = treat as already committed, [d]ecide each,\n         [r]estart = discard the checkpoint and start over, [q]uit = abort the loader (default: all)"
     );
     let mode = loop {
         let choice = prompt("Choose action").trim().to_ascii_lowercase();
@@ -40,24 +51,30 @@ pub(crate) fn resolve_in_flight_skips(in_flight: &[InFlightBatch]) -> HashSet<us
             "" | "a" | "all" => break InFlightMode::ReprocessAll,
             "s" | "skip" | "skip all" => break InFlightMode::SkipAll,
             "d" | "each" | "decide" => break InFlightMode::DecideEach,
-            other => eprintln!("Unknown choice '{other}'. Please enter 'a', 's', or 'd'."),
+            "r" | "restart" => break InFlightMode::Restart,
+            "q" | "quit" | "abort" => break InFlightMode::Abort,
+            other => eprintln!("Unknown choice '{other}'. Please enter 'a', 's', 'd', 'r', or 'q'."),
         }
     };
     match mode {
-        InFlightMode::ReprocessAll => HashSet::new(),
-        InFlightMode::SkipAll => in_flight.iter().map(|b| b.batch_index).collect(),
-        InFlightMode::DecideEach => in_flight
-            .iter()
-            .filter(|batch| {
-                let q = format!(
-                    "Reprocess batch {} (first row: {})?",
-                    batch.batch_index,
-                    format_first_row(&batch.first_row)
-                );
-                !confirm(&q)
-            })
-            .map(|batch| batch.batch_index)
-            .collect(),
+        InFlightMode::ReprocessAll => InFlightDecision::Resume(HashSet::new()),
+        InFlightMode::SkipAll => InFlightDecision::Resume(in_flight.iter().map(|b| b.batch_index).collect()),
+        InFlightMode::DecideEach => InFlightDecision::Resume(
+            in_flight
+                .iter()
+                .filter(|batch| {
+                    let q = format!(
+                        "Reprocess batch {} (first row: {})?",
+                        batch.batch_index,
+                        format_first_row(&batch.first_row)
+                    );
+                    !confirm(&q)
+                })
+                .map(|batch| batch.batch_index)
+                .collect(),
+        ),
+        InFlightMode::Restart => InFlightDecision::Restart,
+        InFlightMode::Abort => InFlightDecision::Abort,
     }
 }
 

@@ -18,7 +18,7 @@ use typedb_driver::TypeDBDriver;
 use crate::{
     ExitCode, fatal, fatal_with,
     params::{Params, resume_warnings},
-    prompts::{confirm, resolve_in_flight_skips},
+    prompts::{InFlightDecision, confirm, resolve_in_flight_skips},
 };
 
 pub(crate) const CHECKPOINT_VERSION: u32 = 1;
@@ -267,12 +267,19 @@ pub(crate) fn hash_string(s: &str) -> String {
 /// freshened hashes and any user-chosen in-flight skips applied), or builds a fresh checkpoint.
 /// Interactive: shows resume warnings and prompts for confirmation when params have drifted,
 /// and asks per-in-flight whether to skip or retry.
+pub(crate) struct CheckpointInit {
+    pub checkpoint: Checkpoint,
+    /// True iff the user chose Restart at the in-flight prompt: caller must treat the run as
+    /// fresh (no resume), and clear any prior output files in the output dir.
+    pub restarted: bool,
+}
+
 pub(crate) fn initialize_checkpoint(
     params: &Params,
     resume_checkpoint: Option<Checkpoint>,
     hashes: Option<Hashes>,
-) -> Checkpoint {
-    let skipped_in_flight: HashSet<usize> = if let Some(prior) = resume_checkpoint.as_ref() {
+) -> CheckpointInit {
+    let decision = if let Some(prior) = resume_checkpoint.as_ref() {
         let hashes = hashes.as_ref().expect("resume requires checkpointing, which always produces hashes");
         let warnings = resume_warnings(params, prior, hashes);
         if !warnings.is_empty() {
@@ -286,10 +293,21 @@ pub(crate) fn initialize_checkpoint(
         }
         resolve_in_flight_skips(&prior.in_flight)
     } else {
-        HashSet::new()
+        InFlightDecision::Resume(HashSet::new())
     };
 
-    match resume_checkpoint {
+    let skipped_in_flight = match decision {
+        InFlightDecision::Resume(skipped) => skipped,
+        InFlightDecision::Restart => {
+            return CheckpointInit {
+                checkpoint: Checkpoint::new(params.to_checkpoint_params(), hashes.unwrap_or_default()),
+                restarted: true,
+            };
+        }
+        InFlightDecision::Abort => fatal_with(ExitCode::UserInputError, "aborted: resume cancelled by user"),
+    };
+
+    let checkpoint = match resume_checkpoint {
         Some(mut prior) => {
             if let Some(hashes) = hashes.as_ref() {
                 prior.set_hashes(hashes.clone());
@@ -298,7 +316,8 @@ pub(crate) fn initialize_checkpoint(
             prior
         }
         None => Checkpoint::new(params.to_checkpoint_params(), hashes.unwrap_or_default()),
-    }
+    };
+    CheckpointInit { checkpoint, restarted: false }
 }
 
 /// Computes the three integrity hashes for the current run by combining the static data/query

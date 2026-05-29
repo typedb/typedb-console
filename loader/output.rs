@@ -5,7 +5,7 @@
  */
 
 use std::{
-    fs,
+    fs, io,
     path::{Path, PathBuf},
 };
 
@@ -47,6 +47,22 @@ impl OutputConfiguration {
         fs::create_dir_all(&self.output_dir).unwrap_or_else(|err| {
             fatal(format!("failed to create output directory '{}': {err}", self.output_dir.display()))
         });
+    }
+
+    /// Removes prior checkpoint and rejects files so a restart looks like a fresh run. Missing
+    /// files are ignored; any other I/O failure is fatal.
+    pub(crate) fn clear_for_restart(&self) {
+        let mut paths: Vec<&Path> = vec![&self.rejects_csv, &self.rejects_log];
+        if let Some(path) = self.checkpoint_path.as_deref() {
+            paths.push(path);
+        }
+        for path in paths {
+            match fs::remove_file(path) {
+                Ok(()) => {}
+                Err(err) if err.kind() == io::ErrorKind::NotFound => {}
+                Err(err) => fatal(format!("failed to remove '{}' for restart: {err}", path.display())),
+            }
+        }
     }
 }
 

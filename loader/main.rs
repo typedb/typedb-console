@@ -9,7 +9,7 @@ use std::process::exit;
 use clap::Parser;
 
 use crate::{
-    checkpoint::{compute_hashes, initialize_checkpoint},
+    checkpoint::{CheckpointInit, compute_hashes, initialize_checkpoint},
     cli::Args,
     load::run_load,
     output::OutputConfiguration,
@@ -59,7 +59,11 @@ async fn main() {
         None
     };
 
-    let checkpoint = initialize_checkpoint(&params, resume_checkpoint, hashes);
+    let CheckpointInit { checkpoint, restarted } = initialize_checkpoint(&params, resume_checkpoint, hashes);
+    if restarted {
+        output_configuration.clear_for_restart();
+    }
+    let resuming = resuming && !restarted;
 
     if let Err(reason) =
         run_load(params, inputs, query_text, driver, checkpoint, output_configuration, resuming, shutdown).await

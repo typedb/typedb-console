@@ -8,11 +8,11 @@ use std::process::exit;
 
 use clap::Parser;
 
-use crate::output::OutputConfiguration;
 use crate::{
     checkpoint::{compute_hashes, initialize_checkpoint},
     cli::Args,
     load::run_load,
+    output::OutputConfiguration,
     params::resolve_and_validate_params,
     query::load_query,
     setup::connect_and_initialize,

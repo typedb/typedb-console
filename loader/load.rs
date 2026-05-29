@@ -13,6 +13,15 @@ use std::{
     time::Instant,
 };
 
+use csv::StringRecord;
+use futures::stream::{FuturesUnordered, StreamExt};
+use tokio::task::JoinHandle;
+use typedb_driver::{
+    TransactionType, TypeDBDriver,
+    answer::QueryAnswer,
+    transaction::{QueryGivenRow, QueryGivenRows},
+};
+
 use crate::{
     checkpoint::{Checkpoint, CheckpointWriter, InFlightBatch},
     csv_reader::{Batch, CsvReader, RowRejection},
@@ -22,14 +31,6 @@ use crate::{
     progress::{LoadStats, print_progress, print_summary},
     query::GivenSpec,
     rejects::RejectsWriter,
-};
-use csv::StringRecord;
-use futures::stream::{FuturesUnordered, StreamExt};
-use tokio::task::JoinHandle;
-use typedb_driver::answer::QueryAnswer;
-use typedb_driver::{
-    TransactionType, TypeDBDriver,
-    transaction::{QueryGivenRow, QueryGivenRows},
 };
 
 /// Executes the load: drives the CSV through parallel commits, persists checkpoints between

@@ -15,7 +15,7 @@ use std::{
 
 use crate::{
     checkpoint::{Checkpoint, CheckpointWriter, InFlightBatch},
-    data::{Batch, CsvReader, RowRejection},
+    csv_reader::{Batch, CsvReader, RowRejection},
     fatal,
     output::OutputConfiguration,
     params::Params,

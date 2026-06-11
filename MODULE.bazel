@@ -20,16 +20,16 @@ bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
 # fixed commits
-typedb_driver_commit = "1a75c33db719ef487e6664a95d86208bc1535a38"
+typedb_driver_commit = "9266211efd94b0097b2b688c396c76712794d69b"
 typeql_commit = "f9fd49770ceb4315ec95364eb15bc904e1b3f67d"
-typedb_protocol_commit = "42ee0b9415728621e09ec3851b8a25a7b9f5fe0d"
+typedb_protocol_commit = "bb9c513d4dcff269feb88015dcf99354ad378657"
 
 # typedb ecosystem dependencies
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "6c81a5180ed94a11c989e06a4ff8215df6da163e",
+    commit = "dd811cf28715bbce8374e5e0f9defaf772e7dd36",
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
@@ -111,8 +111,8 @@ crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
 use_repo(crate, "crates")
 
 # Maven dependencies - import from typedb_dependencies
-maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
-use_repo(maven, "maven")
+maven = use_extension("@typedb_dependencies//library/maven:maven_extension.bzl", "maven")
+use_repo(maven, "typedb_maven")
 
 # Register Kotlin toolchain
 register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")

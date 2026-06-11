@@ -19,7 +19,7 @@ use tokio::task::JoinHandle;
 use typedb_driver::{
     TransactionType, TypeDBDriver,
     answer::QueryAnswer,
-    transaction::{QueryGivenRow, QueryGivenRows},
+    given::{GivenRowEntry, GivenRows, GivenRowsHeader},
 };
 
 use crate::{
@@ -53,6 +53,7 @@ pub(crate) async fn run_load(
     let completed_above_watermark: HashSet<usize> =
         checkpoint.completed_above_watermark.iter().map(|c| c.batch_index).collect();
 
+    let given_header = Arc::new(GivenRowsHeader::new(inputs.iter().map(|input| input.name.clone()).collect()));
     let mut csv_reader = CsvReader::open_for_load(&params, inputs, &checkpoint);
     let checkpoint_writer = CheckpointWriter::open_for_load(resuming, checkpoint_path);
     let rejects_writer =
@@ -97,8 +98,9 @@ pub(crate) async fn run_load(
             let driver = driver.clone();
             let database = database.clone();
             let query_text = query_text.clone();
+            let given_header = given_header.clone();
             in_flight.push(tokio::spawn(async move {
-                process_batch(driver, database, query_text, batch_index, batch).await
+                process_batch(driver, database, query_text, given_header, batch_index, batch).await
             }));
         }
 
@@ -261,12 +263,13 @@ async fn process_batch(
     driver: Arc<TypeDBDriver>,
     database: Arc<str>,
     query_text: Arc<str>,
+    given_header: Arc<GivenRowsHeader>,
     batch_index: usize,
     batch: Batch,
 ) -> BatchResult {
     let parsed_count = batch.rows.len();
     let commit_result = if parsed_count > 0 {
-        commit_batch(&driver, &database, &query_text, batch_index, batch.rows).await
+        commit_batch(&driver, &database, &query_text, given_header, batch_index, batch.rows).await
     } else {
         Ok(())
     };
@@ -285,15 +288,20 @@ async fn commit_batch(
     driver: &TypeDBDriver,
     database: &str,
     query: &str,
+    given_header: Arc<GivenRowsHeader>,
     batch_index: usize,
-    rows: Vec<QueryGivenRow>,
+    rows: Vec<Vec<GivenRowEntry>>,
 ) -> Result<(), String> {
+    let mut given_rows = GivenRows::new_with_headers(given_header, rows.len());
+    for row in rows {
+        given_rows.push_row(row).map_err(|err| format!("building given rows: {err}"))?;
+    }
     let transaction = driver
         .transaction(database.to_owned(), TransactionType::Write)
         .await
         .map_err(|err| format!("opening write transaction on '{database}': {err}"))?;
     let answer = transaction
-        .query_with_inputs(query, QueryGivenRows(rows))
+        .query_with_rows(query, given_rows)
         .await
         .map_err(|err| format!("query failed: {err}"))?;
     let has_any = match answer {

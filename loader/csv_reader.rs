@@ -14,7 +14,7 @@ use typedb_driver::{
         Value,
         value::{Decimal, Duration, TimeZone},
     },
-    transaction::{QueryGivenEntry, QueryGivenRow},
+    given::GivenRowEntry,
 };
 
 use crate::{
@@ -37,7 +37,7 @@ pub(crate) struct CsvReader {
 }
 
 pub(crate) struct Batch {
-    pub(crate) rows: Vec<QueryGivenRow>,
+    pub(crate) rows: Vec<Vec<GivenRowEntry>>,
     pub(crate) records: Vec<StringRecord>,
     pub(crate) row_numbers: Vec<usize>,
     pub(crate) rows_attempted: usize,
@@ -221,7 +221,7 @@ impl CsvReader {
         }
     }
 
-    fn parse_row(&self, record: &StringRecord) -> Result<QueryGivenRow, String> {
+    fn parse_row(&self, record: &StringRecord) -> Result<Vec<GivenRowEntry>, String> {
         let mut entries = Vec::with_capacity(self.inputs.len());
         for (input, &col) in self.inputs.iter().zip(&self.column_indices) {
             let cell = record.get(col).ok_or_else(|| format!("missing column {} for input '${}'", col, input.name))?;
@@ -229,15 +229,15 @@ impl CsvReader {
                 parse_cell(cell, input, &self.null_values).map_err(|err| format!("column '${}': {err}", input.name))?,
             );
         }
-        Ok(QueryGivenRow(entries))
+        Ok(entries)
     }
 }
 
-fn parse_cell(cell: &str, input: &GivenSpec, null_values: &[String]) -> Result<QueryGivenEntry, String> {
+fn parse_cell(cell: &str, input: &GivenSpec, null_values: &[String]) -> Result<GivenRowEntry, String> {
     let is_null = if null_values.is_empty() { cell.is_empty() } else { null_values.iter().any(|v| v == cell) };
     if is_null {
         return if input.optional {
-            Ok(QueryGivenEntry::Empty)
+            Ok(GivenRowEntry::Empty)
         } else {
             Err("null value in non-optional column".to_owned())
         };
@@ -257,7 +257,7 @@ fn parse_cell(cell: &str, input: &GivenSpec, null_values: &[String]) -> Result<Q
             Value::Duration(Duration::from_str(cell).map_err(|_| format!("invalid ISO-8601 duration: '{cell}'"))?)
         }
     };
-    Ok(QueryGivenEntry::Value(value))
+    Ok(GivenRowEntry::Value(value))
 }
 
 fn parse_bool(cell: &str) -> Result<bool, String> {
@@ -393,9 +393,9 @@ mod tests {
         GivenSpec { name: "x".to_owned(), cell_type, optional }
     }
 
-    fn entry_value(entry: QueryGivenEntry) -> Value {
+    fn entry_value(entry: GivenRowEntry) -> Value {
         match entry {
-            QueryGivenEntry::Value(v) => v,
+            GivenRowEntry::Value(v) => v,
             other => panic!("expected Value, got {other:?}"),
         }
     }
@@ -635,9 +635,9 @@ mod tests {
     fn parse_cell_default_null_is_empty_string() {
         // With no explicit --null-values, the empty string is the null sentinel.
         let s = spec(CellType::Integer, true);
-        assert!(matches!(parse_cell("", &s, &[]).unwrap(), QueryGivenEntry::Empty));
+        assert!(matches!(parse_cell("", &s, &[]).unwrap(), GivenRowEntry::Empty));
         // Non-empty string is NOT null even when null_values is empty.
-        assert!(matches!(parse_cell("42", &s, &[]).unwrap(), QueryGivenEntry::Value(_)));
+        assert!(matches!(parse_cell("42", &s, &[]).unwrap(), GivenRowEntry::Value(_)));
     }
 
     #[test]
@@ -645,8 +645,8 @@ mod tests {
         // Once --null-values is provided, the empty string is no longer special.
         let s = spec(CellType::Integer, true);
         let nulls = vec!["NA".to_owned(), "NULL".to_owned()];
-        assert!(matches!(parse_cell("NA", &s, &nulls).unwrap(), QueryGivenEntry::Empty));
-        assert!(matches!(parse_cell("NULL", &s, &nulls).unwrap(), QueryGivenEntry::Empty));
+        assert!(matches!(parse_cell("NA", &s, &nulls).unwrap(), GivenRowEntry::Empty));
+        assert!(matches!(parse_cell("NULL", &s, &nulls).unwrap(), GivenRowEntry::Empty));
         // Empty string is now treated as a value attempt, which fails to parse as integer.
         assert!(parse_cell("", &s, &nulls).is_err());
     }

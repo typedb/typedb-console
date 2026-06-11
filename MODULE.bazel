@@ -36,7 +36,7 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/typedb-dependencies",
-    commit = "75fccc8a9995bcd6a22a96f43aa5144a7eccd91",
+    commit = "75fccc8a9995bcd6a22a96f43aa5144a7eccd916",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")

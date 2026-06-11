@@ -1,7 +1,7 @@
 
 [workspace]
 	resolver = "2"
-	members = ["common", "loader", "tool/runner", "console"]
+	members = ["typeql-check", "common", "loader", "tool/runner", "console"]
 
 	[workspace.dependencies]
 

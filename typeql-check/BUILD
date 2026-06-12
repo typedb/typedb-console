@@ -12,44 +12,17 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_shared_library", "rustfmt_test")
-load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 
 rust_binary(
     name = "typeql-check-native",
-    srcs = ["main.rs"],
+    srcs = glob(["*.rs"]),
     deps = [
         "@typeql//rust:typeql",
     ],
     tags = [
         "crate-name=typeql-check"
     ],
-    visibility = ["//visibility:public"],
-)
-
-# Wasm cdylib that wraps typeql::parse_query in a wasm-bindgen-friendly API.
-# Built only when targeting wasm32 (driven by rust_wasm_bindgen's transition).
-rust_shared_library(
-    name = "typeql-check-wasm-lib",
-    srcs = ["lib.rs"],
-    deps = [
-        "@typeql//rust:typeql",
-        "@rules_rust_wasm_bindgen//3rdparty:wasm_bindgen",
-    ],
-    edition = "2024",
-    target_compatible_with = ["@platforms//cpu:wasm32"],
-    tags = ["crate-name=typeql-check"],
-    visibility = ["//visibility:public"],
-)
-
-# Produces `typeql_check.js`, `typeql_check.d.ts`, `typeql_check_bg.wasm`,
-# `typeql_check_bg.wasm.d.ts` suitable for direct browser consumption
-# (`<script type="module">`).
-rust_wasm_bindgen(
-    name = "typeql-check-wasm",
-    wasm_file = ":typeql-check-wasm-lib",
-    target = "web",
-    out_name = "typeql_check",
     visibility = ["//visibility:public"],
 )
 
@@ -100,22 +73,6 @@ assemble_zip(
     target_compatible_with = constraint_win_x86_64
 )
 
-# Wasm bundle (.wasm + .js + .d.ts) for browser consumers. Platform-independent.
-pkg_tar(
-    name = "typeql-check-artifact-wasm",
-    srcs = [":typeql-check-wasm"],
-    package_dir = "typeql-check",
-    extension = "tar.gz",
-    visibility = ["//visibility:public"],
-)
-
-assemble_targz(
-    name = "assemble-wasm-targz",
-    output_filename = "typeql-check-wasm",
-    targets = [":typeql-check-artifact-wasm"],
-    visibility = ["//visibility:public"],
-)
-
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
@@ -161,16 +118,6 @@ deploy_artifact(
     target = ":assemble-windows-x86_64-zip",
     artifact_group = "typeql-check-windows-x86_64",
     artifact_name = "typeql-check-windows-x86_64-{version}.zip",
-    snapshot = deployment['artifact']['snapshot']['upload'],
-    release = deployment['artifact']['release']['upload'],
-    visibility = ["//visibility:public"],
-)
-
-deploy_artifact(
-    name = "deploy-wasm-targz",
-    target = ":assemble-wasm-targz",
-    artifact_group = "typeql-check-wasm",
-    artifact_name = "typeql-check-wasm-{version}.tar.gz",
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],

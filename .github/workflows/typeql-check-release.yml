@@ -1,0 +1,102 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: TypeQL Check release
+
+# Manual dispatch only. The version is whatever is in ./VERSION at the time the workflow is run.
+# Bump VERSION + update RELEASE_NOTES_LATEST.md before triggering this workflow.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+# TypeQL Check release tags use a `typeql-check-` prefix so the Console and Loader releases (which
+# share the VERSION file) can produce parallel `console-{version}` / `loader-{version}` tags
+# without colliding.
+env:
+  RELEASE_TAG_PREFIX: typeql-check-
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Validate dependencies
+        env:
+          ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run @typedb_dependencies//distribution/artifact:create-netrc
+          bazel test //:release-validate-deps --test_output=streamed
+      - name: Validate release notes
+        env:
+          NOTES_VALIDATE_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./RELEASE_NOTES_LATEST.md
+
+  deploy-artifacts:
+    name: Deploy ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//typeql-check:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//typeql-check:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//typeql-check:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, bazel: "//typeql-check:deploy-mac-arm64-zip" }
+          - { label: windows-x86_64, runner: windows-2022, bazel: "//typeql-check:deploy-windows-x86_64-zip" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Deploy release artifact to Cloudsmith
+        shell: bash
+        env:
+          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(cat VERSION) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- release
+
+  deploy-github:
+    name: Publish GitHub release
+    runs-on: ubuntu-22.04
+    needs: deploy-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+        run: |
+          tag="${RELEASE_TAG_PREFIX}${{ steps.version.outputs.version }}"
+          gh release delete "$tag" --yes --cleanup-tag || true
+          gh release create "$tag" \
+            --target "${{ github.sha }}" \
+            --title "TypeQL Check ${{ steps.version.outputs.version }}" \
+            --notes-file ./RELEASE_NOTES_LATEST.md

@@ -59,7 +59,6 @@ jobs:
           - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
           - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
-          - { label: windows-x86_64, runner: windows-2022, bazel: "//console:deploy-windows-x86_64-zip" }
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0
@@ -80,10 +79,29 @@ jobs:
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- release
 
+  # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
+  # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
+  # so the GitHub-hosted runner can build and launch it.
+  deploy-windows:
+    name: Deploy windows-x86_64
+    runs-on: windows-2022
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Windows build environment
+        shell: cmd
+        run: .github\windows\prepare.bat
+      - name: Deploy release artifact to Cloudsmith
+        shell: cmd
+        env:
+          REPO_TYPEDB_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: .github\windows\deploy_release.bat console
+
   deploy-github:
     name: Publish GitHub release
     runs-on: ubuntu-22.04
-    needs: deploy-artifacts
+    needs: [deploy-artifacts, deploy-windows]
     steps:
       - uses: actions/checkout@v4
       - name: Resolve version

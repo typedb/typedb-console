@@ -1,0 +1,13 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+index bd05d48..cac168f 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -3,7 +3,7 @@
+ # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ 
+ module(
+-    name = "typedb_console",
++    name = "v",
+     version = "0.0.0",
+     compatibility_level = 1,
+ )

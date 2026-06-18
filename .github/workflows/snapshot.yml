@@ -6,7 +6,7 @@ name: Snapshot deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, typedb-loader]
 
 permissions:
   contents: read
@@ -25,7 +25,6 @@ jobs:
           - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
           - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
-          - { label: windows-x86_64, runner: windows-2022, bazel: "//console:deploy-windows-x86_64-zip" }
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0
@@ -46,6 +45,24 @@ jobs:
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- snapshot
 
+  # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
+  # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
+  # so the GitHub-hosted runner can build and launch it.
+  console-windows:
+    name: Console snapshot windows-x86_64
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Windows build environment
+        shell: cmd
+        run: .github\windows\prepare.bat
+      - name: Deploy snapshot
+        shell: cmd
+        env:
+          REPO_TYPEDB_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: .github\windows\deploy_snapshot.bat console
+
   loader:
     name: Loader snapshot ${{ matrix.target.label }}
     runs-on: ${{ matrix.target.runner }}
@@ -57,7 +74,6 @@ jobs:
           - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//loader:deploy-linux-arm64-targz" }
           - { label: mac-x86_64, runner: macos-26-intel, bazel: "//loader:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, bazel: "//loader:deploy-mac-arm64-zip" }
-          - { label: windows-x86_64, runner: windows-2022, bazel: "//loader:deploy-windows-x86_64-zip" }
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0
@@ -77,3 +93,18 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- snapshot
+
+  loader-windows:
+    name: Loader snapshot windows-x86_64
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Windows build environment
+        shell: cmd
+        run: .github\windows\prepare.bat
+      - name: Deploy snapshot
+        shell: cmd
+        env:
+          REPO_TYPEDB_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: .github\windows\deploy_snapshot.bat loader

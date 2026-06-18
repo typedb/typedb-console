@@ -25,6 +25,7 @@ checkstyle_test(
     include = glob([
         "*",
         ".github/workflows/*",
+        ".github/windows/*",
     ]),
     exclude = [
         ".bazelversion",
@@ -33,6 +34,8 @@ checkstyle_test(
         "LICENSE",
         "VERSION",
         "MODULE.bazel.lock",
+        ".github/windows/package_binary_as_exe.patch",
+        ".github/windows/short_workspace.patch",
     ] + glob([
         "*.md",
         "Cargo.*",

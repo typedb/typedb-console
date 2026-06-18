@@ -6,7 +6,7 @@ name: Snapshot deploy
 
 on:
   push:
-    branches: [master, typedb-loader]
+    branches: [master]
 
 permissions:
   contents: read

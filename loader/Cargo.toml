@@ -19,19 +19,28 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
-	[dependencies.sha2]
-		workspace = true
-
-	[dependencies.typedb_cli_common]
-		workspace = true
-
 	[dependencies.serde]
+		workspace = true
+
+	[dependencies.csv]
+		workspace = true
+
+	[dependencies.futures]
+		workspace = true
+
+	[dependencies.rpassword]
+		workspace = true
+
+	[dependencies.chrono-tz]
+		workspace = true
+
+	[dependencies.sha2]
 		workspace = true
 
 	[dependencies.clap]
 		workspace = true
 
-	[dependencies.csv]
+	[dependencies.typedb_cli_common]
 		workspace = true
 
 	[dependencies.typeql]
@@ -40,19 +49,10 @@ features = {}
 	[dependencies.typedb-driver]
 		workspace = true
 
-	[dependencies.futures]
-		workspace = true
-
 	[dependencies.chrono]
 		workspace = true
 
-	[dependencies.chrono-tz]
-		workspace = true
-
 	[dependencies.serde_json]
-		workspace = true
-
-	[dependencies.rpassword]
 		workspace = true
 
 [[test]]

@@ -19,9 +19,6 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
-	[dependencies.typedb_cli_common]
-		workspace = true
-
 	[dependencies.glob]
 		workspace = true
 
@@ -44,6 +41,9 @@ features = {}
 		workspace = true
 
 	[dependencies.clap]
+		workspace = true
+
+	[dependencies.typedb_cli_common]
 		workspace = true
 
 	[dependencies.typeql]

@@ -298,7 +298,7 @@ fn parse_decimal(cell: &str) -> Result<Decimal, String> {
     let signed = sign * (integer * Decimal::FRACTIONAL_PART_DENOMINATOR as i128 + (fractional_raw * scale) as i128);
     let integer_out = (signed / Decimal::FRACTIONAL_PART_DENOMINATOR as i128) as i64;
     let fractional_out = signed.rem_euclid(Decimal::FRACTIONAL_PART_DENOMINATOR as i128) as u64;
-    Ok(Decimal::new(integer_out, fractional_out))
+    Ok(Decimal::from_parts(integer_out, fractional_out))
 }
 
 fn parse_naive_datetime(cell: &str) -> Result<NaiveDateTime, String> {

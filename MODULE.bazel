@@ -20,9 +20,9 @@ bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
 # fixed commits
-typedb_driver_commit = "0eba8fd5d8eacd4e8b77128743643493d3bdf830"
-typeql_commit = "6518e8e2c325df89283d7254e4f7581b157fa0ab"
-typedb_protocol_commit = "03a6a4acc0229a0141c60791ca69f3677ad2c0a5"
+typedb_driver_commit = "747c22ea532e03e25e26814e7079df09910f8257"
+typeql_commit = "aff2bd809b2c6e17e76d25ce3ae731bf14ed03c4"
+typedb_protocol_commit = "bb9c513d4dcff269feb88015dcf99354ad378657"
 
 # typedb ecosystem dependencies
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")

@@ -28,7 +28,7 @@ rust_binary(
 
 pkg_tar(
     name = "typeql-check-artifact-native",
-    files = {":typeql-check-native" : "typeql-check/typeql_check_bin"},
+    files = {":typeql-check-native" : "typeql-check"},
     extension = "tar.gz",
     visibility = ["//visibility:public"]
 )
@@ -36,7 +36,7 @@ pkg_tar(
 assemble_targz(
     name = "assemble-linux-x86_64-targz",
     output_filename = "typeql-check-linux-x86_64",
-    targets = [":typeql-check-artifact-native", "//binary:assemble-bash-targz"],
+    targets = [":typeql-check-artifact-native"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_x86_64,
 )
@@ -44,7 +44,7 @@ assemble_targz(
 assemble_targz(
     name = "assemble-linux-arm64-targz",
     output_filename = "typeql-check-linux-arm64",
-    targets = [":typeql-check-artifact-native", "//binary:assemble-bash-targz"],
+    targets = [":typeql-check-artifact-native"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_linux_arm64
 )
@@ -52,7 +52,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
     output_filename = "typeql-check-mac-x86_64",
-    targets = [":typeql-check-artifact-native", "//binary:assemble-bash-targz"],
+    targets = [":typeql-check-artifact-native"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_x86_64
 )
@@ -60,7 +60,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-mac-arm64-zip",
     output_filename = "typeql-check-mac-arm64",
-    targets = [":typeql-check-artifact-native", "//binary:assemble-bash-targz"],
+    targets = [":typeql-check-artifact-native"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_mac_arm64
 )
@@ -68,7 +68,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-x86_64-zip",
     output_filename = "typeql-check-windows-x86_64",
-    targets = [":typeql-check-artifact-native", "//binary:assemble-bat-targz"],
+    targets = [":typeql-check-artifact-native"],
     visibility = ["//visibility:public"],
     target_compatible_with = constraint_win_x86_64
 )

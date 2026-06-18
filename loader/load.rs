@@ -300,10 +300,7 @@ async fn commit_batch(
         .transaction(database.to_owned(), TransactionType::Write)
         .await
         .map_err(|err| format!("opening write transaction on '{database}': {err}"))?;
-    let answer = transaction
-        .query_with_rows(query, given_rows)
-        .await
-        .map_err(|err| format!("query failed: {err}"))?;
+    let answer = transaction.query_with_rows(query, given_rows).await.map_err(|err| format!("query failed: {err}"))?;
     let has_any = match answer {
         QueryAnswer::Ok(_) => false,
         QueryAnswer::ConceptRowStream(_, mut stream) => stream.next().await.is_some(),

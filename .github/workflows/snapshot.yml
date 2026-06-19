@@ -134,7 +134,7 @@ jobs:
       - name: Deploy snapshot
         shell: bash
         env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: |
           bazel run --define version=$(git rev-parse HEAD) \

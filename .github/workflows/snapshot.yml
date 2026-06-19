@@ -38,7 +38,7 @@ jobs:
       - name: Deploy snapshot
         shell: bash
         env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: |
           bazel run --define version=$(git rev-parse HEAD) \
@@ -59,7 +59,7 @@ jobs:
       - name: Deploy snapshot
         shell: cmd
         env:
-          REPO_TYPEDB_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat console
 
@@ -87,7 +87,7 @@ jobs:
       - name: Deploy snapshot
         shell: bash
         env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: |
           bazel run --define version=$(git rev-parse HEAD) \
@@ -105,6 +105,6 @@ jobs:
       - name: Deploy snapshot
         shell: cmd
         env:
-          REPO_TYPEDB_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat loader

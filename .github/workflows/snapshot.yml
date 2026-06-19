@@ -11,8 +11,8 @@ on:
 permissions:
   contents: read
 
-# Snapshots are versioned by commit SHA. Both Console and Loader binaries are deployed for every
-# master push so downstream consumers can pin to whichever build they need.
+# Snapshots are versioned by commit SHA. Console, Loader, and TypeQL Check binaries are all
+# deployed for every master push so downstream consumers can pin to whichever build they need.
 jobs:
   console:
     name: Console snapshot ${{ matrix.target.label }}
@@ -108,3 +108,35 @@ jobs:
           REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat loader
+
+  typeql-check:
+    name: TypeQL Check snapshot ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//typeql-check:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//typeql-check:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//typeql-check:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, bazel: "//typeql-check:deploy-mac-arm64-zip" }
+          - { label: windows-x86_64, runner: windows-2022, bazel: "//typeql-check:deploy-windows-x86_64-zip" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Deploy snapshot
+        shell: bash
+        env:
+          DEPLOY_ARTIFACT_USERNAME: ${{ secrets.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(git rev-parse HEAD) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- snapshot

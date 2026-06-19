@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::{self, Read};
-use std::process::ExitCode;
+use std::{
+    io::{self, Read},
+    process::ExitCode,
+};
 
 fn main() -> ExitCode {
     let input = match std::env::args().nth(1) {

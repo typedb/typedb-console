@@ -11,6 +11,18 @@ index fa552d6..030fd34 100644
      extension = "tar.gz",
      visibility = ["//visibility:public"]
  )
+diff --git a/typeql-check/BUILD b/typeql-check/BUILD
+--- a/typeql-check/BUILD
++++ b/typeql-check/BUILD
+@@ -28,7 +28,7 @@
+
+ pkg_tar(
+     name = "typeql-check-artifact-native",
+-    files = {":typeql-check-native" : "typeql-check"},
++    files = {":typeql-check-native" : "typeql-check.exe"},
+     extension = "tar.gz",
+     visibility = ["//visibility:public"]
+ )
 diff --git a/loader/BUILD b/loader/BUILD
 index ff645cb..3ec93bf 100644
 --- a/loader/BUILD

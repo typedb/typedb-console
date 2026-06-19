@@ -45,6 +45,21 @@ jobs:
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- snapshot
 
+  typeql-check-windows:
+    name: TypeQL Check snapshot windows-x86_64
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Windows build environment
+        shell: cmd
+        run: .github\windows\prepare.bat
+      - name: Deploy snapshot
+        shell: cmd
+        env:
+          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: .github\windows\deploy_snapshot.bat typeql-check
+
   # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
   # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
   # so the GitHub-hosted runner can build and launch it.
@@ -120,7 +135,6 @@ jobs:
           - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//typeql-check:deploy-linux-arm64-targz" }
           - { label: mac-x86_64, runner: macos-26-intel, bazel: "//typeql-check:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, bazel: "//typeql-check:deploy-mac-arm64-zip" }
-          - { label: windows-x86_64, runner: windows-2022, bazel: "//typeql-check:deploy-windows-x86_64-zip" }
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0

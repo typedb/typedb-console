@@ -56,7 +56,7 @@ git_override(
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
-    remote = "https://github.com/krishnangovindraj/typedb-protocol",
+    remote = "https://github.com/typedb/typedb-protocol",
     commit = typedb_protocol_commit,
 )
 

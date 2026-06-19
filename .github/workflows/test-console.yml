@@ -1,0 +1,46 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: Console tests
+
+# `paths` here narrows PR triggers to changes that could affect the Console binary or its tests.
+# Pushes to development/master use the unfiltered branch trigger so we always validate on
+# integration regardless of what the patch touched.
+on:
+  push:
+    branches: [development, master]
+  pull_request:
+    paths:
+      - 'console/**'
+      - 'tool/connect/**'
+      - 'tool/runner/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'MODULE.bazel'
+      - 'MODULE.bazel.lock'
+      - 'WORKSPACE'
+      - 'BUILD'
+      - 'deployment.bzl'
+      - '.bazelversion'
+      - '.github/workflows/test-console.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Console assembly tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - run: bazel test //console/tests/assembly:test-assembly --test_output=streamed
+      - run: bazel test //console/tests/assembly:test-script --test_output=streamed

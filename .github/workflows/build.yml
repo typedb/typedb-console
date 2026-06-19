@@ -1,0 +1,43 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: Build & checkstyle
+
+# Always runs on every PR and push: the workspace-wide build, checkstyle, and rustfmt are
+# universal correctness checks. Per-binary assembly tests live in test-console.yml /
+# test-loader.yml, which use built-in `paths` filters to skip irrelevant runs.
+on:
+  pull_request:
+  push:
+    branches: [development, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & checkstyle
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Build everything
+        run: bazel build //...
+      - name: Checkstyle
+        run: |
+          bazel run @typedb_dependencies//tool/checkstyle:test-coverage
+          bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
+      - name: rustfmt
+        run: bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config --test_output=errors

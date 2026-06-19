@@ -4,13 +4,13 @@ REM License, v. 2.0. If a copy of the MPL was not distributed with this
 REM file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 REM shorten the workspace name so that we can avoid the long path restriction
-git apply .circleci\windows\short_workspace.patch
+git apply .github\windows\short_workspace.patch
 
 REM uninstall Java 12 installed by CircleCI
 choco uninstall openjdk --limit-output --yes --no-progress
 
 REM install dependencies needed for build
-choco install .circleci\windows\dependencies.config  --limit-output --yes --no-progress
+choco install .github\windows\dependencies.config  --limit-output --yes --no-progress
 
 REM create a symlink python3.exe and make it available in %PATH%
 mklink C:\Python311\python3.exe C:\Python311\python.exe

@@ -1,0 +1,119 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: Loader release
+
+# Manual dispatch only. The version is whatever is in ./VERSION at the time the workflow is run.
+# Bump VERSION + update RELEASE_NOTES_LATEST.md before triggering this workflow.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+# Loader release tags use a `loader-` prefix so the Console release (which shares the VERSION
+# file) can produce a parallel `console-{version}` tag without colliding.
+env:
+  RELEASE_TAG_PREFIX: loader-
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Validate dependencies
+        env:
+          ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+          ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run @typedb_dependencies//distribution/artifact:create-netrc
+          bazel test //:release-validate-deps --test_output=streamed
+      - name: Validate release notes
+        env:
+          NOTES_VALIDATE_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./RELEASE_NOTES_LATEST.md
+
+  deploy-artifacts:
+    name: Deploy ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//loader:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//loader:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//loader:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, bazel: "//loader:deploy-mac-arm64-zip" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Deploy release artifact to Cloudsmith
+        shell: bash
+        env:
+          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(cat VERSION) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- release
+
+  # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
+  # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
+  # so the GitHub-hosted runner can build and launch it.
+  deploy-windows:
+    name: Deploy windows-x86_64
+    runs-on: windows-2022
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Windows build environment
+        shell: cmd
+        run: .github\windows\prepare.bat
+      - name: Deploy release artifact to Cloudsmith
+        shell: cmd
+        env:
+          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: .github\windows\deploy_release.bat loader
+
+  deploy-github:
+    name: Publish GitHub release
+    runs-on: ubuntu-22.04
+    needs: [deploy-artifacts, deploy-windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+        run: |
+          tag="${RELEASE_TAG_PREFIX}${{ steps.version.outputs.version }}"
+          gh release delete "$tag" --yes --cleanup-tag || true
+          gh release create "$tag" \
+            --target "${{ github.sha }}" \
+            --title "TypeDB Loader ${{ steps.version.outputs.version }}" \
+            --notes-file ./RELEASE_NOTES_LATEST.md

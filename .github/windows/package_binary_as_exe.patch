@@ -1,0 +1,26 @@
+diff --git a/console/BUILD b/console/BUILD
+index fa552d6..030fd34 100644
+--- a/console/BUILD
++++ b/console/BUILD
+@@ -45,7 +45,7 @@ rust_binary(
+ 
+ pkg_tar(
+     name = "console-artifact-native",
+-    files = {":console-native" : "console/typedb_console_bin"},
++    files = {":console-native" : "console/typedb_console_bin.exe"},
+     extension = "tar.gz",
+     visibility = ["//visibility:public"]
+ )
+diff --git a/loader/BUILD b/loader/BUILD
+index ff645cb..3ec93bf 100644
+--- a/loader/BUILD
++++ b/loader/BUILD
+@@ -47,7 +47,7 @@ rust_test(
+ 
+ pkg_tar(
+     name = "loader-artifact-native",
+-    files = {":loader-native" : "loader/typedb_loader_bin"},
++    files = {":loader-native" : "loader/typedb_loader_bin.exe"},
+     extension = "tar.gz",
+     visibility = ["//visibility:public"]
+ )

@@ -5,6 +5,7 @@
 
 print_usage() {
       echo "  Console:         typedb console [--help]"
+      echo "  Loader:          typedb loader [--help]"
 }
 
 # =============================================
@@ -19,6 +20,10 @@ case "$1" in
        # exec replaces current shell process with java so no commands after these ones will ever get executed
         TYPEDB_CONSOLE_BIN="${TYPEDB_HOME}/console/typedb_console_bin"
         exec ${TYPEDB_CONSOLE_BIN} "${@:2}"
+        ;;
+    loader)
+        TYPEDB_LOADER_BIN="${TYPEDB_HOME}/loader/typedb_loader_bin"
+        exec ${TYPEDB_LOADER_BIN} "${@:2}"
         ;;
     "")
         echo "Missing argument. Possible commands are:"

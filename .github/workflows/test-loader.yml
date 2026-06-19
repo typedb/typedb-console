@@ -1,0 +1,60 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: Loader tests
+
+# `paths` here narrows PR triggers to changes that could affect the Loader binary or its tests.
+# Pushes to development/master use the unfiltered branch trigger so we always validate on
+# integration regardless of what the patch touched.
+on:
+  push:
+    branches: [development, master]
+  pull_request:
+    paths:
+      - 'loader/**'
+      - 'tool/connect/**'
+      - 'tool/runner/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'MODULE.bazel'
+      - 'MODULE.bazel.lock'
+      - 'WORKSPACE'
+      - 'BUILD'
+      - 'deployment.bzl'
+      - '.bazelversion'
+      - '.github/workflows/test-loader.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Loader unit tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - run: bazel test //loader:loader-unit-tests --test_output=streamed
+
+  assembly-tests:
+    name: Loader assembly tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - run: bazel test //loader/tests/assembly:test-loader --test_output=streamed

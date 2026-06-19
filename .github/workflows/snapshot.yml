@@ -6,7 +6,7 @@ name: Snapshot deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, typedb-loader]
 
 permissions:
   contents: read
@@ -14,36 +14,36 @@ permissions:
 # Snapshots are versioned by commit SHA. Both Console and Loader binaries are deployed for every
 # master push so downstream consumers can pin to whichever build they need.
 jobs:
-  console:
-    name: Console snapshot ${{ matrix.target.label }}
-    runs-on: ${{ matrix.target.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
-          bazelrc: |
-            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
-      - name: Deploy snapshot
-        shell: bash
-        env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run --define version=$(git rev-parse HEAD) \
-            --compilation_mode=opt \
-            ${{ matrix.target.bazel }} -- snapshot
+#  console:
+#    name: Console snapshot ${{ matrix.target.label }}
+#    runs-on: ${{ matrix.target.runner }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        target:
+#          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
+#          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
+#          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
+#          - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: bazel-contrib/setup-bazel@0.15.0
+#        with:
+#          bazelisk-cache: true
+#          disk-cache: true
+#          repository-cache: true
+#          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+#          bazelrc: |
+#            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+#      - name: Deploy snapshot
+#        shell: bash
+#        env:
+#          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: |
+#          bazel run --define version=$(git rev-parse HEAD) \
+#            --compilation_mode=opt \
+#            ${{ matrix.target.bazel }} -- snapshot
 
   # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
   # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
@@ -63,36 +63,36 @@ jobs:
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat console
 
-  loader:
-    name: Loader snapshot ${{ matrix.target.label }}
-    runs-on: ${{ matrix.target.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//loader:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//loader:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//loader:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, bazel: "//loader:deploy-mac-arm64-zip" }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
-          bazelrc: |
-            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
-      - name: Deploy snapshot
-        shell: bash
-        env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run --define version=$(git rev-parse HEAD) \
-            --compilation_mode=opt \
-            ${{ matrix.target.bazel }} -- snapshot
+#  loader:
+#    name: Loader snapshot ${{ matrix.target.label }}
+#    runs-on: ${{ matrix.target.runner }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        target:
+#          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//loader:deploy-linux-x86_64-targz" }
+#          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//loader:deploy-linux-arm64-targz" }
+#          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//loader:deploy-mac-x86_64-zip" }
+#          - { label: mac-arm64, runner: macos-26, bazel: "//loader:deploy-mac-arm64-zip" }
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: bazel-contrib/setup-bazel@0.15.0
+#        with:
+#          bazelisk-cache: true
+#          disk-cache: true
+#          repository-cache: true
+#          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+#          bazelrc: |
+#            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+#      - name: Deploy snapshot
+#        shell: bash
+#        env:
+#          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: |
+#          bazel run --define version=$(git rev-parse HEAD) \
+#            --compilation_mode=opt \
+#            ${{ matrix.target.bazel }} -- snapshot
 
   loader-windows:
     name: Loader snapshot windows-x86_64

@@ -79,6 +79,57 @@ jobs:
           bazel run --define version=$(cat VERSION) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- release
+      # The brew formula pins the sha256 of each mac zip. The deploy step above already built the
+      # assemble target, so checksum the resulting zip and hand it off to the deploy-brew job.
+      - name: Checksum mac artifact for brew
+        if: startsWith(matrix.target.label, 'mac')
+        shell: bash
+        run: |
+          shasum -a 256 bazel-bin/typeql-check/typeql-check-${{ matrix.target.label }}.zip \
+            | awk '{print $1}' > "checksum-${{ matrix.target.label }}"
+      - name: Upload mac checksum
+        if: startsWith(matrix.target.label, 'mac')
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksum-${{ matrix.target.label }}
+          path: checksum-${{ matrix.target.label }}
+
+  # Publishes the typeql-check formula to the shared typedb/homebrew-tap. Needs the mac zip
+  # checksums produced by deploy-artifacts.
+  deploy-brew:
+    name: Deploy brew
+    runs-on: ubuntu-22.04
+    needs: deploy-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Download mac checksums
+        uses: actions/download-artifact@v4
+        with:
+          pattern: checksum-mac-*
+          path: checksums
+          merge-multiple: true
+      - name: Deploy brew formula
+        shell: bash
+        env:
+          DEPLOY_BREW_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+          DEPLOY_BREW_USERNAME: ${{ secrets.REPO_GITHUB_USERNAME }}
+          DEPLOY_BREW_EMAIL: ${{ secrets.REPO_GITHUB_EMAIL }}
+        run: |
+          # deploy_brew reads the sha256 from these files via the checksum-mac-* label flags.
+          cp checksums/checksum-mac-arm64 typeql-check/checksum-arm64
+          cp checksums/checksum-mac-x86_64 typeql-check/checksum-x86_64
+          bazel run --define version=$(cat VERSION) //typeql-check:deploy-brew \
+            --//typeql-check:checksum-mac-arm64=//typeql-check:checksum-arm64 \
+            --//typeql-check:checksum-mac-x86_64=//typeql-check:checksum-x86_64 \
+            --compilation_mode=opt -- release
 
   # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
   # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`

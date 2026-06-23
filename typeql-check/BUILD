@@ -6,6 +6,7 @@ package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
 load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
@@ -121,6 +122,36 @@ deploy_artifact(
     snapshot = deployment['artifact']['snapshot']['upload'],
     release = deployment['artifact']['release']['upload'],
     visibility = ["//visibility:public"],
+)
+
+# brew
+deploy_brew(
+    name = "deploy-brew",
+    file_substitutions = {
+        ":checksum-mac-arm64": "{sha256-arm64}",
+        ":checksum-mac-x86_64": "{sha256-x86_64}",
+    },
+    formula = "//typeql-check/brew:typeql-check.rb",
+    release = deployment["brew"]["release"],
+    snapshot = deployment["brew"]["snapshot"],
+    version_file = "//:VERSION",
+)
+
+genrule(
+    name = "invalid-checksum",
+    outs = ["invalid-checksum.txt"],
+    srcs = [],
+    cmd = "echo > $@",
+)
+
+label_flag(
+    name = "checksum-mac-arm64",
+    build_setting_default = ":invalid-checksum",
+)
+
+label_flag(
+    name = "checksum-mac-x86_64",
+    build_setting_default = ":invalid-checksum",
 )
 
 checkstyle_test(

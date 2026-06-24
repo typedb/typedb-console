@@ -126,14 +126,14 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_console_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": typeql_commit,
-        "typedb_protocol+": typedb_protocol_commit,
-        "typedb_driver+": typedb_driver_commit,
+#        "typeql+": typeql_commit,
+#        "typedb_protocol+": typedb_protocol_commit,
+#        "typedb_driver+": typedb_driver_commit,
     },
     workspace_tag_dict = {
-#        "typeql+": typeql_tag,
-#        "typedb_protocol+": typedb_protocol_tag,
-#        "typedb_driver+": typedb_driver_rag,
+        "typeql+": typeql_tag,
+        "typedb_protocol+": typedb_protocol_tag,
+        "typedb_driver+": typedb_driver_tag,
     },
 )
 

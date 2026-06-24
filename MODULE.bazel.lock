@@ -5413,7 +5413,7 @@
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
         "bzlTransitiveDigest": "j3hx3mUtu6z2mFVqzO+QxuHlrl18RFJ+k2KdWIGo83o=",
-        "usagesDigest": "33j3UMawDwrbHDMoReSda1jIhIOaE6tU6qepXTgUENg=",
+        "usagesDigest": "p/tOBBn6sli1z31J+mJ/NEVv1o//ToaG1V5ookEFI8g=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -5422,16 +5422,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-linux-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-linux-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
               ],
-              "downloaded_file_path": "typedb-all-linux-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+              "downloaded_file_path": "typedb-all-linux-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
             }
           },
           "typedb_artifact_linux-arm64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-linux-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-arm64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-linux-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5441,16 +5441,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-linux-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-linux-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
               ],
-              "downloaded_file_path": "typedb-all-linux-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+              "downloaded_file_path": "typedb-all-linux-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
             }
           },
           "typedb_artifact_linux-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-linux-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.tar.gz"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-linux-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-linux-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.tar.gz"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5460,16 +5460,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-mac-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-mac-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
-              "downloaded_file_path": "typedb-all-mac-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+              "downloaded_file_path": "typedb-all-mac-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
             }
           },
           "typedb_artifact_mac-arm64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-mac-arm64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-arm64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-mac-arm64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5479,16 +5479,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-mac-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-mac-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
-              "downloaded_file_path": "typedb-all-mac-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+              "downloaded_file_path": "typedb-all-mac-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
             }
           },
           "typedb_artifact_mac-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-mac-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-mac-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-mac-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5498,16 +5498,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-windows-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-windows-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
-              "downloaded_file_path": "typedb-all-windows-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+              "downloaded_file_path": "typedb-all-windows-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
             }
           },
           "typedb_artifact_windows-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea/typedb-all-windows-x86_64-7e5748b51b5dbbdc2c381e9c6d700e4cf748b7ea.zip"
+                "https://repo.typedb.com/public/public-snapshot/raw/names/typedb-all-windows-x86_64/versions/6fcf3bc075b3e19e1293edd3a878db22ced710c9/typedb-all-windows-x86_64-6fcf3bc075b3e19e1293edd3a878db22ced710c9.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5517,16 +5517,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-arm64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-linux-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-arm64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-linux-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
               ],
-              "downloaded_file_path": "typedb-cluster-all-linux-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+              "downloaded_file_path": "typedb-cluster-all-linux-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
             }
           },
           "typedb_cluster_artifact_linux-arm64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-arm64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-linux-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-arm64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-linux-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5536,16 +5536,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-linux-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-linux-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
               ],
-              "downloaded_file_path": "typedb-cluster-all-linux-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+              "downloaded_file_path": "typedb-cluster-all-linux-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
             }
           },
           "typedb_cluster_artifact_linux-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-linux-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.tar.gz"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-linux-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-linux-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.tar.gz"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5555,16 +5555,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-arm64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-mac-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-arm64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-mac-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
-              "downloaded_file_path": "typedb-cluster-all-mac-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+              "downloaded_file_path": "typedb-cluster-all-mac-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
             }
           },
           "typedb_cluster_artifact_mac-arm64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-arm64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-mac-arm64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-arm64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-mac-arm64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5574,16 +5574,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-mac-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-mac-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
-              "downloaded_file_path": "typedb-cluster-all-mac-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+              "downloaded_file_path": "typedb-cluster-all-mac-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
             }
           },
           "typedb_cluster_artifact_mac-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-mac-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-mac-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-mac-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
@@ -5593,16 +5593,16 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-windows-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-windows-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-windows-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-windows-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
-              "downloaded_file_path": "typedb-cluster-all-windows-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+              "downloaded_file_path": "typedb-cluster-all-windows-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
             }
           },
           "typedb_cluster_artifact_windows-x86_64-extracted": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-windows-x86_64/versions/dd36d8204fa26982fed32eb1606c2f1ea5eb85d2/typedb-cluster-all-windows-x86_64-dd36d8204fa26982fed32eb1606c2f1ea5eb85d2.zip"
+                "https://repo.typedb.com/basic/private-snapshot/raw/names/typedb-cluster-all-windows-x86_64/versions/48f59129a4e9101221ce1d0f23f4fad1fb34b538/typedb-cluster-all-windows-x86_64-48f59129a4e9101221ce1d0f23f4fad1fb34b538.zip"
               ],
               "strip_prefix": "",
               "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "

@@ -33,6 +33,8 @@ jobs:
           bazelrc: |
             build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
       - name: Build everything
+        env:
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-linux-x86_64
         run: bazel build //...
       - name: Checkstyle
         run: |

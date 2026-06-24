@@ -56,4 +56,7 @@ jobs:
           google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
           bazelrc: |
             build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
-      - run: bazel test //loader/tests/assembly:test-loader --test_output=streamed
+      - name: test loader assembly
+        env:
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-linux-x86_64
+        run: bazel test //loader/tests/assembly:test-loader --test_output=streamed

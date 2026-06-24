@@ -45,7 +45,7 @@ jobs:
       - name: Validate release notes
         env:
           NOTES_VALIDATE_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
-        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./RELEASE_NOTES_LATEST.md
+        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./RELEASE_NOTES_LATEST.md ${RELEASE_TAG_PREFIX}
 
   deploy-artifacts:
     name: Deploy ${{ matrix.target.label }}

@@ -38,7 +38,7 @@ jobs:
           bazelisk-cache: true
           disk-cache: true
           repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON_BREAK_THIS }}
           bazelrc: |
             build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
       - run: bazel test //console/tests/assembly:test-assembly --test_output=streamed

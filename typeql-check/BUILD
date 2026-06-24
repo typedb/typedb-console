@@ -5,6 +5,7 @@
 package(default_visibility = ["//visibility:__subpackages__"])
 
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
@@ -135,6 +136,50 @@ deploy_brew(
     release = deployment["brew"]["release"],
     snapshot = deployment["brew"]["snapshot"],
     version_file = "//:VERSION",
+)
+
+# apt
+# Each .deb is built natively on its matching runner (amd64 / arm64), reusing the same
+# native artifact tar as the targz/zip distributions. The binary lands under /opt/typedb and
+# is symlinked onto PATH at /usr/local/bin/typeql-check.
+assemble_apt(
+    name = "assemble-linux-x86_64-apt",
+    package_name = "typeql-check",
+    architecture = "amd64",
+    archives = [":typeql-check-artifact-native"],
+    description = "Validate TypeQL query syntax from the command line",
+    installation_dir = "/opt/typedb/typeql-check/",
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = {
+        "/usr/local/bin/typeql-check": "/opt/typedb/typeql-check/typeql-check",
+    },
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typeql-check",
+    architecture = "arm64",
+    archives = [":typeql-check-artifact-native"],
+    description = "Validate TypeQL query syntax from the command line",
+    installation_dir = "/opt/typedb/typeql-check/",
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = {
+        "/usr/local/bin/typeql-check": "/opt/typedb/typeql-check/typeql-check",
+    },
+)
+
+deploy_apt(
+    name = "deploy-apt-x86_64",
+    target = ":assemble-linux-x86_64-apt",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    target = ":assemble-linux-arm64-apt",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
 )
 
 genrule(

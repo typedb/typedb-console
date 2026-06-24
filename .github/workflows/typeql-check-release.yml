@@ -94,6 +94,38 @@ jobs:
           name: checksum-${{ matrix.target.label }}
           path: checksum-${{ matrix.target.label }}
 
+  # Publishes the .deb packages to the shared Cloudsmith apt repo. Each architecture is built
+  # natively on its matching runner.
+  deploy-apt:
+    name: Deploy apt ${{ matrix.target.label }}
+    runs-on: ${{ matrix.target.runner }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//typeql-check:deploy-apt-x86_64" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//typeql-check:deploy-apt-arm64" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+      - name: Deploy apt package to Cloudsmith
+        shell: bash
+        env:
+          DEPLOY_APT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+          DEPLOY_APT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+        run: |
+          bazel run --define version=$(cat VERSION) \
+            --compilation_mode=opt \
+            ${{ matrix.target.bazel }} -- release
+
   # Publishes the typeql-check formula to the shared typedb/homebrew-tap. Needs the mac zip
   # checksums produced by deploy-artifacts.
   deploy-brew:

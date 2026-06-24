@@ -10,7 +10,6 @@ name: Build & checkstyle
 on:
   pull_request:
   push:
-    branches: [development, master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

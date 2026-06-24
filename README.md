@@ -19,11 +19,14 @@ common crate.
   user-supplied TypeQL `given`-stage insert pipeline over a CSV file, with batching,
   parallel writes, reject capture, and resumable checkpoints. See the
   [loader README](loader/README.md) for details.
+- **[`typeql-check/`](typeql-check/)** — TypeQL Check: a utility that verifies the
+  syntactic validity of a given TypeQL query.
 
 ## Repo layout
 
 - `console/` — TypeDB Console sources, tests, and packaging.
 - `loader/` — TypeDB Loader sources, tests, and packaging.
+- `typeql-check/` — TypeQL Check sources.
 - `common/` — Shared helpers (address parsing, TLS config) used by both tools.
 - `binary/` — The `typedb` wrapper script that dispatches to either `console` or `loader`
   inside an assembled distribution (`typedb console …`, `typedb loader …`).

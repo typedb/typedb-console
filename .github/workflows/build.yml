@@ -32,7 +32,7 @@ jobs:
           repository-cache: true
           google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
           bazelrc: |
-            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+            build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
       - name: Build everything
         run: bazel build //...
       - name: Checkstyle

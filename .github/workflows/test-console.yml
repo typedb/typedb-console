@@ -9,7 +9,6 @@ name: Console tests
 # integration regardless of what the patch touched.
 on:
   push:
-    branches: [development, master]
   pull_request:
     paths:
       - 'console/**'
@@ -41,6 +40,6 @@ jobs:
           repository-cache: true
           google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
           bazelrc: |
-            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+            build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
       - run: bazel test //console/tests/assembly:test-assembly --test_output=streamed
       - run: bazel test //console/tests/assembly:test-script --test_output=streamed

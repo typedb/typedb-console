@@ -22,8 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { label: linux-x86_64, bazel-arch: amd64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci", bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, bazel-arch: arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci", bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: linux-x86_64, bazel-arch: amd64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, bazel-arch: arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-arm64-targz" }
 #          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
 #          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:

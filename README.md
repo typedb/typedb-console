@@ -39,20 +39,20 @@ We use the `--tag-prefix`, `--include`, and `--exclude` to generate release note
 ### Console
 
 ```shell
-NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> RELEASE_TEMPLATE.md RELEASE.md \
+NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> ./console/RELEASE_TEMPLATE.md ./console/RELEASE.md \
   --include console --exclude loader --exclude typeql-check --tag-prefix console-
 ```
 
 ### Loader
 
 ```shell
-NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> RELEASE_TEMPLATE.md RELEASE.md \
+NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> ./loader/RELEASE_TEMPLATE.md ./loader/RELEASE.md \
   --include loader --exclude console --exclude typeql-check --tag-prefix loader-
 ```
 
 ### TypeQL Check
 
 ```shell
-NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> RELEASE_TEMPLATE.md RELEASE.md \
+NOTES_CREATE_TOKEN="..." bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-tools <COMMIT_SHA> <RELEASE_VERSION> ./typeql-check/RELEASE_TEMPLATE.md ./typeql-check/RELEASE.md \
   --include typeql-check --exclude console --exclude loader --tag-prefix typeql-check-
 ```

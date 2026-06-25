@@ -27,10 +27,7 @@ jobs:
           - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
-      - name: Checkout
-        run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
-          git config --global --add safe.directory $(pwd)
+      - uses: ./.github/actions/checkout
       - name: Deploy snapshot
         shell: bash
         env:

@@ -6,7 +6,7 @@ name: Snapshot deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, one-off/test-github-actions-deployment-jobs-on-amazon-linux]
 
 permissions:
   contents: read

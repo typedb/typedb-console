@@ -18,6 +18,8 @@ jobs:
     name: Console snapshot ${{ matrix.target.label }}
     runs-on: ${{ matrix.target.runner }}
     container: ${{ matrix.target.container }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       fail-fast: false
       matrix:

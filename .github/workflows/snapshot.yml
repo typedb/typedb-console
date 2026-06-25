@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies via yum
         run: |
           yum install wget make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel zlib-devel file lsof which procps tar git -y
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${{matrix.target.label.bazel-arch}}"
-          mv "bazelisk-linux-${{matrix.target.label.bazel-arch}}" /usr/local/bin/bazel
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${{matrix.target.bazel-arch}}"
+          mv "bazelisk-linux-${{matrix.target.bazel-arch}}" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
       - name: Checkout
         run: |

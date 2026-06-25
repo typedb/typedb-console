@@ -18,8 +18,6 @@ jobs:
     name: Console snapshot ${{ matrix.target.label }}
     runs-on: ${{ matrix.target.runner }}
     container: ${{ matrix.target.container }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       fail-fast: false
       matrix:
@@ -29,7 +27,9 @@ jobs:
           - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:
           bazelisk-cache: true

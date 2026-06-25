@@ -29,6 +29,7 @@ jobs:
     steps:
       - name: Install dependencies via yum
         run: |
+          amazon-linux-extras install python3.8 -y
           yum install wget make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel zlib-devel file lsof which procps tar git -y
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${{matrix.target.bazel-arch}}"
           mv "bazelisk-linux-${{matrix.target.bazel-arch}}" /usr/local/bin/bazel
@@ -48,116 +49,116 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- snapshot
-
-  typeql-check-windows:
-    name: TypeQL Check snapshot windows-x86_64
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare Windows build environment
-        shell: cmd
-        run: .github\windows\prepare.bat
-      - name: Deploy snapshot
-        shell: cmd
-        env:
-          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: .github\windows\deploy_snapshot.bat typeql-check
-
-  # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
-  # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
-  # so the GitHub-hosted runner can build and launch it.
-  console-windows:
-    name: Console snapshot windows-x86_64
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare Windows build environment
-        shell: cmd
-        run: .github\windows\prepare.bat
-      - name: Deploy snapshot
-        shell: cmd
-        env:
-          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: .github\windows\deploy_snapshot.bat console
-
-  loader:
-    name: Loader snapshot ${{ matrix.target.label }}
-    runs-on: ${{ matrix.target.runner }}
-    container: ${{ matrix.target.container }}
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//loader:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//loader:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//loader:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//loader:deploy-mac-arm64-zip" }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
-          bazelrc: |
-            build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
-      - name: Deploy snapshot
-        shell: bash
-        env:
-          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-${{matrix.target.label}}
-          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run --define version=$(git rev-parse HEAD) \
-            --compilation_mode=opt \
-            ${{ matrix.target.bazel }} -- snapshot
-
-  loader-windows:
-    name: Loader snapshot windows-x86_64
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare Windows build environment
-        shell: cmd
-        run: .github\windows\prepare.bat
-      - name: Deploy snapshot
-        shell: cmd
-        env:
-          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: .github\windows\deploy_snapshot.bat loader
-
-  typeql-check:
-    name: TypeQL Check snapshot ${{ matrix.target.label }}
-    runs-on: ${{ matrix.target.runner }}
-    container: ${{ matrix.target.container }}
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//typeql-check:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//typeql-check:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//typeql-check:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//typeql-check:deploy-mac-arm64-zip" }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
-          bazelrc: |
-            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
-      - name: Deploy snapshot
-        shell: bash
-        env:
-          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
-          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
-        run: |
-          bazel run --define version=$(git rev-parse HEAD) \
-            --compilation_mode=opt \
-            ${{ matrix.target.bazel }} -- snapshot
+#
+#  typeql-check-windows:
+#    name: TypeQL Check snapshot windows-x86_64
+#    runs-on: windows-2022
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Prepare Windows build environment
+#        shell: cmd
+#        run: .github\windows\prepare.bat
+#      - name: Deploy snapshot
+#        shell: cmd
+#        env:
+#          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: .github\windows\deploy_snapshot.bat typeql-check
+#
+#  # Windows uses the custom batch-script process (see .github/windows): it shortens the Bazel
+#  # workspace path, installs build dependencies via Chocolatey, and patches the binary to a `.exe`
+#  # so the GitHub-hosted runner can build and launch it.
+#  console-windows:
+#    name: Console snapshot windows-x86_64
+#    runs-on: windows-2022
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Prepare Windows build environment
+#        shell: cmd
+#        run: .github\windows\prepare.bat
+#      - name: Deploy snapshot
+#        shell: cmd
+#        env:
+#          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: .github\windows\deploy_snapshot.bat console
+#
+#  loader:
+#    name: Loader snapshot ${{ matrix.target.label }}
+#    runs-on: ${{ matrix.target.runner }}
+#    container: ${{ matrix.target.container }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        target:
+#          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//loader:deploy-linux-x86_64-targz" }
+#          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//loader:deploy-linux-arm64-targz" }
+#          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//loader:deploy-mac-x86_64-zip" }
+#          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//loader:deploy-mac-arm64-zip" }
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: bazel-contrib/setup-bazel@0.15.0
+#        with:
+#          bazelisk-cache: true
+#          disk-cache: true
+#          repository-cache: true
+#          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+#          bazelrc: |
+#            build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
+#      - name: Deploy snapshot
+#        shell: bash
+#        env:
+#          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-${{matrix.target.label}}
+#          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: |
+#          bazel run --define version=$(git rev-parse HEAD) \
+#            --compilation_mode=opt \
+#            ${{ matrix.target.bazel }} -- snapshot
+#
+#  loader-windows:
+#    name: Loader snapshot windows-x86_64
+#    runs-on: windows-2022
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Prepare Windows build environment
+#        shell: cmd
+#        run: .github\windows\prepare.bat
+#      - name: Deploy snapshot
+#        shell: cmd
+#        env:
+#          REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: .github\windows\deploy_snapshot.bat loader
+#
+#  typeql-check:
+#    name: TypeQL Check snapshot ${{ matrix.target.label }}
+#    runs-on: ${{ matrix.target.runner }}
+#    container: ${{ matrix.target.container }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        target:
+#          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//typeql-check:deploy-linux-x86_64-targz" }
+#          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//typeql-check:deploy-linux-arm64-targz" }
+#          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//typeql-check:deploy-mac-x86_64-zip" }
+#          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//typeql-check:deploy-mac-arm64-zip" }
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: bazel-contrib/setup-bazel@0.15.0
+#        with:
+#          bazelisk-cache: true
+#          disk-cache: true
+#          repository-cache: true
+#          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+#          bazelrc: |
+#            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
+#      - name: Deploy snapshot
+#        shell: bash
+#        env:
+#          DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
+#          DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+#        run: |
+#          bazel run --define version=$(git rev-parse HEAD) \
+#            --compilation_mode=opt \
+#            ${{ matrix.target.bazel }} -- snapshot

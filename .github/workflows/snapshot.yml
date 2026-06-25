@@ -31,21 +31,18 @@ jobs:
         run: |
           yum install wget make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel zlib-devel file lsof which procps tar git -y
           git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
-      - uses: bazel-contrib/setup-bazel@0.15.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
-          bazelrc: |
-            build --remote_cache https://storage.googleapis.com/typedb-engineers-bazel-remote-cache-europe-west1
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
+          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
       - name: Deploy snapshot
         shell: bash
         env:
           CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-${{matrix.target.label}}
           DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+          BAZEL_CACHE_CREDENTIAL: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- snapshot

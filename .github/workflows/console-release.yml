@@ -50,15 +50,16 @@ jobs:
   deploy-artifacts:
     name: Deploy ${{ matrix.target.label }}
     runs-on: ${{ matrix.target.runner }}
+    container: ${{ matrix.target.container }}
     needs: validate
     strategy:
       fail-fast: false
       matrix:
         target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
+          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0

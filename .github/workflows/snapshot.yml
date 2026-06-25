@@ -24,8 +24,8 @@ jobs:
         target:
           - { label: linux-x86_64, bazel-arch: amd64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-x86_64-targz" }
           - { label: linux-arm64, bazel-arch: arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-arm64-targz" }
-#          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
-#          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
+          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
       - name: Checkout
         run: |
@@ -40,9 +40,6 @@ jobs:
           BAZEL_CACHE_URL: ${{ vars.BAZEL_CACHE_URL }}
           BAZEL_CACHE_CREDENTIAL_JSON: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
-          git rev-parse HEAD
-          echo $(git rev-parse HEAD)
-          echo "$(git rev-parse HEAD)"
           export BAZEL_CACHE_CREDENTIAL=$(echo $BAZEL_CACHE_CREDENTIAL_JSON | base64)
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt ${{ matrix.target.bazel }} -- snapshot

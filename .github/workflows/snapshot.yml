@@ -22,19 +22,11 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { label: linux-x86_64, bazel-arch: amd64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, bazel-arch: arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: linux-x86_64, bazel-arch: amd64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci", bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, bazel-arch: arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci", bazel: "//console:deploy-linux-arm64-targz" }
 #          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
 #          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
-      - name: Install dependencies via yum
-        run: |
-          amazon-linux-extras install python3.8 -y
-          ln -s /usr/bin/python3.8 /usr/bin/python3
-          yum install wget make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel zlib-devel file lsof which procps tar git -y
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${{matrix.target.bazel-arch}}"
-          mv "bazelisk-linux-${{matrix.target.bazel-arch}}" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/bazel
       - name: Checkout
         run: |
           git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .

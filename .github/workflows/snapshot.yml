@@ -47,9 +47,7 @@ jobs:
           BAZEL_CACHE_CREDENTIAL: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(git rev-parse HEAD) \
-            --compilation_mode=opt \
-            ${{ matrix.target.bazel }} -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt ${{ matrix.target.bazel }} -- snapshot
 #
 #  typeql-check-windows:
 #    name: TypeQL Check snapshot windows-x86_64

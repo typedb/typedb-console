@@ -152,8 +152,8 @@ jobs:
         shell: bash
         env:
           DEPLOY_BREW_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
-          DEPLOY_BREW_USERNAME: ${{ secrets.REPO_GITHUB_USERNAME }}
-          DEPLOY_BREW_EMAIL: ${{ secrets.REPO_GITHUB_EMAIL }}
+          DEPLOY_BREW_USERNAME: ${{ vars.REPO_GITHUB_USERNAME }}
+          DEPLOY_BREW_EMAIL: ${{ vars.REPO_GITHUB_EMAIL }}
         run: |
           # deploy_brew reads the sha256 from these files via the checksum-mac-* label flags.
           cp checksums/checksum-mac-arm64 typeql-check/checksum-arm64

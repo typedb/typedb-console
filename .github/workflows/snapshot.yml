@@ -29,6 +29,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
+          yum install wget make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel zlib-devel file lsof which procps tar git -y
           git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:

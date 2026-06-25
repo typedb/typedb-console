@@ -46,6 +46,9 @@ jobs:
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
           BAZEL_CACHE_CREDENTIAL: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
+          git rev-parse HEAD
+          echo $(git rev-parse HEAD)
+          echo "$(git rev-parse HEAD)"
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(git rev-parse HEAD) --compilation_mode=opt ${{ matrix.target.bazel }} -- snapshot
 #

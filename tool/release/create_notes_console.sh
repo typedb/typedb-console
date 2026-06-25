@@ -5,5 +5,3 @@
 
 bazel run @typedb_dependencies//tool/release/notes:create -- typedb typedb-console HEAD $(cat VERSION) ./console/RELEASE_TEMPLATE.md ./console/RELEASE_NOTES_LATEST.md \
   --include console --exclude loader --exclude typeql-check --tag-prefix console-
-  --include loader --exclude console --exclude typeql-check --tag-prefix loader-
-  --include typeql-check --exclude console --exclude loader --tag-prefix typeql-check-

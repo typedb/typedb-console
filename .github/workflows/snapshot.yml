@@ -6,7 +6,7 @@ name: Snapshot deploy
 
 on:
   push:
-    branches: [master, one-off]
+    branches: [master]
 
 permissions:
   contents: read

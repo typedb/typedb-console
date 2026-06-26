@@ -26,7 +26,10 @@ jobs:
     name: Validate
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
+          git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:
           bazelisk-cache: true
@@ -56,12 +59,15 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, container: "amazonlinux:2", bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "amazonlinux:2", bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: linux-x86_64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-arm64-targz" }
           - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
           - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
+          git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:
           bazelisk-cache: true
@@ -89,7 +95,10 @@ jobs:
     runs-on: windows-2022
     needs: validate
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
+          git config --global --add safe.directory $(pwd)
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat
@@ -105,7 +114,10 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [deploy-artifacts, deploy-windows]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
+          git config --global --add safe.directory $(pwd)
       - name: Resolve version
         id: version
         run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"

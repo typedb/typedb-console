@@ -83,7 +83,11 @@ jobs:
           CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-${{matrix.target.label}}
           DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+          BAZEL_CACHE_URL: ${{ vars.BAZEL_CACHE_URL }}
+          BAZEL_CACHE_CREDENTIAL_JSON: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
+          export BAZEL_CACHE_CREDENTIAL=$(echo $BAZEL_CACHE_CREDENTIAL_JSON | base64)
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(cat VERSION) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- release

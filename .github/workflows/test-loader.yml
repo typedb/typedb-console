@@ -34,7 +34,8 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${{github.event.pull_request.head.repo.full_name}}.git" .
+          git init
+          git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
           git checkout ${GITHUB_SHA}
           git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
@@ -53,7 +54,8 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${{github.event.pull_request.head.repo.full_name}}.git" .
+          git init
+          git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
           git checkout ${GITHUB_SHA}
           git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0

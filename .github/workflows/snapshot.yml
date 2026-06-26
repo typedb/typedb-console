@@ -48,10 +48,7 @@ jobs:
     name: TypeQL Check snapshot windows-x86_64
     runs-on: windows-2022
     steps:
-      - name: Checkout
-        run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
-          git config --global --add safe.directory $(pwd)
+      - uses: actions/checkout@v4
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat
@@ -69,10 +66,7 @@ jobs:
     name: Console snapshot windows-x86_64
     runs-on: windows-2022
     steps:
-      - name: Checkout
-        run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
-          git config --global --add safe.directory $(pwd)
+      - uses: actions/checkout@v4
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat
@@ -124,10 +118,7 @@ jobs:
     name: Loader snapshot windows-x86_64
     runs-on: windows-2022
     steps:
-      - name: Checkout
-        run: |
-          git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
-          git config --global --add safe.directory $(pwd)
+      - uses: actions/checkout@v4
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat

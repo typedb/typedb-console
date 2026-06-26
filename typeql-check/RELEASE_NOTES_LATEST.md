@@ -1,6 +1,6 @@
 ## Distribution
 
-Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.12.0-rc0
+Download from TypeDB Package Repository: https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-console+version:3.12.0-rc1
 
 
 ## New Features

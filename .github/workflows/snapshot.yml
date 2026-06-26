@@ -66,7 +66,7 @@ jobs:
       - name: Deploy snapshot
         shell: cmd
         env:
-          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-windows-x86_64
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64
           REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat typeql-check
@@ -85,7 +85,7 @@ jobs:
       - name: Deploy snapshot
         shell: cmd
         env:
-          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-windows-x86_64
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64
           REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat console
@@ -144,7 +144,7 @@ jobs:
       - name: Deploy snapshot
         shell: cmd
         env:
-          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-windows-x86_64
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64
           REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_snapshot.bat loader

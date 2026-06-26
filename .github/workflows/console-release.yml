@@ -138,4 +138,4 @@ jobs:
           gh release create "$tag" \
             --target "${{ github.sha }}" \
             --title "TypeDB Console ${{ steps.version.outputs.version }}" \
-            --notes-file ./RELEASE_NOTES_LATEST.md
+            --notes-file ./console/RELEASE_NOTES_LATEST.md

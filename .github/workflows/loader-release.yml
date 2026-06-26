@@ -69,6 +69,7 @@ jobs:
           git clone --depth 1 -b "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "https://github.com/${GITHUB_REPOSITORY}.git" .
           git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
+        if: matrix.target.container == null
         with:
           bazelisk-cache: true
           disk-cache: true

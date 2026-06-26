@@ -60,6 +60,14 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat
@@ -79,6 +87,14 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat
@@ -138,6 +154,14 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          google-credentials: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
+          bazelrc: |
+            build --remote_cache ${{ vars.BAZEL_CACHE_URL }}
       - name: Prepare Windows build environment
         shell: cmd
         run: .github\windows\prepare.bat

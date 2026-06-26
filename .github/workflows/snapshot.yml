@@ -30,9 +30,9 @@ jobs:
       - name: Checkout
         run: |
           git init
+          git config --global --add safe.directory $(pwd)
           git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
           git checkout ${GITHUB_SHA}
-          git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
         if: matrix.target.container == null
         with:
@@ -106,9 +106,9 @@ jobs:
       - name: Checkout
         run: |
           git init
+          git config --global --add safe.directory $(pwd)
           git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
           git checkout ${GITHUB_SHA}
-          git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
         if: matrix.target.container == null
         with:
@@ -165,9 +165,9 @@ jobs:
       - name: Checkout
         run: |
           git init
+          git config --global --add safe.directory $(pwd)
           git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
           git checkout ${GITHUB_SHA}
-          git config --global --add safe.directory $(pwd)
       - uses: bazel-contrib/setup-bazel@0.15.0
         if: matrix.target.container == null
         with:

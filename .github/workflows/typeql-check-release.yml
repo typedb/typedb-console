@@ -46,7 +46,7 @@ jobs:
       - name: Validate release notes
         env:
           NOTES_VALIDATE_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
-        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./RELEASE_NOTES_LATEST.md ${RELEASE_TAG_PREFIX}
+        run: bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- ${{ github.repository_owner }} ${{ github.event.repository.name }} ./typeql-check/RELEASE_NOTES_LATEST.md ${RELEASE_TAG_PREFIX}
 
   deploy-artifacts:
     name: Deploy ${{ matrix.target.label }}
@@ -221,4 +221,4 @@ jobs:
           gh release create "$tag" \
             --target "${{ github.sha }}" \
             --title "TypeQL Check ${{ steps.version.outputs.version }}" \
-            --notes-file ./RELEASE_NOTES_LATEST.md
+            --notes-file ./typeql-check/RELEASE_NOTES_LATEST.md

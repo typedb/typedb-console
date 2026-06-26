@@ -50,18 +50,25 @@ jobs:
   deploy-artifacts:
     name: Deploy ${{ matrix.target.label }}
     runs-on: ${{ matrix.target.runner }}
+    container: ${{ matrix.target.container }}
     needs: validate
     strategy:
       fail-fast: false
       matrix:
         target:
-          - { label: linux-x86_64, runner: ubuntu-22.04, bazel: "//console:deploy-linux-x86_64-targz" }
-          - { label: linux-arm64, runner: ubuntu-22.04-arm, bazel: "//console:deploy-linux-arm64-targz" }
-          - { label: mac-x86_64, runner: macos-26-intel, bazel: "//console:deploy-mac-x86_64-zip" }
-          - { label: mac-arm64, runner: macos-26, bazel: "//console:deploy-mac-arm64-zip" }
+          - { label: linux-x86_64, runner: ubuntu-22.04, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-x86_64-targz" }
+          - { label: linux-arm64, runner: ubuntu-22.04-arm, container: "typedb/amazonlinux2-ci:3.12.0", bazel: "//console:deploy-linux-arm64-targz" }
+          - { label: mac-x86_64, runner: macos-26-intel, container: null, bazel: "//console:deploy-mac-x86_64-zip" }
+          - { label: mac-arm64, runner: macos-26, container: null, bazel: "//console:deploy-mac-arm64-zip" }
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git init
+          git config --global --add safe.directory $(pwd)
+          git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
+          git checkout ${GITHUB_SHA}
       - uses: bazel-contrib/setup-bazel@0.15.0
+        if: matrix.target.container == null
         with:
           bazelisk-cache: true
           disk-cache: true
@@ -75,7 +82,11 @@ jobs:
           CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-${{matrix.target.label}}
           DEPLOY_ARTIFACT_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           DEPLOY_ARTIFACT_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
+          BAZEL_CACHE_URL: ${{ vars.BAZEL_CACHE_URL }}
+          BAZEL_CACHE_CREDENTIAL_JSON: ${{ secrets.BAZEL_CACHE_CREDENTIAL_JSON }}
         run: |
+          export BAZEL_CACHE_CREDENTIAL=$(echo $BAZEL_CACHE_CREDENTIAL_JSON | base64)
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(cat VERSION) \
             --compilation_mode=opt \
             ${{ matrix.target.bazel }} -- release
@@ -95,6 +106,7 @@ jobs:
       - name: Deploy release artifact to Cloudsmith
         shell: cmd
         env:
+          CARGO_BAZEL_GENERATOR_URL: https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64
           REPO_TYPEDB_USERNAME: ${{ vars.REPO_TYPEDB_USERNAME }}
           REPO_TYPEDB_PASSWORD: ${{ secrets.REPO_TYPEDB_PASSWORD }}
         run: .github\windows\deploy_release.bat console

@@ -26,12 +26,7 @@ jobs:
     name: Validate
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        run: |
-          git init
-          git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
-          git checkout ${GITHUB_SHA}
-          git config --global --add safe.directory $(pwd)
+      - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:
           bazelisk-cache: true
@@ -121,12 +116,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [deploy-artifacts, deploy-windows]
     steps:
-      - name: Checkout
-        run: |
-          git init
-          git fetch "https://github.com/${GITHUB_REPOSITORY}.git" ${GITHUB_SHA}
-          git checkout ${GITHUB_SHA}
-          git config --global --add safe.directory $(pwd)
+      - uses: actions/checkout@v4
       - name: Resolve version
         id: version
         run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
